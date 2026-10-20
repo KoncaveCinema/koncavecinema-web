@@ -1,0 +1,64 @@
+name: Continuous Integration
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+    branches: [main, dev]
+  push:
+    branches: [main, dev]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-pr-title:
+    name: Validate PR Title
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+      statuses: write
+    steps:
+      - uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  validate-and-build:
+    name: Typecheck, Lint, Format, Test & Build (Node 24.x)
+    runs-on: ubuntu-latest
+    env:
+      # Placeholders so the validated environment passes during the build
+      NEXT_PUBLIC_APP_URL: http://localhost:3001
+      NEXT_PUBLIC_API_URL: http://localhost:3000/api
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 24.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: TypeScript Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint:check
+
+      - name: Verify Formatting
+        run: npm run format:check
+
+      - name: Unit Tests
+        run: npm test
+
+      - name: Audit Production Dependencies
+        run: npm run audit
+
+      - name: Build Application
+        run: npm run build
