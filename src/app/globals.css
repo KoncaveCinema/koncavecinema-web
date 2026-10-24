@@ -4,41 +4,69 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ==========================================================================
+   Koncave Cinema design tokens
+   Brand sheet: #D60211 red, #970001 crimson, #000000 black, #FFFFFF white.
+   Everything else is derived from those four and checked for WCAG AA contrast.
+   ========================================================================== */
+
 @theme inline {
+  /* Typography: a wide display face echoing the KONCAVE wordmark, a crisp sans for reading */
+  --font-sans: var(--font-sans);
+  --font-display: var(--font-display);
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-display);
+
+  /* Brand */
+  --color-brand: #d60211;
+  --color-crimson: #970001;
+  --color-brand-foreground: #ffffff;
+
+  /* Surfaces, lifted from black in small steps so cards read without borders */
+  --color-surface-1: #0a0a0b;
+  --color-surface-2: #111113;
+  --color-surface-3: #19191c;
+  --color-hairline: rgb(255 255 255 / 0.08);
+
+  /* States */
+  --color-live: #d60211;
+  --color-lobby: #10b981;
+  --color-gold: #f5b700;
+
+  /* shadcn semantic colours, mapped onto the brand */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Soft cinema geometry: 12px controls, 20px cards, 28px feature panels */
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -46,96 +74,453 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  --ease-cinema: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --animate-live-pulse: live-pulse 1.8s var(--ease-cinema) infinite;
+  --animate-cone-sway: cone-sway 14s ease-in-out infinite alternate;
+  --animate-projector-flicker: projector-flicker 3.2s steps(1, end) infinite;
+  --animate-lights-dim: lights-dim 900ms var(--ease-cinema) both;
+  --animate-rise: rise 800ms var(--ease-cinema) both;
+  --animate-ken-burns: ken-burns 16s cubic-bezier(0.25, 0.6, 0.3, 1) both;
 }
 
-:root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-}
-
+/* Dark is the only theme for now; `.dark` is kept so shadcn's dark variants still apply */
+:root,
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  color-scheme: dark;
+  --radius: 0.75rem;
+
+  --background: #000000;
+  --foreground: #ffffff;
+  --card: #111113;
+  --card-foreground: #ffffff;
+  --popover: #141416;
+  --popover-foreground: #ffffff;
+  --primary: #d60211;
+  --primary-foreground: #ffffff;
+  --secondary: #19191c;
+  --secondary-foreground: #ffffff;
+  --muted: #141416;
+  /* 66% white: readable body copy on black (the mock's grey failed AA at small sizes) */
+  --muted-foreground: #a8a8ad;
+  --accent: #1d1d21;
+  --accent-foreground: #ffffff;
+  --destructive: #ff4d57;
+  --border: rgb(255 255 255 / 0.1);
+  --input: rgb(255 255 255 / 0.12);
+  --ring: #d60211;
+
+  --chart-1: #d60211;
+  --chart-2: #970001;
+  --chart-3: #f5b700;
+  --chart-4: #10b981;
+  --chart-5: #a8a8ad;
+
+  --sidebar: #0a0a0b;
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: #d60211;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #19191c;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: rgb(255 255 255 / 0.08);
+  --sidebar-ring: #d60211;
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border outline-ring/60;
+  }
+  html {
+    @apply font-sans;
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
   }
   body {
     @apply bg-background text-foreground;
+    text-rendering: optimizeLegibility;
+  }
+  ::selection {
+    background: var(--color-brand);
+    color: #fff;
   }
   button:not(:disabled),
   [role="button"]:not(:disabled) {
     cursor: pointer;
   }
-  html {
-    @apply font-sans;
+  /* Sections reached from the header are not hidden under the sticky bar */
+  [id] {
+    scroll-margin-top: 5.5rem;
   }
 }
 
-/* Route and shared-element transitions run through React's <ViewTransition> (browser-native,
-   compositor driven). Respect the operating system's reduced-motion setting for all of them. */
+/* ==========================================================================
+   Brand utilities
+   ========================================================================== */
+
+/* Display type: the wordmark's wide, heavy geometry */
+@utility font-display {
+  font-family: var(--font-display);
+  font-stretch: 112%;
+  letter-spacing: -0.015em;
+}
+
+/* The mock's signature outlined title word ("THE BLACK [BOOK]") */
+@utility text-outline {
+  color: transparent;
+  -webkit-text-stroke: 1.5px rgb(255 255 255 / 0.92);
+  paint-order: stroke fill;
+}
+
+/* Frosted glass with a solid fallback where backdrop blur is unavailable */
+@utility glass {
+  background-color: rgb(255 255 255 / 0.045);
+  border: 1px solid rgb(255 255 255 / 0.09);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+
+  @supports not (backdrop-filter: blur(1px)) {
+    background-color: rgb(20 20 22 / 0.94);
+  }
+}
+
+/* Ticket-stub notches on the left and right edges */
+@utility ticket-stub {
+  --notch: 7px;
+  mask:
+    radial-gradient(circle at 0 50%, transparent var(--notch), #000 calc(var(--notch) + 0.5px))
+      left / 51% 100% no-repeat,
+    radial-gradient(circle at 100% 50%, transparent var(--notch), #000 calc(var(--notch) + 0.5px))
+      right / 51% 100% no-repeat;
+}
+
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Horizontal rails on small screens: native scroll-snap, no carousel library */
+@utility snap-rail {
+  display: flex;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 1rem;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  & > * {
+    scroll-snap-align: start;
+    flex-shrink: 0;
+  }
+}
+
+/* Elements rise into view as they scroll in. Browser-driven (no JavaScript); browsers without
+   scroll-driven animations simply show the element. */
+@utility reveal {
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      animation: rise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 60%;
+    }
+  }
+}
+
+/* A vertical rail that fills as its list scrolls through the viewport. Fully drawn where
+   scroll-driven animations are unsupported or motion is reduced. */
+@utility steps-timeline {
+  view-timeline-name: --steps;
+}
+
+@utility rail-fill {
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      animation: rail-grow linear both;
+      animation-timeline: --steps;
+      animation-range: cover 15% cover 65%;
+    }
+  }
+}
+
+/* Softer outline for oversized numerals */
+@utility text-outline-soft {
+  color: transparent;
+  -webkit-text-stroke: 1.5px rgb(255 255 255 / 0.3);
+  paint-order: stroke fill;
+}
+
+/* A cone of light hanging from its apex: a soft-edged conic gradient (no blur or clipping, so
+   no seams) that fades in below the apex and out with distance. Width at the far end follows
+   the half-angle: set --cone-spread (e.g. 14deg) and --cone-intensity (0 to 1) on any parent
+   to override the cone's own defaults. --cone-fade sets how far below the apex the beam reaches
+   full strength; --cone-cut trims the pointed tip (the beam starts that far below the apex). */
+@utility spotlight-cone {
+  --cone-angle: var(--cone-spread, var(--cone-default-spread, 9deg));
+  --cone-core: calc(var(--cone-angle) * 0.4);
+  --cone-light: rgb(255 238 228 / var(--cone-intensity, var(--cone-default-intensity, 0.2)));
+  aspect-ratio: calc(2 * tan(var(--cone-angle)) + 0.04);
+  translate: -50% 0;
+  transform-origin: top;
+  background: conic-gradient(
+    from 180deg at 50% 0%,
+    var(--cone-light) 0deg,
+    var(--cone-light) var(--cone-core),
+    transparent var(--cone-angle),
+    transparent calc(360deg - var(--cone-angle)),
+    var(--cone-light) calc(360deg - var(--cone-core)),
+    var(--cone-light) 360deg
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent var(--cone-cut, 0px),
+    #000 max(var(--cone-cut, 0px), var(--cone-fade, 24%)),
+    rgb(0 0 0 / 0.55) 64%,
+    transparent 100%
+  );
+}
+
+/* Infinite ticker: the track holds two identical copies and slides by one copy's width.
+   Transform only; pauses on hover (see the rule below); settles under reduced motion. */
+@utility marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee var(--marquee-duration, 40s) linear infinite;
+  animation-direction: var(--marquee-direction, normal);
+}
+
+[data-marquee]:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+/* Images unclip upward as they scroll in */
+@utility reveal-clip {
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      animation: unclip linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 80%;
+    }
+  }
+}
+
+/* Slow drift against the scroll, for imagery inside an overflow-hidden frame. Animates the
+   individual translate property, so hover scale on the same element still works. Set --drift
+   (default 5%) to keep the travel within the image's extra scale. */
+@utility parallax {
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      animation: drift linear both;
+      animation-timeline: view();
+      animation-range: cover 0% cover 100%;
+    }
+  }
+}
+
+/* Pieces of a step's preview arrive as it scrolls in (deal, drop), staggered with an inline
+   animation-range. Shown as-is where scroll timelines are unsupported. */
+@utility vignette-item {
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      animation: var(--vignette-animation, deal) linear both;
+      animation-timeline: view();
+      animation-range: entry 10% cover 40%;
+    }
+  }
+}
+
+/* ==========================================================================
+   Keyframes (transform and opacity only, so they run on the compositor)
+   ========================================================================== */
+
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes unclip {
+  from {
+    clip-path: inset(18% 0 0 0 round 1.5rem);
+    opacity: 0.4;
+  }
+  to {
+    clip-path: inset(0 0 0 0 round 1.5rem);
+    opacity: 1;
+  }
+}
+
+@keyframes drift {
+  from {
+    translate: 0 calc(var(--drift, 5%) * -1);
+  }
+  to {
+    translate: 0 var(--drift, 5%);
+  }
+}
+
+@keyframes deal {
+  from {
+    opacity: 0;
+    transform: translateY(18px) rotate(-5deg);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes drop-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-26px);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(3px);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* An old projector's lamp: mostly steady, with brief irregular dips */
+@keyframes projector-flicker {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  12% {
+    opacity: 0.86;
+  }
+  14% {
+    opacity: 1;
+  }
+  47% {
+    opacity: 0.92;
+  }
+  49% {
+    opacity: 1;
+  }
+  81% {
+    opacity: 0.8;
+  }
+  83% {
+    opacity: 1;
+  }
+}
+
+@keyframes spin-slow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes dust {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0);
+  }
+  25%,
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--dust-x, 12px), -90px, 0);
+  }
+}
+
+@keyframes live-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  80%,
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+
+@keyframes cone-sway {
+  from {
+    transform: rotate(var(--cone-from, -4deg));
+  }
+  to {
+    transform: rotate(var(--cone-to, 4deg));
+  }
+}
+
+@keyframes lights-dim {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes rail-grow {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes ken-burns {
+  from {
+    transform: scale(1.12);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+/* Carousel slides replay their entrance each time they become active */
+[data-slide][data-active="false"] :is(.animate-rise, .animate-ken-burns, .animate-lights-dim) {
+  animation: none;
+}
+
+@keyframes progress-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* ==========================================================================
+   Reduced motion: no drifting light, no auto-advancing, no reveals, no view transitions
+   ========================================================================== */
+
 @media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
   ::view-transition-group(*),
   ::view-transition-old(*),
   ::view-transition-new(*) {
