@@ -11,6 +11,9 @@ export const env = createEnv({
     // Base URL used by Server Components to reach the API. Defaults to the public URL; set it
     // when the server can reach the API over a private network.
     API_INTERNAL_URL: z.url().optional(),
+    // Where public catalog pages get films: the API, or built-in sample films (placeholder art,
+    // showtimes relative to now) for development, design review and screenshots
+    CATALOG_SOURCE: z.enum(["api", "fixtures"]).default("api"),
   },
   client: {
     // Public origin of this web app, used for canonical URLs, Open Graph and Paystack callbacks
@@ -21,6 +24,7 @@ export const env = createEnv({
   runtimeEnv: {
     NODE_ENV: process.env.NODE_ENV,
     API_INTERNAL_URL: process.env.API_INTERNAL_URL,
+    CATALOG_SOURCE: process.env.CATALOG_SOURCE,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
   },
