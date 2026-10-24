@@ -21,7 +21,6 @@ export default function AppleIcon() {
         background: "radial-gradient(circle at 50% 40%, #2a0003, #000 70%)",
       }}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element -- rendered to PNG, not the DOM */}
       <img src={iconDataUri} width={128} height={128} alt="" />
     </div>,
     size,

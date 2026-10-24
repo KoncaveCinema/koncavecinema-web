@@ -1,7 +1,7 @@
 import pluginQuery from "@tanstack/eslint-plugin-query";
-import prettier from "eslint-config-prettier";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
+import prettier from "eslint-config-prettier";
 import { defineConfig, globalIgnores } from "eslint/config";
 
 export default defineConfig([
@@ -61,6 +61,17 @@ export default defineConfig([
     files: ["src/lib/api/**", "src/lib/motion/**", "src/components/motion/**"],
     rules: { "no-restricted-imports": "off" },
   },
+  {
+    // Metadata image routes render via Satori/ImageResponse which only supports HTML image tags.
+    // Next.js intends to ignore these routes, but its plugin has a Windows path separator bug.
+    files: [
+      "src/app/**/opengraph-image.*",
+      "src/app/**/twitter-image.*",
+      "src/app/**/apple-icon.*",
+      "src/app/**/icon.*",
+    ],
+    rules: { "@next/next/no-img-element": "off" },
+  },
   // Must stay last: turns off stylistic rules that Prettier owns
   prettier,
   globalIgnores([
@@ -72,5 +83,6 @@ export default defineConfig([
     "test-results/**",
     "next-env.d.ts",
     "src/lib/api/schema.d.ts",
+    "**/*.{png,jpg,jpeg,gif,webp,avif,ico}",
   ]),
 ]);

@@ -1,7 +1,7 @@
-import fs from "node:fs";
-import path from "node:path";
 import { cacheLife } from "next/cache";
 import { ImageResponse } from "next/og";
+import fs from "node:fs";
+import path from "node:path";
 
 import { SITE_NAME, SITE_TAGLINE } from "@/lib/seo";
 
@@ -62,7 +62,6 @@ export default async function OpenGraphImage() {
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 22 }}>
-        {/* eslint-disable-next-line @next/next/no-img-element -- rendered to PNG, not the DOM */}
         <img src={iconDataUri} width={64} height={64} alt="" />
         <span style={{ fontSize: 34, fontWeight: 900, letterSpacing: 2 }}>KONCAVE CINEMA</span>
       </div>
