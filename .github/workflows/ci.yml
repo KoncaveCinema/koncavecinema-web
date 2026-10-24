@@ -32,6 +32,7 @@ jobs:
       # Placeholders so the validated environment passes during the build
       NEXT_PUBLIC_APP_URL: http://localhost:3001
       NEXT_PUBLIC_API_URL: http://localhost:3000/api
+      CATALOG_SOURCE: fixtures
     steps:
       - name: Checkout Codebase
         uses: actions/checkout@v4
