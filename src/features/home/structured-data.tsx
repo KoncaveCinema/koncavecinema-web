@@ -14,7 +14,7 @@ export async function HomeStructuredData() {
     "@id": absoluteUrl("/#organization"),
     name: SITE_NAME,
     url: absoluteUrl("/"),
-    logo: absoluteUrl("/icon.svg"),
+    logo: absoluteUrl("/icon.png"),
   };
 
   const screenings = films.flatMap((film) => {

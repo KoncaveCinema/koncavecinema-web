@@ -1,7 +1,9 @@
+import fs from "node:fs";
+import path from "node:path";
 import { cacheLife } from "next/cache";
 import { ImageResponse } from "next/og";
 
-import { MARK_DATA_URI, SITE_NAME, SITE_TAGLINE } from "@/lib/seo";
+import { SITE_NAME, SITE_TAGLINE } from "@/lib/seo";
 
 export const alt = `${SITE_NAME}: ${SITE_TAGLINE}`;
 export const size = { width: 1200, height: 630 };
@@ -40,6 +42,8 @@ async function loadFonts(): Promise<{ weight: FontWeight; data: ArrayBuffer }[]>
 /** The default share card for every page: the brand on a darkened, spotlit stage. */
 export default async function OpenGraphImage() {
   const fonts = await loadFonts();
+  const iconBuffer = fs.readFileSync(path.join(process.cwd(), "public/koncave-icon.png"));
+  const iconDataUri = `data:image/png;base64,${iconBuffer.toString("base64")}`;
 
   return new ImageResponse(
     <div
@@ -59,7 +63,7 @@ export default async function OpenGraphImage() {
     >
       <div style={{ display: "flex", alignItems: "center", gap: 22 }}>
         {/* eslint-disable-next-line @next/next/no-img-element -- rendered to PNG, not the DOM */}
-        <img src={MARK_DATA_URI} width={64} height={65} alt="" />
+        <img src={iconDataUri} width={64} height={64} alt="" />
         <span style={{ fontSize: 34, fontWeight: 900, letterSpacing: 2 }}>KONCAVE CINEMA</span>
       </div>
 
