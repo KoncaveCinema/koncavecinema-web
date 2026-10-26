@@ -235,13 +235,21 @@ export function ProjectorBeam({
 }
 
 /** Light spilling down from the top edge, as if from a cinema screen above the section. */
-export function ScreenGlow({ className }: { className?: string }) {
+export function ScreenGlow({
+  className,
+  showLine = false,
+}: {
+  className?: string;
+  showLine?: boolean;
+}) {
   return (
     <div
       aria-hidden="true"
       className={cn("pointer-events-none absolute inset-x-0 top-0 h-96", className)}
     >
-      <div className="mx-auto h-px w-2/3 max-w-4xl bg-linear-to-r from-transparent via-white/45 to-transparent" />
+      {showLine && (
+        <div className="mx-auto h-px w-2/3 max-w-4xl bg-linear-to-r from-transparent via-white/45 to-transparent" />
+      )}
       <div
         className="absolute inset-0"
         style={{
