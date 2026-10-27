@@ -81,6 +81,8 @@
   --animate-cone-sway: cone-sway 14s ease-in-out infinite alternate;
   --animate-projector-flicker: projector-flicker 3.2s steps(1, end) infinite;
   --animate-lights-dim: lights-dim 900ms var(--ease-cinema) both;
+  --animate-accordion-down: accordion-down 220ms var(--ease-cinema);
+  --animate-accordion-up: accordion-up 180ms var(--ease-cinema);
   --animate-rise: rise 800ms var(--ease-cinema) both;
   --animate-ken-burns: ken-burns 16s cubic-bezier(0.25, 0.6, 0.3, 1) both;
 }
@@ -499,12 +501,135 @@
   animation: none;
 }
 
+/* Radix accordion panels open to their measured height */
+@keyframes accordion-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
+  }
+}
+
+@keyframes accordion-up {
+  from {
+    height: var(--radix-accordion-content-height);
+  }
+  to {
+    height: 0;
+  }
+}
+
 @keyframes progress-fill {
   from {
     transform: scaleX(0);
   }
   to {
     transform: scaleX(1);
+  }
+}
+
+/* Long-form policy text. Styles only bare elements (anything inside .not-prose keeps its own
+   classes); each top-level section gets a large outlined number from a CSS counter. */
+@utility legal-prose {
+  counter-reset: legal-section;
+  max-width: 70ch;
+  color: rgb(255 255 255 / 0.68);
+  font-size: 0.975rem;
+  line-height: 1.75;
+
+  & > section {
+    counter-increment: legal-section;
+    position: relative;
+    scroll-margin-top: 7rem;
+    padding-top: 3rem;
+    margin-top: 3rem;
+    border-top: 1px solid rgb(255 255 255 / 0.07);
+  }
+  & > section > * + * {
+    margin-top: 1.1rem;
+  }
+  & :where(h2):not(:where(.not-prose *)) {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-bottom: 1.4rem;
+    font-family: var(--font-display);
+    font-stretch: 112%;
+    font-size: clamp(1.35rem, 2.4vw, 1.75rem);
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.015em;
+    color: #fff;
+    text-wrap: balance;
+  }
+  & > section > h2::before {
+    content: counter(legal-section, decimal-leading-zero);
+    font-size: 2.6rem;
+    font-weight: 900;
+    line-height: 1;
+    color: transparent;
+    -webkit-text-stroke: 1.25px rgb(214 2 17 / 0.75);
+  }
+  & :where(h3):not(:where(.not-prose *)) {
+    margin-top: 2rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #fff;
+  }
+  & :where(strong):not(:where(.not-prose *)) {
+    font-weight: 600;
+    color: rgb(255 255 255 / 0.92);
+  }
+  & :where(a):not(:where(.not-prose *)) {
+    color: #fff;
+    text-decoration: underline;
+    text-decoration-color: var(--color-brand);
+    text-underline-offset: 3px;
+    &:hover {
+      color: var(--color-brand);
+    }
+  }
+  & :where(ul, ol):not(:where(.not-prose *)) {
+    display: grid;
+    gap: 0.6rem;
+    padding-left: 1.25rem;
+  }
+  & :where(ul):not(:where(.not-prose *)) {
+    list-style: square;
+  }
+  & :where(ol):not(:where(.not-prose *)) {
+    list-style: decimal;
+  }
+  & :where(li):not(:where(.not-prose *))::marker {
+    color: var(--color-brand);
+  }
+  & :where(code):not(:where(.not-prose *)) {
+    padding: 0.1em 0.35em;
+    border-radius: 0.3rem;
+    background: rgb(255 255 255 / 0.07);
+    font-size: 0.85em;
+    color: #fff;
+  }
+  & :where(table):not(:where(.not-prose *)) {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+  }
+  & :where(th, td):not(:where(.not-prose *)) {
+    padding: 0.75rem 1rem 0.75rem 0;
+    border-bottom: 1px solid rgb(255 255 255 / 0.08);
+    text-align: left;
+    vertical-align: top;
+  }
+  & :where(th):not(:where(.not-prose *)) {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: rgb(255 255 255 / 0.5);
   }
 }
 

@@ -162,6 +162,38 @@ export function CrimsonHalo({ className }: { className?: string }) {
   );
 }
 
+const ACCENT_GLOWS = {
+  gold: "rgb(245 183 0 / 0.13)",
+  lobby: "rgb(16 185 129 / 0.12)",
+  sky: "rgb(56 189 248 / 0.12)",
+} as const;
+
+/**
+ * A soft pool of accent light, for sections that should shift the page's temperature without
+ * adding a hard colour: gold for money and value, green (lobby) for safety, blue (sky)
+ * for information. Position it with `className` (it fills its container by default).
+ */
+export function AccentGlow({
+  tone,
+  at = "50% 40%",
+  className,
+}: {
+  tone: keyof typeof ACCENT_GLOWS;
+  /** Centre of the glow, as a CSS position */
+  at?: string;
+  className?: string;
+}) {
+  return (
+    <div
+      aria-hidden="true"
+      className={cn("pointer-events-none absolute inset-0", className)}
+      style={{
+        background: `radial-gradient(55% 60% at ${at}, ${ACCENT_GLOWS[tone]}, transparent 70%)`,
+      }}
+    />
+  );
+}
+
 /** Very fine film grain over dark imagery; a 1 KB SVG tile, static. */
 export function FilmGrain({ className }: { className?: string }) {
   return (
