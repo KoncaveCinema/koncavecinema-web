@@ -2,23 +2,24 @@ import { Clock, RefreshCw, ShieldCheck, Utensils } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { LegalPageShell, type TocItem } from "@/components/layout/legal-page-shell";
+import type { TocItem } from "@/features/legal/documents";
+import { LegalPageShell } from "@/features/legal/page-shell";
 import { Card } from "@/components/ui/card";
 
 export const metadata: Metadata = {
-  title: "Refund & Cancellation Policy | Koncave Cinema",
+  title: "Refund & Cancellation Policy",
   description:
     "Understand the refund and cancellation policies for virtual cinema admissions, technical stream interruptions, and Chowdeck concessions on Koncave Cinema.",
 };
 
 const TOC: TocItem[] = [
-  { id: "overview", title: "1. Overview & Virtual Goods Policy" },
-  { id: "eligible-refunds", title: "2. When Refunds Are Guaranteed" },
-  { id: "ineligible-situations", title: "3. Non-Refundable Situations" },
-  { id: "concessions-refunds", title: "4. Concessions & Food Delivery Refunds" },
-  { id: "private-suite-rules", title: "5. Private VIP Suite Rescheduling" },
-  { id: "refund-methods", title: "6. Refund Methods & Settlement Times" },
-  { id: "how-to-request", title: "7. How to File a Refund Claim" },
+  { id: "overview", title: "Overview & Virtual Goods Policy" },
+  { id: "eligible-refunds", title: "When Refunds Are Guaranteed" },
+  { id: "ineligible-situations", title: "Non-Refundable Situations" },
+  { id: "concessions-refunds", title: "Concessions & Food Delivery Refunds" },
+  { id: "private-suite-rules", title: "Private VIP Suite Rescheduling" },
+  { id: "refund-methods", title: "Refund Methods & Settlement Times" },
+  { id: "how-to-request", title: "How to File a Refund Claim" },
 ];
 
 export default function RefundPolicyPage() {
@@ -28,15 +29,12 @@ export default function RefundPolicyPage() {
       subtitle="Clear, fair rules regarding virtual admissions, platform technical faults, overbooking protection, and food delivery refunds."
       effectiveDate="October 2026"
       lastUpdated="October 25, 2026"
-      version="1.3.0"
       toc={TOC}
       activePath="/refunds"
     >
-      {/* =========================================================================
-          CREATIVE AT-A-GLANCE SUMMARY CARDS
-          ========================================================================= */}
+      {/* In short */}
       <div className="not-prose mb-12 grid gap-4 sm:grid-cols-2">
-        <Card className="border-white/10 bg-surface-1/80 p-5 backdrop-blur-md transition-all hover:border-brand/40">
+        <Card className="gap-0 bg-white/2 p-5 ring-white/8">
           <div className="flex items-center gap-3">
             <div className="flex size-9 items-center justify-center rounded-lg bg-brand/10 text-brand">
               <Clock className="size-4.5" />
@@ -52,7 +50,7 @@ export default function RefundPolicyPage() {
           </p>
         </Card>
 
-        <Card className="border-white/10 bg-surface-1/80 p-5 backdrop-blur-md transition-all hover:border-brand/40">
+        <Card className="gap-0 bg-white/2 p-5 ring-white/8">
           <div className="flex items-center gap-3">
             <div className="flex size-9 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
               <ShieldCheck className="size-4.5" />
@@ -70,9 +68,9 @@ export default function RefundPolicyPage() {
           </p>
         </Card>
 
-        <Card className="border-white/10 bg-surface-1/80 p-5 backdrop-blur-md transition-all hover:border-brand/40">
+        <Card className="gap-0 bg-white/2 p-5 ring-white/8">
           <div className="flex items-center gap-3">
-            <div className="flex size-9 items-center justify-center rounded-lg bg-brand/10 text-brand">
+            <div className="flex size-9 items-center justify-center rounded-lg bg-sky-400/12 text-sky-400">
               <RefreshCw className="size-4.5" />
             </div>
             <div>
@@ -88,7 +86,7 @@ export default function RefundPolicyPage() {
           </p>
         </Card>
 
-        <Card className="border-white/10 bg-surface-1/80 p-5 backdrop-blur-md transition-all hover:border-brand/40">
+        <Card className="gap-0 bg-white/2 p-5 ring-white/8">
           <div className="flex items-center gap-3">
             <div className="flex size-9 items-center justify-center rounded-lg bg-amber-500/10 text-amber-400">
               <Utensils className="size-4.5" />
@@ -106,8 +104,8 @@ export default function RefundPolicyPage() {
       </div>
 
       {/* SECTION 1 */}
-      <section id="overview" className="space-y-4">
-        <h2>1. Overview &amp; Virtual Goods Policy</h2>
+      <section id="overview">
+        <h2>Overview &amp; Virtual Goods Policy</h2>
         <p>
           Koncave Cinema provides synchronized &ldquo;Simulated Live&rdquo; theatrical exhibition
           experiences. When you purchase an admission pass (whether for Individual Watch, Public
@@ -122,8 +120,8 @@ export default function RefundPolicyPage() {
       </section>
 
       {/* SECTION 2 */}
-      <section id="eligible-refunds" className="space-y-4 pt-8">
-        <h2>2. When Refunds Are Guaranteed</h2>
+      <section id="eligible-refunds">
+        <h2>When Refunds Are Guaranteed</h2>
         <p>
           We stand firmly behind our platform reliability. You are entitled to an immediate full
           refund or complimentary ticket voucher in any of the following events:
@@ -152,8 +150,8 @@ export default function RefundPolicyPage() {
       </section>
 
       {/* SECTION 3 */}
-      <section id="ineligible-situations" className="space-y-4 pt-8">
-        <h2>3. Non-Refundable Situations</h2>
+      <section id="ineligible-situations">
+        <h2>Non-Refundable Situations</h2>
         <p>
           We cannot issue refunds or credits for user-side issues beyond the control of Koncave
           Cinema, including:
@@ -182,8 +180,8 @@ export default function RefundPolicyPage() {
       </section>
 
       {/* SECTION 4 */}
-      <section id="concessions-refunds" className="space-y-4 pt-8">
-        <h2>4. Concessions &amp; Food Delivery Refunds</h2>
+      <section id="concessions-refunds">
+        <h2>Concessions &amp; Food Delivery Refunds</h2>
         <p>
           Concession orders (popcorn, combos, drinks) are fulfilled through our delivery integration
           with <strong>Chowdeck Relay</strong>.
@@ -203,8 +201,8 @@ export default function RefundPolicyPage() {
       </section>
 
       {/* SECTION 5 */}
-      <section id="private-suite-rules" className="space-y-4 pt-8">
-        <h2>5. Private VIP Suite Rescheduling</h2>
+      <section id="private-suite-rules">
+        <h2>Private VIP Suite Rescheduling</h2>
         <p>
           Unlike Public Theatres, <strong>Private VIP Suites (Suite 5 and Suite 10)</strong> grant
           the host the flexibility to reschedule their private screening up to 2 hours before the
@@ -217,8 +215,8 @@ export default function RefundPolicyPage() {
       </section>
 
       {/* SECTION 6 */}
-      <section id="refund-methods" className="space-y-4 pt-8">
-        <h2>6. Refund Methods &amp; Settlement Times</h2>
+      <section id="refund-methods">
+        <h2>Refund Methods &amp; Settlement Times</h2>
         <p>Approved refunds are processed through the original method of payment:</p>
         <ul>
           <li>
@@ -236,8 +234,8 @@ export default function RefundPolicyPage() {
       </section>
 
       {/* SECTION 7 */}
-      <section id="how-to-request" className="space-y-4 pt-8">
-        <h2>7. How to File a Refund Claim</h2>
+      <section id="how-to-request">
+        <h2>How to File a Refund Claim</h2>
         <p>
           To submit a refund request, contact our concierge desk within 24 hours of the affected
           screening:

@@ -1,22 +1,23 @@
 import { Ban, Cookie, Lock, Sliders } from "lucide-react";
 import type { Metadata } from "next";
 
-import { LegalPageShell, type TocItem } from "@/components/layout/legal-page-shell";
+import type { TocItem } from "@/features/legal/documents";
+import { LegalPageShell } from "@/features/legal/page-shell";
 import { Card } from "@/components/ui/card";
 
 export const metadata: Metadata = {
-  title: "Cookie Policy | Koncave Cinema",
+  title: "Cookie Policy",
   description:
     "Learn how Koncave Cinema uses essential cookies and local storage tokens for session security and DRM playback without third-party ad trackers.",
 };
 
 const TOC: TocItem[] = [
-  { id: "what-are-cookies", title: "1. What Are Cookies & Local Storage?" },
-  { id: "how-we-use-cookies", title: "2. How We Use Storage Technologies" },
-  { id: "categories", title: "3. Categories of Storage We Use" },
-  { id: "zero-ad-tracking", title: "4. Zero Third-Party Advertising Trackers" },
-  { id: "managing-cookies", title: "5. Managing & Disabling Cookies" },
-  { id: "updates-contact", title: "6. Policy Updates & Contact" },
+  { id: "what-are-cookies", title: "What Are Cookies & Local Storage?" },
+  { id: "how-we-use-cookies", title: "How We Use Storage Technologies" },
+  { id: "categories", title: "Categories of Storage We Use" },
+  { id: "zero-ad-tracking", title: "Zero Third-Party Advertising Trackers" },
+  { id: "managing-cookies", title: "Managing & Disabling Cookies" },
+  { id: "updates-contact", title: "Policy Updates & Contact" },
 ];
 
 export default function CookiePolicyPage() {
@@ -26,15 +27,12 @@ export default function CookiePolicyPage() {
       subtitle="Transparent information regarding how we utilize browser storage and essential session tokens to power your cinema streaming experience."
       effectiveDate="October 2026"
       lastUpdated="October 25, 2026"
-      version="1.2.0"
       toc={TOC}
       activePath="/cookies"
     >
-      {/* =========================================================================
-          CREATIVE AT-A-GLANCE SUMMARY CARDS
-          ========================================================================= */}
+      {/* In short */}
       <div className="not-prose mb-12 grid gap-4 sm:grid-cols-2">
-        <Card className="border-white/10 bg-surface-1/80 p-5 backdrop-blur-md transition-all hover:border-brand/40">
+        <Card className="gap-0 bg-white/2 p-5 ring-white/8">
           <div className="flex items-center gap-3">
             <div className="flex size-9 items-center justify-center rounded-lg bg-brand/10 text-brand">
               <Cookie className="size-4.5" />
@@ -52,9 +50,9 @@ export default function CookiePolicyPage() {
           </p>
         </Card>
 
-        <Card className="border-white/10 bg-surface-1/80 p-5 backdrop-blur-md transition-all hover:border-brand/40">
+        <Card className="gap-0 bg-white/2 p-5 ring-white/8">
           <div className="flex items-center gap-3">
-            <div className="flex size-9 items-center justify-center rounded-lg bg-brand/10 text-brand">
+            <div className="flex size-9 items-center justify-center rounded-lg bg-sky-400/12 text-sky-400">
               <Ban className="size-4.5" />
             </div>
             <div>
@@ -68,9 +66,9 @@ export default function CookiePolicyPage() {
           </p>
         </Card>
 
-        <Card className="border-white/10 bg-surface-1/80 p-5 backdrop-blur-md transition-all hover:border-brand/40">
+        <Card className="gap-0 bg-white/2 p-5 ring-white/8">
           <div className="flex items-center gap-3">
-            <div className="flex size-9 items-center justify-center rounded-lg bg-brand/10 text-brand">
+            <div className="flex size-9 items-center justify-center rounded-lg bg-lobby/12 text-lobby">
               <Lock className="size-4.5" />
             </div>
             <div>
@@ -84,9 +82,9 @@ export default function CookiePolicyPage() {
           </p>
         </Card>
 
-        <Card className="border-white/10 bg-surface-1/80 p-5 backdrop-blur-md transition-all hover:border-brand/40">
+        <Card className="gap-0 bg-white/2 p-5 ring-white/8">
           <div className="flex items-center gap-3">
-            <div className="flex size-9 items-center justify-center rounded-lg bg-brand/10 text-brand">
+            <div className="flex size-9 items-center justify-center rounded-lg bg-gold/12 text-gold">
               <Sliders className="size-4.5" />
             </div>
             <div>
@@ -102,8 +100,8 @@ export default function CookiePolicyPage() {
       </div>
 
       {/* SECTION 1 */}
-      <section id="what-are-cookies" className="space-y-4">
-        <h2>1. What Are Cookies &amp; Local Storage?</h2>
+      <section id="what-are-cookies">
+        <h2>What Are Cookies &amp; Local Storage?</h2>
         <p>
           Cookies are small text files placed on your device by websites you visit. Modern web
           applications also rely on browser-native storage technologies such as{" "}
@@ -117,8 +115,8 @@ export default function CookiePolicyPage() {
       </section>
 
       {/* SECTION 2 */}
-      <section id="how-we-use-cookies" className="space-y-4 pt-8">
-        <h2>2. How We Use Storage Technologies</h2>
+      <section id="how-we-use-cookies">
+        <h2>How We Use Storage Technologies</h2>
         <p>
           When you stream on Koncave Cinema, storage technologies fulfill essential technical roles:
         </p>
@@ -143,9 +141,9 @@ export default function CookiePolicyPage() {
       </section>
 
       {/* SECTION 3 */}
-      <section id="categories" className="space-y-4 pt-8">
-        <h2>3. Categories of Storage We Use</h2>
-        <div className="not-prose my-6 overflow-hidden rounded-2xl border border-white/10 bg-surface-1/80 shadow-xl">
+      <section id="categories">
+        <h2>Categories of Storage We Use</h2>
+        <div className="not-prose my-6 overflow-hidden rounded-2xl border border-white/10 bg-surface-1/80">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
@@ -190,8 +188,8 @@ export default function CookiePolicyPage() {
       </section>
 
       {/* SECTION 4 */}
-      <section id="zero-ad-tracking" className="space-y-4 pt-8">
-        <h2>4. Zero Third-Party Advertising Trackers</h2>
+      <section id="zero-ad-tracking">
+        <h2>Zero Third-Party Advertising Trackers</h2>
         <p>
           We do not partner with third-party advertising networks, data brokers, or retargeting
           services. Specifically:
@@ -208,8 +206,8 @@ export default function CookiePolicyPage() {
       </section>
 
       {/* SECTION 5 */}
-      <section id="managing-cookies" className="space-y-4 pt-8">
-        <h2>5. Managing &amp; Disabling Cookies</h2>
+      <section id="managing-cookies">
+        <h2>Managing &amp; Disabling Cookies</h2>
         <p>
           You have full control over browser cookies. You can configure your browser to reject all
           cookies or notify you when a cookie is placed.
@@ -221,8 +219,8 @@ export default function CookiePolicyPage() {
       </section>
 
       {/* SECTION 6 */}
-      <section id="updates-contact" className="space-y-4 pt-8">
-        <h2>6. Policy Updates &amp; Contact</h2>
+      <section id="updates-contact">
+        <h2>Policy Updates &amp; Contact</h2>
         <p>
           We may update this policy periodically to reflect architectural changes. Any updates will
           be published on this page with a revised date.

@@ -1,26 +1,27 @@
 import { AlertTriangle, Clapperboard, CreditCard, Lock, ShieldCheck } from "lucide-react";
 import type { Metadata } from "next";
 
-import { LegalPageShell, type TocItem } from "@/components/layout/legal-page-shell";
+import type { TocItem } from "@/features/legal/documents";
+import { LegalPageShell } from "@/features/legal/page-shell";
 import { Card } from "@/components/ui/card";
 
 export const metadata: Metadata = {
-  title: "Terms of Use | Koncave Cinema",
+  title: "Terms of Use",
   description:
     "Review the Terms of Use governing admission, synchronized virtual cinema screenings, concurrency rules, and intellectual property on Koncave Cinema.",
 };
 
 const TOC: TocItem[] = [
-  { id: "acceptance", title: "1. Acceptance of Terms" },
-  { id: "theatrical-model", title: "2. The Virtual Theatrical Exhibition Model" },
-  { id: "user-accounts", title: "3. Accounts & Public Theatre KYC" },
-  { id: "ticketing-payment", title: "4. Ticketing, Pricing & Pass-Through Fees" },
-  { id: "streaming-concurrency", title: "5. Streaming Policies & Concurrency Locks" },
-  { id: "intellectual-property", title: "6. Intellectual Property & Anti-Piracy" },
-  { id: "community-conduct", title: "7. Community Conduct & Prohibited Behavior" },
-  { id: "refund-cancellation", title: "8. Refund & Cancellation Terms" },
-  { id: "disclaimers", title: "9. Disclaimers & Limitation of Liability" },
-  { id: "governing-law", title: "10. Governing Law & Dispute Resolution" },
+  { id: "acceptance", title: "Acceptance of Terms" },
+  { id: "theatrical-model", title: "The Virtual Theatrical Exhibition Model" },
+  { id: "user-accounts", title: "Accounts & Public Theatre KYC" },
+  { id: "ticketing-payment", title: "Ticketing, Pricing & Pass-Through Fees" },
+  { id: "streaming-concurrency", title: "Streaming Policies & Concurrency Locks" },
+  { id: "intellectual-property", title: "Intellectual Property & Anti-Piracy" },
+  { id: "community-conduct", title: "Community Conduct & Prohibited Behavior" },
+  { id: "refund-cancellation", title: "Refund & Cancellation Terms" },
+  { id: "disclaimers", title: "Disclaimers & Limitation of Liability" },
+  { id: "governing-law", title: "Governing Law & Dispute Resolution" },
 ];
 
 export default function TermsOfUsePage() {
@@ -30,15 +31,12 @@ export default function TermsOfUsePage() {
       subtitle="The contractual framework governing virtual admissions, synchronized premiere showtimes, intellectual property protection, and community standards."
       effectiveDate="October 2026"
       lastUpdated="October 25, 2026"
-      version="1.4.0"
       toc={TOC}
       activePath="/terms"
     >
-      {/* =========================================================================
-          CREATIVE AT-A-GLANCE SUMMARY CARDS
-          ========================================================================= */}
+      {/* In short */}
       <div className="not-prose mb-12 grid gap-4 sm:grid-cols-2">
-        <Card className="border-white/10 bg-surface-1/80 p-5 backdrop-blur-md transition-all hover:border-brand/40">
+        <Card className="gap-0 bg-white/2 p-5 ring-white/8">
           <div className="flex items-center gap-3">
             <div className="flex size-9 items-center justify-center rounded-lg bg-brand/10 text-brand">
               <Clapperboard className="size-4.5" />
@@ -54,9 +52,9 @@ export default function TermsOfUsePage() {
           </p>
         </Card>
 
-        <Card className="border-white/10 bg-surface-1/80 p-5 backdrop-blur-md transition-all hover:border-brand/40">
+        <Card className="gap-0 bg-white/2 p-5 ring-white/8">
           <div className="flex items-center gap-3">
-            <div className="flex size-9 items-center justify-center rounded-lg bg-brand/10 text-brand">
+            <div className="flex size-9 items-center justify-center rounded-lg bg-sky-400/12 text-sky-400">
               <Lock className="size-4.5" />
             </div>
             <div>
@@ -70,9 +68,9 @@ export default function TermsOfUsePage() {
           </p>
         </Card>
 
-        <Card className="border-white/10 bg-surface-1/80 p-5 backdrop-blur-md transition-all hover:border-brand/40">
+        <Card className="gap-0 bg-white/2 p-5 ring-white/8">
           <div className="flex items-center gap-3">
-            <div className="flex size-9 items-center justify-center rounded-lg bg-brand/10 text-brand">
+            <div className="flex size-9 items-center justify-center rounded-lg bg-lobby/12 text-lobby">
               <ShieldCheck className="size-4.5" />
             </div>
             <div>
@@ -87,9 +85,9 @@ export default function TermsOfUsePage() {
           </p>
         </Card>
 
-        <Card className="border-white/10 bg-surface-1/80 p-5 backdrop-blur-md transition-all hover:border-brand/40">
+        <Card className="gap-0 bg-white/2 p-5 ring-white/8">
           <div className="flex items-center gap-3">
-            <div className="flex size-9 items-center justify-center rounded-lg bg-brand/10 text-brand">
+            <div className="flex size-9 items-center justify-center rounded-lg bg-gold/12 text-gold">
               <CreditCard className="size-4.5" />
             </div>
             <div>
@@ -105,8 +103,8 @@ export default function TermsOfUsePage() {
       </div>
 
       {/* SECTION 1 */}
-      <section id="acceptance" className="space-y-4">
-        <h2>1. Acceptance of Terms</h2>
+      <section id="acceptance">
+        <h2>Acceptance of Terms</h2>
         <p>
           These Terms of Use (&ldquo;Terms&rdquo;) constitute a legally binding agreement between
           you (&ldquo;Viewer&rdquo;, &ldquo;User&rdquo;, or &ldquo;You&rdquo;) and{" "}
@@ -122,8 +120,8 @@ export default function TermsOfUsePage() {
       </section>
 
       {/* SECTION 2 */}
-      <section id="theatrical-model" className="space-y-4 pt-8">
-        <h2>2. The Virtual Theatrical Exhibition Model</h2>
+      <section id="theatrical-model">
+        <h2>The Virtual Theatrical Exhibition Model</h2>
         <p>
           Koncave Cinema is not an on-demand video subscription service. We operate a{" "}
           <strong>virtual theatrical exhibition model</strong>, providing time-bound access to
@@ -147,8 +145,8 @@ export default function TermsOfUsePage() {
       </section>
 
       {/* SECTION 3 */}
-      <section id="user-accounts" className="space-y-4 pt-8">
-        <h2>3. Accounts &amp; Public Theatre KYC</h2>
+      <section id="user-accounts">
+        <h2>Accounts &amp; Public Theatre KYC</h2>
         <p>
           Account registration requires a valid email address verified via One-Time Password (OTP).
           You are responsible for safeguarding your login credentials.
@@ -174,8 +172,8 @@ export default function TermsOfUsePage() {
       </section>
 
       {/* SECTION 4 */}
-      <section id="ticketing-payment" className="space-y-4 pt-8">
-        <h2>4. Ticketing, Pricing &amp; Pass-Through Fees</h2>
+      <section id="ticketing-payment">
+        <h2>Ticketing, Pricing &amp; Pass-Through Fees</h2>
         <h3>4.1 Virtual Admission Passes</h3>
         <p>
           Admissions are time-bound, non-transferable digital licenses granting personal,
@@ -197,8 +195,8 @@ export default function TermsOfUsePage() {
       </section>
 
       {/* SECTION 5 */}
-      <section id="streaming-concurrency" className="space-y-4 pt-8">
-        <h2>5. Streaming Policies &amp; Concurrency Locks</h2>
+      <section id="streaming-concurrency">
+        <h2>Streaming Policies &amp; Concurrency Locks</h2>
         <h3>5.1 Single-Viewer Concurrency Lock</h3>
         <p>
           Each admission pass is strictly licensed for a{" "}
@@ -216,8 +214,8 @@ export default function TermsOfUsePage() {
       </section>
 
       {/* SECTION 6 */}
-      <section id="intellectual-property" className="space-y-4 pt-8">
-        <h2>6. Intellectual Property &amp; Anti-Piracy</h2>
+      <section id="intellectual-property">
+        <h2>Intellectual Property &amp; Anti-Piracy</h2>
         <p>
           All titles exhibited on Koncave Cinema are protected under Nigerian copyright laws and
           international treaties. Content is secured via multi-DRM encryption and dynamic forensic
@@ -240,8 +238,8 @@ export default function TermsOfUsePage() {
       </section>
 
       {/* SECTION 7 */}
-      <section id="community-conduct" className="space-y-4 pt-8">
-        <h2>7. Community Conduct &amp; Prohibited Behavior</h2>
+      <section id="community-conduct">
+        <h2>Community Conduct &amp; Prohibited Behavior</h2>
         <p>
           When participating in Public Theatres or Private Suites, users must maintain an atmosphere
           of mutual respect. Prohibited conduct includes:
@@ -258,8 +256,8 @@ export default function TermsOfUsePage() {
       </section>
 
       {/* SECTION 8 */}
-      <section id="refund-cancellation" className="space-y-4 pt-8">
-        <h2>8. Refund &amp; Cancellation Terms</h2>
+      <section id="refund-cancellation">
+        <h2>Refund &amp; Cancellation Terms</h2>
         <p>
           Because virtual tickets reserve dedicated capacity in scheduled theatrical screening
           rooms, ticket purchases are generally non-refundable once confirmed. Exceptions and
@@ -269,8 +267,8 @@ export default function TermsOfUsePage() {
       </section>
 
       {/* SECTION 9 */}
-      <section id="disclaimers" className="space-y-4 pt-8">
-        <h2>9. Disclaimers &amp; Limitation of Liability</h2>
+      <section id="disclaimers">
+        <h2>Disclaimers &amp; Limitation of Liability</h2>
         <p>
           Koncave Cinema provides its exhibition platform on an &ldquo;as is&rdquo; and &ldquo;as
           available&rdquo; basis. While we engineer high availability across multi-region CDNs, we
@@ -280,8 +278,8 @@ export default function TermsOfUsePage() {
       </section>
 
       {/* SECTION 10 */}
-      <section id="governing-law" className="space-y-4 pt-8">
-        <h2>10. Governing Law &amp; Dispute Resolution</h2>
+      <section id="governing-law">
+        <h2>Governing Law &amp; Dispute Resolution</h2>
         <p>
           These Terms are governed by and construed in accordance with the laws of the{" "}
           <strong>Federal Republic of Nigeria</strong>. Any disputes arising out of or in connection
