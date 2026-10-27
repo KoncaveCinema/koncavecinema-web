@@ -36,6 +36,5 @@ All images are from [Unsplash](https://unsplash.com) under the [Unsplash License
 
 ## Sample trailer
 
-The fixture films' teaser streams _Tears of Steel_ (Blender Foundation, 2012, CC BY 3.0,
-<https://mango.blender.org>) from Mux's public test streams:
-`https://test-streams.mux.dev/tos_ismc/main.m3u8`.
+The fixture films' teaser is the client's own 1m37s trailer, hosted on Koncave's Mux account
+(public playback ID `tgzz2gfKV6uz00p8qW7iJFdirInYmn1dbkd3Yug6hiE00`). It is not a third-party asset.
