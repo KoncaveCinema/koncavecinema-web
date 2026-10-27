@@ -25,7 +25,7 @@ export function Header() {
             aria-hidden="true"
             className="absolute -inset-4 rounded-full bg-crimson/0 blur-xl transition-colors duration-500 group-hover:bg-crimson/45"
           />
-          <Logo className="relative" />
+          <Logo className="relative" priority />
         </Link>
 
         <nav aria-label="Main" className="hidden lg:block">

@@ -38,7 +38,7 @@ export function HeroStage({
             priority={priority}
             fetchPriority={priority ? "high" : "low"}
             sizes="100vw"
-            quality={80}
+            quality={75}
             className="animate-ken-burns object-cover object-[center_top] lg:object-[75%_35%]"
           />
           {/* Mobile bottom fade: dissolves the artwork smoothly into the dark bottom content area */}
@@ -52,7 +52,7 @@ export function HeroStage({
       {/* House lights scrim: subtle top vignette for navbar, deep dark gradient at bottom for text contrast */}
       <div
         aria-hidden="true"
-        className="absolute inset-0 -z-10 animate-lights-dim bg-[linear-gradient(180deg,rgb(0_0_0/0.5)_0%,transparent_18%,rgb(0_0_0/0.15)_38%,rgb(0_0_0/0.88)_65%,#000_85%)] lg:bg-[linear-gradient(90deg,#000_0%,rgb(0_0_0/0.9)_28%,rgb(0_0_0/0.4)_55%,transparent_80%),linear-gradient(0deg,#000_0%,transparent_22%)]"
+        className="absolute inset-0 -z-10 animate-lights-dim bg-[linear-gradient(180deg,rgb(0_0_0/0.5)_0%,transparent_18%,rgb(0_0_0/0.15)_38%,rgb(0_0_0/0.88)_65%,#000_85%)] lg:bg-[linear-gradient(90deg,#000_0%,rgb(0_0_0/0.9)_28%,rgb(0_0_0/0.4)_55%,transparent_80%),linear-gradient(0deg,#000_0%,transparent_12%)]"
       />
       <div className="relative z-20 mx-auto w-full max-w-360 px-5 sm:px-8 lg:px-16">{children}</div>
       {/* Above the copy and art, so the beams light what they pass over */}
@@ -124,7 +124,7 @@ export function FeaturedSlide({ film, priority }: { film: CatalogFilm; priority:
             </Button>
           )}
 
-          {/* Teaser: the API returns trailerStreamUrl; switched off until the experience is agreed. */}
+          {/* Teaser: Streamable links embed, HLS streams play in our own player */}
           {film.trailerUrl && <TrailerButton src={film.trailerUrl} title={film.title} />}
 
           <Button asChild size="xl" variant="glass">

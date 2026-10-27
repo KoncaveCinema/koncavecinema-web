@@ -35,10 +35,12 @@ export function LogoWordmark({ className }: WordmarkProps) {
 interface LogoProps {
   className?: string;
   variant?: "stacked" | "inline";
+  /** Preload the image: only for the copy in the header, which is above the fold */
+  priority?: boolean;
 }
 
 /** Official full brand logo from public/koncave-logo.png */
-export function Logo({ className, variant = "stacked" }: LogoProps) {
+export function Logo({ className, variant = "stacked", priority = false }: LogoProps) {
   return (
     <span className={cn("relative inline-flex items-center", className)}>
       <Image
@@ -46,13 +48,12 @@ export function Logo({ className, variant = "stacked" }: LogoProps) {
         alt="Koncave Cinema"
         width={1643}
         height={957}
-        priority
+        priority={priority}
         className={cn(
           "w-auto object-contain transition-transform duration-300",
           variant === "inline" ? "h-9 sm:h-10" : "h-10 sm:h-12",
         )}
       />
-      <span className="sr-only">Koncave Cinema</span>
     </span>
   );
 }
