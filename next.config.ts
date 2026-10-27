@@ -42,6 +42,8 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       // Mux thumbnails and storyboards; add the API's artwork host when it is known
       { protocol: "https", hostname: "image.mux.com" },
+      { protocol: "https", hostname: "*.streamable.com" },
+      { protocol: "https", hostname: "streamable.com" },
     ],
   },
 
