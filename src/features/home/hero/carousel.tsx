@@ -71,7 +71,7 @@ export function HeroCarousel({ slides, labels }: { slides: ReactNode[]; labels: 
       })}
 
       {count > 1 && (
-        <div className="absolute inset-x-0 bottom-16 z-20 mx-auto flex max-w-360 justify-end gap-2 px-5 sm:bottom-20 sm:px-8 lg:px-16">
+        <div className="pointer-events-none absolute inset-x-0 bottom-6 z-20 mx-auto flex max-w-360 justify-end gap-2 px-5 sm:bottom-8 sm:px-8 lg:bottom-16 lg:px-16">
           {labels.map((label, index) => (
             <button
               key={label}
@@ -79,7 +79,7 @@ export function HeroCarousel({ slides, labels }: { slides: ReactNode[]; labels: 
               onClick={() => go(index)}
               aria-label={`Show ${label}`}
               aria-current={index === active ? "true" : undefined}
-              className="group py-3"
+              className="group pointer-events-auto py-3"
             >
               <span className="block h-0.75 w-10 overflow-hidden rounded-full bg-white/25 transition-colors group-hover:bg-white/40 sm:w-14">
                 <span

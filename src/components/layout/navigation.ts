@@ -14,6 +14,7 @@ export const FOOTER_NAV = [
       { href: "/#coming-soon", label: "Coming soon" },
       { href: "/#how-it-works", label: "How it works" },
       { href: "/#auditoriums", label: "Auditoriums" },
+      { href: "/producers", label: "For Filmmakers" },
     ],
   },
   {

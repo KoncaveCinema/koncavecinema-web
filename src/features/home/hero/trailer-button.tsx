@@ -17,7 +17,20 @@ import {
  * Plays a film's teaser in a dialog. hls.js is fetched only when the dialog opens, so no video
  * code ships with the page; iOS, which lacks Media Source Extensions, plays HLS natively.
  */
-function TeaserVideo({ src, title }: { src: string; title: string }) {
+function StreamableEmbed({ src, title }: { src: string; title: string }) {
+  const embedSrc = src.replace("streamable.com/", "streamable.com/e/");
+  return (
+    <iframe
+      src={`${embedSrc}?autoplay=1`}
+      title={`${title} teaser`}
+      allow="autoplay; fullscreen"
+      className="aspect-video w-full rounded-xl border-0 bg-black"
+      allowFullScreen
+    />
+  );
+}
+
+function NativeTeaserVideo({ src, title }: { src: string; title: string }) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -74,6 +87,13 @@ function TeaserVideo({ src, title }: { src: string; title: string }) {
       aria-label={`${title} teaser`}
     />
   );
+}
+
+function TeaserVideo({ src, title }: { src: string; title: string }) {
+  if (src.includes("streamable.com")) {
+    return <StreamableEmbed src={src} title={title} />;
+  }
+  return <NativeTeaserVideo src={src} title={title} />;
 }
 
 export function TrailerButton({ src, title }: { src: string; title: string }) {

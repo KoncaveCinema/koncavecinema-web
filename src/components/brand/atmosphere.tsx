@@ -77,25 +77,50 @@ export function Spotlights({ className }: { className?: string }) {
         className,
       )}
     >
-      <Cone
-        left="58%"
-        top="-20%"
-        height="145%"
-        spread={9}
-        from="-7deg"
-        to="3deg"
-        intensity={0.28}
-      />
-      <Cone
-        left="78%"
-        top="-20%"
-        height="135%"
-        spread={8}
-        from="6deg"
-        to="-4deg"
-        delay="-6s"
-        intensity={0.22}
-      />
+      {/* Mobile: softer, more centered beams to avoid glare across portrait screens */}
+      <div className="contents lg:hidden">
+        <Cone
+          left="36%"
+          top="-20%"
+          height="130%"
+          spread={7}
+          from="-5deg"
+          to="2deg"
+          intensity={0.14}
+        />
+        <Cone
+          left="64%"
+          top="-20%"
+          height="125%"
+          spread={6}
+          from="4deg"
+          to="-3deg"
+          delay="-5s"
+          intensity={0.11}
+        />
+      </div>
+      {/* Desktop: sweeping theatrical beams focused on the right-side artwork */}
+      <div className="hidden lg:contents">
+        <Cone
+          left="58%"
+          top="-20%"
+          height="145%"
+          spread={9}
+          from="-7deg"
+          to="3deg"
+          intensity={0.28}
+        />
+        <Cone
+          left="78%"
+          top="-20%"
+          height="135%"
+          spread={8}
+          from="6deg"
+          to="-4deg"
+          delay="-6s"
+          intensity={0.22}
+        />
+      </div>
     </div>
   );
 }
@@ -128,12 +153,11 @@ export function CrimsonHalo({ className }: { className?: string }) {
   return (
     <div
       aria-hidden="true"
-      className={cn("pointer-events-none absolute inset-0", className)}
-      style={{
-        background:
-          "radial-gradient(60% 70% at 72% 45%, rgb(151 0 1 / 0.55), transparent 70%)," +
-          "radial-gradient(40% 40% at 85% 100%, rgb(214 2 17 / 0.25), transparent 70%)",
-      }}
+      className={cn(
+        "pointer-events-none absolute inset-0",
+        "bg-[radial-gradient(75%_60%_at_50%_35%,rgb(151_0_1/0.4),transparent_70%)] lg:bg-[radial-gradient(60%_70%_at_72%_45%,rgb(151_0_1/0.55),transparent_70%),radial-gradient(40%_40%_at_85%_100%,rgb(214_2_17/0.25),transparent_70%)]",
+        className,
+      )}
     />
   );
 }
@@ -203,18 +227,36 @@ export function ProjectorBeam({
       )}
     >
       <div className="sticky top-0 h-svh max-h-full">
-        <Cone
-          left="4%"
-          top="12%"
-          height="150%"
-          spread={13}
-          from="-36deg"
-          to="-24deg"
-          duration="18s"
-          intensity={0.13}
-          fade="0%"
-          cut="50px"
-        />
+        {/* On mobile: softer, steeper beam so it grazes the edge rather than cutting right across mobile text */}
+        <div className="contents lg:hidden">
+          <Cone
+            left="0%"
+            top="5%"
+            height="140%"
+            spread={9}
+            from="-24deg"
+            to="-16deg"
+            duration="18s"
+            intensity={0.08}
+            fade="0%"
+            cut="40px"
+          />
+        </div>
+        {/* On desktop: full theatrical sweep */}
+        <div className="hidden lg:contents">
+          <Cone
+            left="4%"
+            top="12%"
+            height="150%"
+            spread={13}
+            from="-36deg"
+            to="-24deg"
+            duration="18s"
+            intensity={0.13}
+            fade="0%"
+            cut="50px"
+          />
+        </div>
         {DUST.map((mote) => (
           <span
             key={mote.left + mote.top}
@@ -235,13 +277,21 @@ export function ProjectorBeam({
 }
 
 /** Light spilling down from the top edge, as if from a cinema screen above the section. */
-export function ScreenGlow({ className }: { className?: string }) {
+export function ScreenGlow({
+  className,
+  showLine = false,
+}: {
+  className?: string;
+  showLine?: boolean;
+}) {
   return (
     <div
       aria-hidden="true"
       className={cn("pointer-events-none absolute inset-x-0 top-0 h-96", className)}
     >
-      <div className="mx-auto h-px w-2/3 max-w-4xl bg-linear-to-r from-transparent via-white/45 to-transparent" />
+      {showLine && (
+        <div className="mx-auto h-px w-2/3 max-w-4xl bg-linear-to-r from-transparent via-white/45 to-transparent" />
+      )}
       <div
         className="absolute inset-0"
         style={{

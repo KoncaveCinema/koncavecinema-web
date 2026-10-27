@@ -37,10 +37,8 @@ export function Footer() {
               <ul className="space-y-2.5">
                 {group.links.map((link) => (
                   <li key={link.href}>
-                    {/* No prefetch: most of these pages are still to be built */}
                     <Link
                       href={link.href}
-                      prefetch={false}
                       className="text-sm text-muted-foreground transition-colors hover:text-foreground"
                     >
                       {link.label}

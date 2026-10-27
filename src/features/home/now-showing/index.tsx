@@ -16,7 +16,7 @@ export async function NowShowing() {
       id="now-showing"
       className="relative isolate pt-20 pb-12 sm:pt-24 sm:pb-16"
     >
-      <ScreenGlow className="-z-10" />
+      <ScreenGlow className="-z-10" showLine={true} />
       <div className="mx-auto max-w-360 px-5 sm:px-8 lg:px-16">
         <SectionHeading
           id="now-showing-title"
