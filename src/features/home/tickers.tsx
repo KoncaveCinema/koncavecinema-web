@@ -39,7 +39,7 @@ function Star({ className }: { className?: string }) {
  * over a slower brand motto. */
 export function PremiereTape() {
   return (
-    <div className="relative z-20 -mt-14 overflow-hidden py-12 sm:-mt-20 sm:py-14">
+    <div className="relative z-10 mt-0 overflow-hidden py-6 sm:z-20 sm:-mt-12 sm:py-14">
       <div className="mx-[-5%] w-[110%]">
         <div className="bg-brand py-3.5 shadow-[0_18px_50px_-12px_rgb(214_2_17/0.6)]">
           <Ticker

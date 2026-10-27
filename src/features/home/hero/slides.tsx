@@ -28,27 +28,33 @@ export function HeroStage({
   priority: boolean;
 }) {
   return (
-    <div className="relative isolate flex min-h-svh items-center overflow-hidden pt-28 pb-32 lg:h-[88svh] lg:max-h-250 lg:min-h-180 lg:pt-44 lg:pb-28">
+    <div className="relative isolate flex min-h-svh flex-col justify-end overflow-hidden pt-20 pb-28 sm:pb-28 lg:h-[88svh] lg:max-h-250 lg:min-h-180 lg:flex-row lg:items-center lg:pt-44 lg:pb-28">
       {image && (
-        <Image
-          src={image}
-          alt=""
-          fill
-          priority={priority}
-          fetchPriority={priority ? "high" : "low"}
-          sizes="100vw"
-          quality={75}
-          className="-z-30 animate-ken-burns object-cover object-[65%_25%] lg:object-[75%_35%]"
-        />
+        <div className="absolute inset-x-0 top-0 -z-30 h-[66svh] overflow-hidden sm:h-[72svh] lg:inset-0 lg:h-full">
+          <Image
+            src={image}
+            alt=""
+            fill
+            priority={priority}
+            fetchPriority={priority ? "high" : "low"}
+            sizes="100vw"
+            quality={80}
+            className="animate-ken-burns object-cover object-[center_top] lg:object-[75%_35%]"
+          />
+          {/* Mobile bottom fade: dissolves the artwork smoothly into the dark bottom content area */}
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 bg-[linear-gradient(180deg,transparent_0%,transparent_50%,rgb(0_0_0/0.75)_80%,#000_100%)] lg:hidden"
+          />
+        </div>
       )}
       <CrimsonHalo className="-z-20 mix-blend-screen" />
-      {/* As the house lights dim: an even scrim behind centred copy (mobile), black from the
-          left (desktop) */}
+      {/* House lights scrim: subtle top vignette for navbar, deep dark gradient at bottom for text contrast */}
       <div
         aria-hidden="true"
-        className="absolute inset-0 -z-10 animate-lights-dim bg-[linear-gradient(0deg,#000_0%,rgb(0_0_0/0.72)_30%,rgb(0_0_0/0.6)_65%,rgb(0_0_0/0.7)_100%)] lg:bg-[linear-gradient(90deg,#000_0%,rgb(0_0_0/0.9)_28%,rgb(0_0_0/0.4)_55%,transparent_80%),linear-gradient(0deg,#000_0%,transparent_22%)]"
+        className="absolute inset-0 -z-10 animate-lights-dim bg-[linear-gradient(180deg,rgb(0_0_0/0.5)_0%,transparent_18%,rgb(0_0_0/0.15)_38%,rgb(0_0_0/0.88)_65%,#000_85%)] lg:bg-[linear-gradient(90deg,#000_0%,rgb(0_0_0/0.9)_28%,rgb(0_0_0/0.4)_55%,transparent_80%),linear-gradient(0deg,#000_0%,transparent_22%)]"
       />
-      <div className="mx-auto w-full max-w-360 px-5 sm:px-8 lg:px-16">{children}</div>
+      <div className="relative z-20 mx-auto w-full max-w-360 px-5 sm:px-8 lg:px-16">{children}</div>
       {/* Above the copy and art, so the beams light what they pass over */}
       <Spotlights />
     </div>
@@ -69,7 +75,7 @@ export function FeaturedSlide({ film, priority }: { film: CatalogFilm; priority:
         </div>
 
         <h1
-          className="mt-7 animate-rise font-display text-[clamp(3rem,7.5vw,6.5rem)] leading-[0.86] font-black uppercase"
+          className="mt-4 animate-rise font-display text-[clamp(2.25rem,6vw,4rem)] leading-[0.88] font-black uppercase sm:mt-7 lg:text-[clamp(3rem,7.5vw,6.5rem)] lg:leading-[0.86]"
           style={stagger(1)}
         >
           {lead && <span className="block">{lead}</span>}
@@ -77,7 +83,7 @@ export function FeaturedSlide({ film, priority }: { film: CatalogFilm; priority:
         </h1>
 
         <p
-          className="mt-7 line-clamp-3 max-w-xl animate-rise text-base leading-relaxed text-pretty text-white/75 sm:text-lg"
+          className="mt-3.5 line-clamp-2 max-w-xl animate-rise text-sm leading-relaxed text-pretty text-white/75 sm:mt-7 sm:line-clamp-3 sm:text-base lg:text-lg"
           style={stagger(2)}
         >
           {film.synopsis}
@@ -85,7 +91,7 @@ export function FeaturedSlide({ film, priority }: { film: CatalogFilm; priority:
 
         {next && (
           <p
-            className="mt-6 flex animate-rise flex-wrap items-center gap-x-3 gap-y-1 text-sm text-white/60"
+            className="mt-4 flex animate-rise flex-wrap items-center gap-x-3 gap-y-1 text-sm text-white/60 sm:mt-6"
             style={stagger(3)}
           >
             <span className="font-medium text-white">
@@ -100,7 +106,10 @@ export function FeaturedSlide({ film, priority }: { film: CatalogFilm; priority:
           </p>
         )}
 
-        <div className="mt-9 flex animate-rise flex-wrap items-center gap-3" style={stagger(4)}>
+        <div
+          className="mt-6 flex animate-rise flex-wrap items-center gap-3 sm:mt-9"
+          style={stagger(4)}
+        >
           {next && (
             <Button asChild size="xl">
               <Link href={`/movies/${film.slug}/showtimes/${next.id}`}>
