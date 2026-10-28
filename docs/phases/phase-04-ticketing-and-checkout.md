@@ -20,9 +20,11 @@ with no double charges on bad networks.
 
 ## Deliverables
 
-- Checkout dialog (sheet on mobile) with steps: 1 account (inline register / sign in),
-  2 KYC (Public Hall only, reuses `KycStep`), 3 review and pay. The price breakdown is the API's
-  (`baseAmount`, `infrastructureMarkup`, `vatAmount`, `processingFee`, total); the client never
+- Checkout as a page, `/checkout/[ticketId]`, with the step in the URL so Back works: sign-in
+  first (returning via `?next=`), then identity (Public Hall only), snacks, and review and pay.
+  Route map and status: [Sprint 2](../roadmap/02-sprint-2-catalog-and-booking.md). The price breakdown is the API's
+  (`basePrice`, `seatCount`, `baseAmount`, `infrastructureMarkup`, `subtotal`, `vatPercent`,
+  `vatAmount`, `processingFee`, `totalPayable`); the client never
   computes money.
 - Hold timer from the reservation expiry; on expiry the dialog explains and offers to retry.
 - Paystack payment (Inline popup, falling back to redirect to the authorization URL); on return,
