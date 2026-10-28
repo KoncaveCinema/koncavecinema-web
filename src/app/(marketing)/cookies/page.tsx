@@ -1,14 +1,14 @@
 import { Ban, Cookie, Lock, Sliders } from "lucide-react";
 import type { Metadata } from "next";
 
-import type { TocItem } from "@/features/legal/documents";
+import { TERMS_UPDATED, type TocItem } from "@/features/legal/documents";
 import { LegalPageShell } from "@/features/legal/page-shell";
 import { Card } from "@/components/ui/card";
 
 export const metadata: Metadata = {
   title: "Cookie Policy",
   description:
-    "Learn how Koncave Cinema uses essential cookies and local storage tokens for session security and DRM playback without third-party ad trackers.",
+    "How Koncave Cinema uses one sign-in cookie and temporary checkout storage, with no advertising trackers.",
 };
 
 const TOC: TocItem[] = [
@@ -26,7 +26,7 @@ export default function CookiePolicyPage() {
       title="Cookie & Local Storage Policy"
       subtitle="Transparent information regarding how we utilize browser storage and essential session tokens to power your cinema streaming experience."
       effectiveDate="October 2026"
-      lastUpdated="October 25, 2026"
+      lastUpdated={TERMS_UPDATED}
       toc={TOC}
       activePath="/cookies"
     >
@@ -39,14 +39,12 @@ export default function CookiePolicyPage() {
             </div>
             <div>
               <h3 className="text-sm font-bold text-foreground">Strictly Functional</h3>
-              <p className="text-xs text-muted-foreground">
-                Essential for streaming &amp; security
-              </p>
+              <p className="text-xs text-muted-foreground">Only what the service needs</p>
             </div>
           </div>
           <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-            We store only what is required to maintain authenticated logins, provision Mux DRM keys,
-            and preserve volume and closed-captioning preferences.
+            One sign-in cookie, and checkout details kept for your browser tab. Nothing used for
+            advertising.
           </p>
         </Card>
 
@@ -72,13 +70,13 @@ export default function CookiePolicyPage() {
               <Lock className="size-4.5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-foreground">Ephemeral Concurrency Leases</h3>
-              <p className="text-xs text-muted-foreground">Auto-clearing session memory</p>
+              <h3 className="text-sm font-bold text-foreground">Cleared With the Tab</h3>
+              <p className="text-xs text-muted-foreground">Checkout details are temporary</p>
             </div>
           </div>
           <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-            Screening leases in sessionStorage automatically erase the moment you close your browser
-            tab or the film concludes.
+            The showtime and snack basket kept during checkout live in your browser tab only and are
+            erased when you close it.
           </p>
         </Card>
 
@@ -103,39 +101,32 @@ export default function CookiePolicyPage() {
       <section id="what-are-cookies">
         <h2>What Are Cookies &amp; Local Storage?</h2>
         <p>
-          Cookies are small text files placed on your device by websites you visit. Modern web
-          applications also rely on browser-native storage technologies such as{" "}
-          <code>localStorage</code> and <code>sessionStorage</code> to deliver high-performance,
-          responsive experiences.
+          Cookies are small text files a website stores in your browser. Websites can also keep
+          information in the browser itself, using <code>sessionStorage</code> (erased when you
+          close the tab) or <code>localStorage</code> (kept until you clear it).
         </p>
         <p>
-          Koncave Cinema utilizes these technologies strictly to authenticate viewer sessions,
-          manage DRM playback tokens, and remember your theatre audio and subtitle preferences.
+          Koncave Cinema uses one cookie to keep you signed in, and <code>sessionStorage</code> to
+          remember your booking while you check out. We do not use <code>localStorage</code>.
         </p>
       </section>
 
       {/* SECTION 2 */}
       <section id="how-we-use-cookies">
         <h2>How We Use Storage Technologies</h2>
-        <p>
-          When you stream on Koncave Cinema, storage technologies fulfill essential technical roles:
-        </p>
         <ul>
           <li>
-            <strong>Session Authentication:</strong> Keeping you securely authenticated across
-            screening rooms without requiring repeated OTP logins.
+            <strong>Staying signed in:</strong> a secure cookie lets you stay signed in without
+            entering your password on every visit. Your short-lived access token is kept only in the
+            page&rsquo;s memory, never in browser storage.
           </li>
           <li>
-            <strong>DRM Licensing:</strong> Securely holding short-lived decryption tokens for
-            hardware Mux Multi-DRM video streams.
+            <strong>Checking out:</strong> while you book, your browser tab remembers the showtime
+            you chose and your snack basket, so a reload doesn&rsquo;t lose your place.
           </li>
           <li>
-            <strong>Single-Device Concurrency:</strong> Storing temporary session lease IDs to
-            verify that each admission pass is active on only one screen at a time.
-          </li>
-          <li>
-            <strong>Viewer Preferences:</strong> Remembering audio volume, mute state, closed
-            captions, and ambient theatre lighting choices between screenings.
+            <strong>Watching:</strong> playback tokens are not stored in your browser. The
+            one-screen-per-ticket check runs on our servers.
           </li>
         </ul>
       </section>
@@ -148,7 +139,7 @@ export default function CookiePolicyPage() {
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-white/12 bg-white/4">
-                  <th className="p-3 font-semibold text-foreground">Storage Key</th>
+                  <th className="p-3 font-semibold text-foreground">Name</th>
                   <th className="p-3 font-semibold text-foreground">Type</th>
                   <th className="p-3 font-semibold text-foreground">Lifespan</th>
                   <th className="p-3 font-semibold text-foreground">Purpose</th>
@@ -156,30 +147,30 @@ export default function CookiePolicyPage() {
               </thead>
               <tbody className="divide-y divide-white/6 text-muted-foreground">
                 <tr>
-                  <td className="p-3 font-mono text-foreground">kc_session</td>
-                  <td className="p-3">HTTP-Only Cookie</td>
-                  <td className="p-3">7 Days</td>
-                  <td className="p-3">Encrypted JWT user authentication token.</td>
-                </tr>
-                <tr>
-                  <td className="p-3 font-mono text-foreground">kc_lease_id</td>
-                  <td className="p-3">sessionStorage</td>
-                  <td className="p-3">Screening Duration</td>
-                  <td className="p-3">Enforces single-device concurrency lock for active film.</td>
-                </tr>
-                <tr>
-                  <td className="p-3 font-mono text-foreground">kc_audio_prefs</td>
-                  <td className="p-3">localStorage</td>
-                  <td className="p-3">1 Year</td>
+                  <td className="p-3 font-mono text-foreground">refresh_token</td>
+                  <td className="p-3">Cookie (HttpOnly, secure, same-site only)</td>
+                  <td className="p-3">7 days</td>
                   <td className="p-3">
-                    Remembers default volume, mute state, and subtitle choices.
+                    Keeps you signed in. Scripts on the page cannot read it, and it is sent only to
+                    our sign-in service.
                   </td>
                 </tr>
                 <tr>
-                  <td className="p-3 font-mono text-foreground">kc_theme</td>
-                  <td className="p-3">localStorage</td>
-                  <td className="p-3">Persistent</td>
-                  <td className="p-3">Stores ambient auditorium contrast and UI settings.</td>
+                  <td className="p-3 font-mono text-foreground">kc-showtimes</td>
+                  <td className="p-3">sessionStorage</td>
+                  <td className="p-3">Until you close the tab</td>
+                  <td className="p-3">
+                    The film and showtime you are booking (public details only), shown during
+                    checkout.
+                  </td>
+                </tr>
+                <tr>
+                  <td className="p-3 font-mono text-foreground">kc-concessions</td>
+                  <td className="p-3">sessionStorage</td>
+                  <td className="p-3">Until you close the tab</td>
+                  <td className="p-3">
+                    Your snack basket, delivery address and rider phone number while you check out.
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -213,8 +204,8 @@ export default function CookiePolicyPage() {
           cookies or notify you when a cookie is placed.
         </p>
         <p>
-          <em>Note:</em> Disabling essential cookies (such as <code>kc_session</code>) will prevent
-          you from logging in, reserving tickets, and entering screening rooms.
+          <em>Note:</em> Blocking the <code>refresh_token</code> cookie signs you out whenever you
+          reload or leave the site, so you would need to sign in again each time.
         </p>
       </section>
 

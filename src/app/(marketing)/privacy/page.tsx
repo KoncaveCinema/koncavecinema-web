@@ -1,7 +1,7 @@
 import { Ban, CheckCircle2, EyeOff, Fingerprint, Lock, ShieldCheck, UserCheck } from "lucide-react";
 import type { Metadata } from "next";
 
-import type { TocItem } from "@/features/legal/documents";
+import { TERMS_UPDATED, type TocItem } from "@/features/legal/documents";
 import { LegalPageShell } from "@/features/legal/page-shell";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -18,9 +18,9 @@ const TOC: TocItem[] = [
   { id: "information-matrix", title: "Information We Collect vs What We Never Collect" },
   { id: "statutory-kyc", title: "In-Checkout KYC Protocol (Public Theatres)" },
   { id: "how-we-use-data", title: "Legal Bases & Purpose of Processing" },
-  { id: "payment-processing", title: "Payment Security & Pass-Through Data" },
+  { id: "payment-processing", title: "Payments & Service Providers" },
   { id: "concession-delivery", title: "Concessions & Geofencing (Chowdeck Relay)" },
-  { id: "data-retention", title: "Retention Schedules & DRM Expiration" },
+  { id: "data-retention", title: "How Long We Keep Data" },
   { id: "your-rights", title: "Your NDPA 2023 Data Subject Rights" },
   { id: "privacy-contact", title: "Privacy Inquiries & Contact" },
 ];
@@ -31,7 +31,7 @@ export default function PrivacyPolicyPage() {
       title="Privacy Policy & NDPA 2023 Compliance"
       subtitle="Koncave Cinema is built on strict data minimization. We protect your privacy while delivering synchronized, premium virtual cinema premieres."
       effectiveDate="October 2026"
-      lastUpdated="October 25, 2026"
+      lastUpdated={TERMS_UPDATED}
       toc={TOC}
       activePath="/privacy"
     >
@@ -79,15 +79,15 @@ export default function PrivacyPolicyPage() {
               <Lock className="size-4.5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-foreground">Cryptographic Token Leases</h3>
+              <h3 className="text-sm font-bold text-foreground">Protected Playback</h3>
               <p className="text-xs text-muted-foreground">
-                Hardware Mux DRM with auto-expiring keys
+                Expiring tokens and a personal watermark
               </p>
             </div>
           </div>
           <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-            Playback sessions are secured via hardware-encrypted DRM tokens that expire
-            automatically upon the conclusion of your scheduled screening room.
+            Each screening plays with signed, short-lived tokens and a visible watermark tied to
+            your ticket. Studio-grade DRM will be added later.
           </p>
         </Card>
 
@@ -188,7 +188,8 @@ export default function PrivacyPolicyPage() {
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-400">•</span>
                   <span>
-                    <strong>Account Email:</strong> For magic OTP logins and ticket pass delivery.
+                    <strong>Account Email and Password:</strong> To sign you in and send your
+                    tickets. Your password is stored only as a secure hash.
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
@@ -201,15 +202,23 @@ export default function PrivacyPolicyPage() {
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-400">•</span>
                   <span>
-                    <strong>DRM Session Heartbeat:</strong> Temporary token leases to verify
-                    single-device concurrency.
+                    <strong>Playback Session:</strong> A 90-second lease, renewed every 45 seconds
+                    while you watch, so one ticket plays on one screen.
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-400">•</span>
                   <span>
-                    <strong>Public Theatre Alias:</strong> Your selected display name for communal
-                    reactions.
+                    <strong>Public Hall Identity Check:</strong> Your phone number (kept only as a
+                    one-way hash), your legal full name (encrypted) and the screen alias shown in
+                    hall chat.
+                  </span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-400">•</span>
+                  <span>
+                    <strong>Connection Details at Playback:</strong> Your IP address and approximate
+                    location, to detect account sharing.
                   </span>
                 </li>
               </ul>
@@ -283,9 +292,9 @@ export default function PrivacyPolicyPage() {
             </Badge>
             <h4 className="mt-2 text-sm font-bold text-foreground">In-Checkout Verification</h4>
             <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-              Conducted exclusively in-checkout during ticket purchase (never during platform
-              sign-up). Uses HMAC-SHA256 one-way hashing to eliminate bot swarms and safeguard
-              community civility.
+              Done once, when you book a Public Hall seat, never at sign-up. The code is emailed to
+              you. Your phone number is kept only as a one-way hash, your legal full name is
+              encrypted, and only your screen alias is shown in the hall.
             </p>
           </div>
         </div>
@@ -299,13 +308,18 @@ export default function PrivacyPolicyPage() {
         </p>
         <ul>
           <li>
-            <strong>Contract Performance:</strong> Issuing reserved ticket passes, provisioning
-            synchronized Mux DRM streams, and handling Paystack transaction confirmations.
+            <strong>Contract Performance:</strong> Issuing your passes, streaming the film to your
+            ticket at its showtime, and confirming payments with Paystack.
           </li>
           <li>
-            <strong>Anti-Piracy &amp; Intellectual Property Protection:</strong> Generating dynamic
-            Brownian motion watermarking on video playback viewports to prevent illicit recording
-            and screen-scraping of African films.
+            <strong>Anti-Piracy &amp; Intellectual Property Protection:</strong> Showing a visible
+            personal watermark during playback, and checking your IP address and approximate
+            location to detect account sharing, so films are protected from recording and resale.
+            Location is estimated with{" "}
+            <a href="https://db-ip.com" target="_blank" rel="noreferrer">
+              IP Geolocation by DB-IP
+            </a>
+            .
           </li>
           <li>
             <strong>Regulatory &amp; Statutory Compliance:</strong> Upholding exhibition age ratings
@@ -317,13 +331,38 @@ export default function PrivacyPolicyPage() {
 
       {/* SECTION 6 */}
       <section id="payment-processing">
-        <h2>Payment Security &amp; Pass-Through Data</h2>
+        <h2>Payments &amp; Service Providers</h2>
         <p>
           Koncave Cinema does not store, hold, or transmit raw credit card credentials, cardholder
           CVVs, or online banking authorization tokens. All payment processing is managed by{" "}
           <strong>Paystack Payments Limited</strong>, a PCI-DSS Level 1 certified processor
           regulated by the Central Bank of Nigeria (CBN).
         </p>
+        <p>
+          We share personal data only with the providers that run the service, under contract and
+          only for that purpose:
+        </p>
+        <ul>
+          <li>
+            <strong>Paystack</strong>: payments.
+          </li>
+          <li>
+            <strong>Mux</strong>: video streaming.
+          </li>
+          <li>
+            <strong>Resend</strong>: email, including your sign-in and verification codes.
+          </li>
+          <li>
+            <strong>Supabase</strong>: database hosting.
+          </li>
+          <li>
+            <strong>Upstash</strong>: temporary data such as playback sessions.
+          </li>
+          <li>
+            <strong>LiveKit</strong> (voice in private suites) and <strong>Chowdeck</strong> (snack
+            delivery), when those features launch.
+          </li>
+        </ul>
       </section>
 
       {/* SECTION 7 */}
@@ -343,20 +382,24 @@ export default function PrivacyPolicyPage() {
 
       {/* SECTION 8 */}
       <section id="data-retention">
-        <h2>Retention Schedules &amp; DRM Expiration</h2>
-        <p>We enforce automated data obsolescence across our infrastructure:</p>
+        <h2>How Long We Keep Data</h2>
+        <p>We keep data only as long as it is needed:</p>
         <ul>
           <li>
-            <strong>DRM Concurrency Leases:</strong> Stored in in-memory Redis stores with a strict
-            Time-to-Live (TTL) of 45 seconds, expiring automatically when playback ends.
+            <strong>Playback leases:</strong> 90 seconds, renewed every 45 seconds while you watch,
+            and gone when playback stops.
           </li>
           <li>
-            <strong>Ephemeral Room Chat:</strong> Public Theatre emoji and reaction logs are purged
-            within 24 hours of the premiere conclusion.
+            <strong>Location checks:</strong> your IP address and approximate location, for up to 6
+            hours.
           </li>
           <li>
-            <strong>Ticket Purchase Receipts:</strong> Stored in encrypted database records to
-            fulfill statutory accounting audits under Nigerian law.
+            <strong>Security logs:</strong> IP address and browser details, kept to investigate
+            misuse of accounts.
+          </li>
+          <li>
+            <strong>Ticket and payment records:</strong> kept to meet accounting and tax obligations
+            under Nigerian law.
           </li>
         </ul>
       </section>

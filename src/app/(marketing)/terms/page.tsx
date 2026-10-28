@@ -1,14 +1,14 @@
 import { AlertTriangle, Clapperboard, CreditCard, Lock, ShieldCheck } from "lucide-react";
 import type { Metadata } from "next";
 
-import type { TocItem } from "@/features/legal/documents";
+import { TERMS_UPDATED, type TocItem } from "@/features/legal/documents";
 import { LegalPageShell } from "@/features/legal/page-shell";
 import { Card } from "@/components/ui/card";
 
 export const metadata: Metadata = {
   title: "Terms of Use",
   description:
-    "Review the Terms of Use governing admission, synchronized virtual cinema screenings, concurrency rules, and intellectual property on Koncave Cinema.",
+    "Review the Terms of Use governing admission, synchronized virtual cinema screenings, one-screen-per-ticket rules, and intellectual property on Koncave Cinema.",
 };
 
 const TOC: TocItem[] = [
@@ -16,7 +16,7 @@ const TOC: TocItem[] = [
   { id: "theatrical-model", title: "The Virtual Theatrical Exhibition Model" },
   { id: "user-accounts", title: "Accounts & Public Theatre KYC" },
   { id: "ticketing-payment", title: "Ticketing, Pricing & Pass-Through Fees" },
-  { id: "streaming-concurrency", title: "Streaming Policies & Concurrency Locks" },
+  { id: "streaming-concurrency", title: "Streaming & One Screen per Ticket" },
   { id: "intellectual-property", title: "Intellectual Property & Anti-Piracy" },
   { id: "community-conduct", title: "Community Conduct & Prohibited Behavior" },
   { id: "refund-cancellation", title: "Refund & Cancellation Terms" },
@@ -30,7 +30,7 @@ export default function TermsOfUsePage() {
       title="Terms of Use & Theatrical Agreement"
       subtitle="The contractual framework governing virtual admissions, synchronized premiere showtimes, intellectual property protection, and community standards."
       effectiveDate="October 2026"
-      lastUpdated="October 25, 2026"
+      lastUpdated={TERMS_UPDATED}
       toc={TOC}
       activePath="/terms"
     >
@@ -58,13 +58,13 @@ export default function TermsOfUsePage() {
               <Lock className="size-4.5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-foreground">Single-Device Concurrency</h3>
-              <p className="text-xs text-muted-foreground">Strict 1-ticket 1-screen integrity</p>
+              <h3 className="text-sm font-bold text-foreground">One Ticket, One Screen</h3>
+              <p className="text-xs text-muted-foreground">A second device is refused</p>
             </div>
           </div>
           <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-            Each ticket pass authorizes exactly one active browser session. Launching a second
-            viewport or sharing credentials instantly suspends the previous stream.
+            Each ticket plays on one screen at a time. While it is playing, a second device or tab
+            is refused; the screen already watching carries on.
           </p>
         </Card>
 
@@ -74,13 +74,13 @@ export default function TermsOfUsePage() {
               <ShieldCheck className="size-4.5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-foreground">Forensic Anti-Piracy</h3>
-              <p className="text-xs text-muted-foreground">Brownian motion watermarked playback</p>
+              <h3 className="text-sm font-bold text-foreground">Protected Playback</h3>
+              <p className="text-xs text-muted-foreground">A personal watermark on screen</p>
             </div>
           </div>
           <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-            Streams embed an imperceptible, dynamic watermark tied to your ticket session. Any
-            attempt to record or redistribute content triggers immediate account ban and legal
+            Streams can show a visible watermark tied to your ticket (a film&rsquo;s producer may
+            turn it off). Recording or redistributing a film ends your access and may lead to legal
             action.
           </p>
         </Card>
@@ -148,8 +148,8 @@ export default function TermsOfUsePage() {
       <section id="user-accounts">
         <h2>Accounts &amp; Public Theatre KYC</h2>
         <p>
-          Account registration requires a valid email address verified via One-Time Password (OTP).
-          You are responsible for safeguarding your login credentials.
+          An account needs an email address and a password. You are responsible for keeping your
+          password safe and for activity on your account.
         </p>
         <p>
           In compliance with the{" "}
@@ -163,10 +163,10 @@ export default function TermsOfUsePage() {
             and Private Suite guests are exempt from this requirement.
           </li>
           <li>
-            In accordance with data minimization mandates, your raw telephone number is{" "}
-            <strong>never stored in plaintext</strong>. It is cryptographically converted into an
-            irreversible HMAC-SHA256 hash used solely for community civility and security
-            enforcement.
+            In line with data minimisation, your phone number is{" "}
+            <strong>never stored as you typed it</strong>, only as a one-way hash. Your legal full
+            name is stored encrypted, and only your chosen screen alias is shown to other viewers.
+            The verification code is sent to your account email.
           </li>
         </ul>
       </section>
@@ -196,20 +196,19 @@ export default function TermsOfUsePage() {
 
       {/* SECTION 5 */}
       <section id="streaming-concurrency">
-        <h2>Streaming Policies &amp; Concurrency Locks</h2>
-        <h3>5.1 Single-Viewer Concurrency Lock</h3>
+        <h2>Streaming &amp; One Screen per Ticket</h2>
+        <h3>5.1 One Screen per Ticket</h3>
         <p>
-          Each admission pass is strictly licensed for a{" "}
-          <strong>single concurrent device and viewport</strong>. Attempting to access the stream
-          simultaneously from a second browser tab, device, or remote network will immediately
-          suspend the prior session.
+          Each pass is licensed for <strong>one device at a time</strong>. While a pass is playing,
+          an attempt to start it on a second browser tab or device is refused; the screen already
+          watching is not interrupted.
         </p>
 
-        <h3>5.2 Adaptive Playback &amp; Catch-Up Engine</h3>
+        <h3>5.2 Playback and Keeping Up</h3>
         <p>
-          Playback quality adapts dynamically to your network connection. If local buffering causes
-          you to lag behind the live broadcast, our 4-Zone Catch-Up Engine applies subtle
-          acceleration to resynchronize you with the audience edge without distortion.
+          Picture quality adapts to your connection. The screening room is designed to help viewers
+          who fall behind catch up with the rest of the audience; how it does so may change as the
+          room develops.
         </p>
       </section>
 
@@ -218,8 +217,9 @@ export default function TermsOfUsePage() {
         <h2>Intellectual Property &amp; Anti-Piracy</h2>
         <p>
           All titles exhibited on Koncave Cinema are protected under Nigerian copyright laws and
-          international treaties. Content is secured via multi-DRM encryption and dynamic forensic
-          watermarking.
+          international treaties. Streams are protected with signed, expiring access and, unless the
+          producer turns it off, a visible personal watermark. Further protection such as DRM may be
+          added.
         </p>
         <div className="not-prose my-6 rounded-2xl border border-rose-500/30 bg-rose-950/20 p-6">
           <div className="flex items-start gap-3">
@@ -250,8 +250,8 @@ export default function TermsOfUsePage() {
           <li>Disruptive behavior or continuous spamming of chat and reaction channels.</li>
         </ul>
         <p>
-          Auditorium moderators reserve the absolute authority to mute, kick, or permanently
-          blacklist violators.
+          We may mute, remove or ban accounts that break these rules, including through moderation
+          in the screening room.
         </p>
       </section>
 
@@ -260,9 +260,9 @@ export default function TermsOfUsePage() {
         <h2>Refund &amp; Cancellation Terms</h2>
         <p>
           Because virtual tickets reserve dedicated capacity in scheduled theatrical screening
-          rooms, ticket purchases are generally non-refundable once confirmed. Exceptions and
-          automatic credit re-issuances for platform technical interruptions are governed strictly
-          by our dedicated <a href="/refunds">Refund &amp; Cancellation Policy</a>.
+          rooms, ticket purchases are generally non-refundable once confirmed. Exceptions, such as
+          cancelled screenings and faults on our side, are set out in our{" "}
+          <a href="/refunds">Refund &amp; Cancellation Policy</a>.
         </p>
       </section>
 
