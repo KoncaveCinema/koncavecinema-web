@@ -1,7 +1,7 @@
 # Placeholder imagery
 
 Where each file in `public/placeholder/` came from. They are development and design-review
-placeholders only, used by the sample catalog (`CATALOG_SOURCE=fixtures`) and a few decorative
+placeholders only, used by the sample catalog (`NEXT_PUBLIC_DATA_SOURCE=fixtures`) and a few decorative
 sections. Replace them with real key art and brand photography before launch. (Kept here rather
 than in `public/`, which would serve this file to anyone.)
 
