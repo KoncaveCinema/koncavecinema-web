@@ -73,7 +73,12 @@ export default async function FilmPage({ params }: PageProps<"/movies/[slug]">) 
 
   return (
     <>
-      <FilmBackdrop slug={film.slug} image={film.posterLandscape} title={film.title}>
+      <FilmBackdrop
+        slug={film.slug}
+        image={film.posterLandscape}
+        title={film.title}
+        focus={film.posterFocus}
+      >
         <div className="max-w-2xl">
           <div className="flex animate-rise items-center gap-2.5">
             {next && <ScreeningStatus startTime={next.startTime} endTime={next.endTime} />}
@@ -221,9 +226,7 @@ export default async function FilmPage({ params }: PageProps<"/movies/[slug]">) 
               {information.map((item) => (
                 <div key={item.term}>
                   <dt className="text-xs text-white/45">{item.term}</dt>
-                  <dd className="mt-1 text-sm leading-snug [overflow-wrap:anywhere]">
-                    {item.detail}
-                  </dd>
+                  <dd className="mt-1 text-sm leading-snug wrap-anywhere">{item.detail}</dd>
                 </div>
               ))}
             </dl>
