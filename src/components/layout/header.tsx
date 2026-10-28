@@ -1,9 +1,8 @@
 import Link from "next/link";
 
 import { Logo } from "@/components/brand/logo";
-import { Button } from "@/components/ui/button";
 
-import { HeaderScrollState, MobileNav } from "./header-client";
+import { AccountMenu, HeaderScrollState, MobileNav } from "./header-client";
 import { PRIMARY_NAV } from "./navigation";
 
 /**
@@ -44,11 +43,7 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-2 justify-self-end">
-          <Button asChild className="hidden sm:inline-flex">
-            <Link href="/sign-in" prefetch={false}>
-              Sign in
-            </Link>
-          </Button>
+          <AccountMenu />
           <MobileNav />
         </div>
       </div>
