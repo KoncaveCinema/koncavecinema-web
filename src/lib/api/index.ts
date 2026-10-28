@@ -6,6 +6,7 @@ export {
   refreshAccessToken,
   withIdempotencyKey,
 } from "./client";
+export { recordServerTime, serverOffset } from "./server-clock";
 export { ApiError, ErrorCode, isApiError, toApiError } from "./errors";
 export type { ApiErrorCode, KnownErrorCode } from "./errors";
 export type {

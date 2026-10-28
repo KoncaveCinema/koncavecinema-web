@@ -32,6 +32,7 @@ export const ErrorCode = {
   OTP_EXPIRED: "OTP_EXPIRED",
   OTP_INVALID: "OTP_INVALID",
   ALIAS_TAKEN: "ALIAS_TAKEN",
+  PASSWORD_RESET_TOKEN_INVALID: "PASSWORD_RESET_TOKEN_INVALID",
 
   KYC_REQUIRED: "KYC_REQUIRED",
   RESERVATION_IN_PROGRESS: "RESERVATION_IN_PROGRESS",
@@ -74,12 +75,15 @@ export class ApiError extends Error {
   readonly messages: string[];
   /** Quote this when reporting a problem; every API log line for the request carries it. */
   readonly requestId: string | undefined;
+  /** Extra fields some errors carry, e.g. `ticketId` on RESERVATION_ALREADY_HELD */
+  readonly details: Record<string, unknown>;
 
   constructor(params: {
     status: number;
     code: ApiErrorCode;
     messages: string[];
     requestId?: string;
+    details?: Record<string, unknown>;
   }) {
     super(params.messages[0] ?? params.code);
     this.name = "ApiError";
@@ -87,6 +91,7 @@ export class ApiError extends Error {
     this.code = params.code;
     this.messages = params.messages;
     this.requestId = params.requestId;
+    this.details = params.details ?? {};
   }
 
   is(...codes: ApiErrorCode[]): boolean {
@@ -116,6 +121,7 @@ export function toApiError(error: unknown): ApiError {
         code: body.code,
         messages: Array.isArray(body.message) ? body.message : [body.message],
         requestId,
+        details: body as unknown as Record<string, unknown>,
       });
     }
 
