@@ -22,7 +22,8 @@ export async function ComingSoon() {
           id="coming-soon-title"
           eyebrow="Coming soon"
           title="Save the date"
-          description="Pre-book your seat or save the date. We'll remind you when the lobby opens."
+          description="Pre-book your seat, or add the date to your calendar so you don't miss the lobby."
+          action={{ href: "/showtimes", label: "Full schedule" }}
         />
         <div className="-mx-4 mt-10 snap-rail gap-4 px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 lg:grid-cols-4">
           {upcoming.map((film) => (

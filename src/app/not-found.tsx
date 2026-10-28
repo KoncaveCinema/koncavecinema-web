@@ -58,7 +58,7 @@ export default function NotFound() {
                 </Link>
               </Button>
               <Button asChild size="xl" variant="glass">
-                <Link href="/#now-showing">
+                <Link href="/movies">
                   <Film data-icon="inline-start" />
                   Browse films
                 </Link>
