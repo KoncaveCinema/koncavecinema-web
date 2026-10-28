@@ -22,7 +22,8 @@ async function loadApiCatalog(): Promise<CatalogFilm[]> {
   cacheTag("catalog");
 
   const list = await serverApi.getPage<ApiMovieListItem>("/movies", {
-    params: { page: 1, pageSize: 50 },
+    // Now showing: films with a showtime still to come, soonest first
+    params: { upcoming: true, sort: "soonest", page: 1, pageSize: 50 },
   });
   const details = await Promise.all(
     list.items.map((movie) => serverApi.get<ApiMovieDetail>(`/movies/${movie.slug}`)),
@@ -53,6 +54,8 @@ async function loadApiCatalog(): Promise<CatalogFilm[]> {
     durationMinutes: movie.durationMinutes,
     ageRating: movie.ageRating,
     producerName: movie.producerName,
+    nfvcbCertNumber: movie.nfvcbCertNumber,
+    nfvcbCertUrl: movie.nfvcbCertUrl,
     trailerUrl: movie.trailerStreamUrl || null,
     posterLandscape: movie.posterLandscape,
     posterPortrait: movie.posterPortrait || movie.posterLandscape,
@@ -62,9 +65,8 @@ async function loadApiCatalog(): Promise<CatalogFilm[]> {
         const capacity = capacities.get(showtime.id);
         const tierPrices: Partial<Record<TicketTier, number>> = {};
         for (const tier of capacity?.tiers ?? []) {
-          // The ticket price; the processing fee is shown at checkout
-          tierPrices[tier.tier] =
-            tier.pricing.baseAmount + tier.pricing.infrastructureMarkup + tier.pricing.vatAmount;
+          // What the buyer pays, fee included: the same figure the schedule calls priceFrom
+          tierPrices[tier.tier] = tier.pricing.totalPayable;
         }
         return {
           id: showtime.id,
@@ -89,7 +91,7 @@ async function loadFixtureCatalog(): Promise<CatalogFilm[]> {
  * empty states, and the failure is not cached, so the next request tries again.
  */
 export async function getCatalog(): Promise<Catalog> {
-  if (env.CATALOG_SOURCE === "fixtures") {
+  if (env.NEXT_PUBLIC_DATA_SOURCE === "fixtures") {
     return { films: await loadFixtureCatalog(), source: "fixtures", unavailable: false };
   }
   try {
