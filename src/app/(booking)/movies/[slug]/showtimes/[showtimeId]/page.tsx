@@ -8,6 +8,9 @@ import { getShowtime, getShowtimeCapacity } from "@/features/catalog/queries";
 
 type Props = PageProps<"/movies/[slug]/showtimes/[showtimeId]">;
 
+// Every known showtime is prerendered whole, and an unknown one must answer a real 404
+export const instant = false;
+
 export async function generateStaticParams() {
   const { films } = await getCatalog();
   const params = films.flatMap((film) =>

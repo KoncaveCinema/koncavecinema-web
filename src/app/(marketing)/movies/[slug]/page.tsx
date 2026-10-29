@@ -19,6 +19,10 @@ import { AUDITORIUMS } from "@/features/home/auditoriums/halls";
 import { formatMoney, formatRuntime, ratingDescription, ratingLabel } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
+// Every known film is prerendered whole, so there is nothing to stream; a loading shell would
+// also break the card-to-hero image morph and turn unknown films into soft 404s
+export const instant = false;
+
 export async function generateStaticParams() {
   const { films } = await getCatalog();
   // Cache Components needs at least one param; an empty catalog renders the not-found page

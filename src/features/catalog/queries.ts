@@ -8,7 +8,7 @@ import { dayKey, HOME_TIME_ZONE } from "@/lib/format";
 
 import type { ApiScheduleShowtime, ApiShowtimeCapacity } from "./api-types";
 import { FIXTURE_TIERS, fixturePricing } from "./fixture-pricing";
-import { getCatalog } from "./get-catalog";
+import { FAILURE_LIFE, getCatalog } from "./get-catalog";
 import type { CatalogFilm, CatalogShowtime } from "./types";
 
 /*
@@ -64,11 +64,13 @@ export async function getShowtimeCapacity({
 
 async function loadCapacity(showtimeId: string): Promise<ApiShowtimeCapacity | null> {
   "use cache";
-  cacheLife("minutes");
   cacheTag("catalog");
   try {
-    return await serverApi.get<ApiShowtimeCapacity>(`/showtimes/${showtimeId}/capacity`);
+    const capacity = await serverApi.get<ApiShowtimeCapacity>(`/showtimes/${showtimeId}/capacity`);
+    cacheLife("minutes");
+    return capacity;
   } catch {
+    cacheLife(FAILURE_LIFE);
     return null;
   }
 }
@@ -83,11 +85,27 @@ const SCHEDULE_DAYS = 14;
 const SCHEDULE_PAGE_SIZE = 100;
 const SCHEDULE_MAX_PAGES = 5;
 
-/** GET /showtimes for today and the next 13 days (Lagos), every page up to a sane limit. */
-async function loadApiSchedule(): Promise<ApiScheduleShowtime[]> {
+/**
+ * GET /showtimes for today and the next 13 days (Lagos). Like the catalog, a failure is caught
+ * inside the cache (so the build survives an unreachable API) and kept briefly. Null means
+ * unavailable.
+ */
+async function loadApiSchedule(): Promise<ApiScheduleShowtime[] | null> {
   "use cache";
-  cacheLife("minutes");
   cacheTag("catalog");
+  try {
+    const items = await fetchApiSchedule();
+    cacheLife("minutes");
+    return items;
+  } catch (error) {
+    cacheLife(FAILURE_LIFE);
+    console.error("Schedule unavailable:", error instanceof Error ? error.message : error);
+    return null;
+  }
+}
+
+/** Every page of the schedule, up to a sane limit */
+async function fetchApiSchedule(): Promise<ApiScheduleShowtime[]> {
   const now = Date.now();
   const params = {
     from: lagosDay(now),
@@ -111,14 +129,7 @@ async function loadApiSchedule(): Promise<ApiScheduleShowtime[]> {
  * schedule (the page shows its empty state) rather than an error.
  */
 export async function getSchedule(): Promise<ApiScheduleShowtime[]> {
-  if (!fixtures) {
-    try {
-      return await loadApiSchedule();
-    } catch (error) {
-      console.error("Schedule unavailable:", error instanceof Error ? error.message : error);
-      return [];
-    }
-  }
+  if (!fixtures) return (await loadApiSchedule()) ?? [];
   const { films } = await getCatalog();
   return films
     .flatMap((film) =>
