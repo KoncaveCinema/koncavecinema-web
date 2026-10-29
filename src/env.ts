@@ -11,6 +11,12 @@ export const env = createEnv({
     // Base URL used by Server Components to reach the API. Defaults to the public URL; set it
     // when the server can reach the API over a private network.
     API_INTERNAL_URL: z.url().optional(),
+    // Set by Vercel on every deployment. Anything other than production (staging, previews)
+    // is kept out of search engines
+    VERCEL_ENV: z.enum(["production", "preview", "development"]).optional(),
+    // Staging only: when set, every page asks for this password (any username). Never set it
+    // on production
+    STAGING_PASSWORD: z.string().min(12).optional(),
   },
   client: {
     // Public origin of this web app, used for canonical URLs, Open Graph and Paystack callbacks
@@ -25,6 +31,8 @@ export const env = createEnv({
   runtimeEnv: {
     NODE_ENV: process.env.NODE_ENV,
     API_INTERNAL_URL: process.env.API_INTERNAL_URL,
+    VERCEL_ENV: process.env.VERCEL_ENV,
+    STAGING_PASSWORD: process.env.STAGING_PASSWORD,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
     NEXT_PUBLIC_DATA_SOURCE: process.env.NEXT_PUBLIC_DATA_SOURCE,

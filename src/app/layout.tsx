@@ -7,6 +7,7 @@ import NextTopLoader from "nextjs-toploader";
 import { AppProviders } from "@/components/providers/app-providers";
 import { WebVitals } from "@/components/providers/web-vitals";
 import { env } from "@/env";
+import { indexable } from "@/lib/deployment";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE } from "@/lib/seo";
 
 import "./globals.css";
@@ -48,6 +49,8 @@ export const metadata: Metadata = {
   openGraph: { type: "website", siteName: SITE_NAME, locale: "en_NG" },
   twitter: { card: "summary_large_image" },
   formatDetection: { telephone: false },
+  // Staging and previews: a second guard after robots.txt, for crawlers that skip it
+  ...(!indexable && { robots: { index: false, follow: false } }),
 };
 
 export const viewport: Viewport = {
