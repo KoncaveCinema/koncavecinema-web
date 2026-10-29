@@ -3,6 +3,7 @@ import { api, ApiError, ErrorCode, refreshAccessToken, setAccessToken } from "@/
 
 import type {
   AuthResponse,
+  ChangePasswordResponse,
   RegisterResponse,
   SendOtpResponse,
   UserProfile,
@@ -169,4 +170,63 @@ export async function verifyIdentity(values: VerifyIdentityValues): Promise<User
   }
   const response = await api.post<VerifyKycResponse>("/auth/kyc/verify-otp", values);
   return response.user;
+}
+
+/* Account settings (the dashboard) */
+
+/**
+ * PATCH /auth/me: change the screen alias. Members who passed the Public Hall check only; once per
+ * 30 days (ALIAS_CHANGE_TOO_SOON carries `details.nextChangeAt`). Returns the updated profile.
+ */
+export async function updateScreenAlias(publicScreenAlias: string): Promise<UserProfile> {
+  if (demo) {
+    await wait();
+    const current = readDemoUser();
+    if (!current?.isPhoneVerified) {
+      throw demoError(ErrorCode.KYC_REQUIRED, "Verify your identity first.", 403);
+    }
+    if (publicScreenAlias.toLowerCase() === "taken") {
+      throw demoError(ErrorCode.ALIAS_TAKEN, "That alias is taken.", 409);
+    }
+    const user = { ...current, publicScreenAlias };
+    writeDemoUser(user);
+    return user;
+  }
+  return api.patch<UserProfile>("/auth/me", { publicScreenAlias });
+}
+
+/**
+ * POST /auth/change-password. Signs every other device out; this one gets a new access token (and
+ * refresh cookie). A wrong current password is INVALID_CREDENTIALS and does not sign out.
+ */
+export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+  if (demo) {
+    await wait();
+    if (currentPassword === "wrong") {
+      throw demoError(ErrorCode.INVALID_CREDENTIALS, "That isn't your current password.", 401);
+    }
+    return;
+  }
+  const response = await api.post<ChangePasswordResponse>("/auth/change-password", {
+    currentPassword,
+    newPassword,
+  });
+  setAccessToken(response.accessToken);
+}
+
+/**
+ * DELETE /auth/me: delete the account after confirming the password. Refused while the member
+ * holds a paid pass for a screening that hasn't ended (ACCOUNT_HAS_UPCOMING_PASSES).
+ */
+export async function deleteAccount(password: string): Promise<void> {
+  if (demo) {
+    await wait();
+    if (password === "wrong") {
+      throw demoError(ErrorCode.INVALID_CREDENTIALS, "That password isn't right.", 401);
+    }
+    writeDemoUser(null);
+    return;
+  }
+  await api.delete("/auth/me", { data: { password } });
+  setAccessToken(null);
 }

@@ -36,3 +36,9 @@ export interface VerifyKycResponse {
   message: string;
   user: UserProfile;
 }
+
+/** POST /auth/change-password: a new access token (and refresh cookie); other devices signed out */
+export interface ChangePasswordResponse {
+  accessToken: string;
+  expiresIn: number;
+}
