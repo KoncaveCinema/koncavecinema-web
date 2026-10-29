@@ -18,7 +18,7 @@ export interface TocItem {
  * It is the date the policies were last updated: bump it whenever their wording changes. The
  * "Last updated" date on every policy page is derived from it, so the two always match.
  */
-export const TERMS_VERSION = "2026-10-27";
+export const TERMS_VERSION = "2026-10-28";
 export const TERMS_UPDATED = new Intl.DateTimeFormat("en-US", {
   month: "long",
   day: "numeric",

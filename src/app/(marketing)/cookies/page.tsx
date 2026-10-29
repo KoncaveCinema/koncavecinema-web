@@ -70,13 +70,13 @@ export default function CookiePolicyPage() {
               <Lock className="size-4.5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-foreground">Cleared With the Tab</h3>
-              <p className="text-xs text-muted-foreground">Checkout details are temporary</p>
+              <h3 className="text-sm font-bold text-foreground">Nothing Else Stored</h3>
+              <p className="text-xs text-muted-foreground">One cookie, and that&rsquo;s all</p>
             </div>
           </div>
           <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-            The showtime and snack basket kept during checkout live in your browser tab only and are
-            erased when you close it.
+            Your bookings and payments are kept on our servers. Apart from the sign-in cookie, we
+            store nothing in your browser.
           </p>
         </Card>
 
@@ -106,8 +106,9 @@ export default function CookiePolicyPage() {
           close the tab) or <code>localStorage</code> (kept until you clear it).
         </p>
         <p>
-          Koncave Cinema uses one cookie to keep you signed in, and <code>sessionStorage</code> to
-          remember your booking while you check out. We do not use <code>localStorage</code>.
+          Koncave Cinema uses one cookie, to keep you signed in. We do not use{" "}
+          <code>sessionStorage</code> or <code>localStorage</code>: your bookings live on our
+          servers, so a reload never loses your place.
         </p>
       </section>
 
@@ -121,8 +122,9 @@ export default function CookiePolicyPage() {
             page&rsquo;s memory, never in browser storage.
           </li>
           <li>
-            <strong>Checking out:</strong> while you book, your browser tab remembers the showtime
-            you chose and your snack basket, so a reload doesn&rsquo;t lose your place.
+            <strong>Checking out:</strong> your seat hold and payment are kept on our servers, not
+            in your browser. A reload, or coming back from the payment page, picks up where you left
+            off.
           </li>
           <li>
             <strong>Watching:</strong> playback tokens are not stored in your browser. The
@@ -153,23 +155,6 @@ export default function CookiePolicyPage() {
                   <td className="p-3">
                     Keeps you signed in. Scripts on the page cannot read it, and it is sent only to
                     our sign-in service.
-                  </td>
-                </tr>
-                <tr>
-                  <td className="p-3 font-mono text-foreground">kc-showtimes</td>
-                  <td className="p-3">sessionStorage</td>
-                  <td className="p-3">Until you close the tab</td>
-                  <td className="p-3">
-                    The film and showtime you are booking (public details only), shown during
-                    checkout.
-                  </td>
-                </tr>
-                <tr>
-                  <td className="p-3 font-mono text-foreground">kc-concessions</td>
-                  <td className="p-3">sessionStorage</td>
-                  <td className="p-3">Until you close the tab</td>
-                  <td className="p-3">
-                    Your snack basket, delivery address and rider phone number while you check out.
                   </td>
                 </tr>
               </tbody>
