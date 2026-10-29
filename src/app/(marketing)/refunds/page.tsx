@@ -2,7 +2,7 @@ import { Clock, RefreshCw, ShieldCheck, Utensils } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import type { TocItem } from "@/features/legal/documents";
+import { TERMS_UPDATED, type TocItem } from "@/features/legal/documents";
 import { LegalPageShell } from "@/features/legal/page-shell";
 import { Card } from "@/components/ui/card";
 
@@ -17,7 +17,6 @@ const TOC: TocItem[] = [
   { id: "eligible-refunds", title: "When Refunds Are Guaranteed" },
   { id: "ineligible-situations", title: "Non-Refundable Situations" },
   { id: "concessions-refunds", title: "Concessions & Food Delivery Refunds" },
-  { id: "private-suite-rules", title: "Private VIP Suite Rescheduling" },
   { id: "refund-methods", title: "Refund Methods & Settlement Times" },
   { id: "how-to-request", title: "How to File a Refund Claim" },
 ];
@@ -28,7 +27,7 @@ export default function RefundPolicyPage() {
       title="Refund & Cancellation Policy"
       subtitle="Clear, fair rules regarding virtual admissions, platform technical faults, overbooking protection, and food delivery refunds."
       effectiveDate="October 2026"
-      lastUpdated="October 25, 2026"
+      lastUpdated={TERMS_UPDATED}
       toc={TOC}
       activePath="/refunds"
     >
@@ -56,15 +55,13 @@ export default function RefundPolicyPage() {
               <ShieldCheck className="size-4.5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-foreground">Outage Protection Guarantee</h3>
-              <p className="text-xs text-muted-foreground">
-                Automated remediation for verified issues
-              </p>
+              <h3 className="text-sm font-bold text-foreground">Faults on Our Side</h3>
+              <p className="text-xs text-muted-foreground">Refunded on request</p>
             </div>
           </div>
           <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-            If our distribution network, DRM licensing, or server infrastructure fails during your
-            showtime, you are automatically granted a full refund or replacement premiere pass.
+            If a fault on our side stops your screening, contact us. Once we confirm it, we refund
+            your ticket or give you a pass to another showtime.
           </p>
         </Card>
 
@@ -74,15 +71,13 @@ export default function RefundPolicyPage() {
               <RefreshCw className="size-4.5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-foreground">Delayed Payment Protection</h3>
-              <p className="text-xs text-muted-foreground">
-                Automatic return on overbooked sessions
-              </p>
+              <h3 className="text-sm font-bold text-foreground">Late or Duplicate Payments</h3>
+              <p className="text-xs text-muted-foreground">Reviewed and refunded by our team</p>
             </div>
           </div>
           <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-            If a bank transfer clears after the 10-minute hold expires and the room is full, funds
-            are automatically queued for an immediate full reversal.
+            If a payment clears after your 10-minute hold has expired, or you are charged twice, our
+            team reviews it and refunds you in full.
           </p>
         </Card>
 
@@ -97,8 +92,7 @@ export default function RefundPolicyPage() {
             </div>
           </div>
           <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-            Damaged, spilled, or non-delivered snack orders are resolved instantly through our live
-            concierge with prompt wallet or bank refunds.
+            Damaged, spilled or missing snack orders are refunded once you report them to our team.
           </p>
         </Card>
       </div>
@@ -122,29 +116,21 @@ export default function RefundPolicyPage() {
       {/* SECTION 2 */}
       <section id="eligible-refunds">
         <h2>When Refunds Are Guaranteed</h2>
-        <p>
-          We stand firmly behind our platform reliability. You are entitled to an immediate full
-          refund or complimentary ticket voucher in any of the following events:
-        </p>
+        <p>We refund your ticket, or offer a pass to another showtime, in these cases:</p>
         <ul>
           <li>
             <strong>Screening Cancellation:</strong> The filmmaker, distributor, or Koncave Cinema
             cancels the scheduled showtime.
           </li>
           <li>
-            <strong>Verified Platform Infrastructure Outage:</strong> Unscheduled server downtime,
-            CDN delivery blackouts, or DRM licensing engine failures that prevent attendees from
-            completing their screening.
+            <strong>A Fault on Our Side:</strong> Downtime or a streaming failure on our side that
+            stops you from watching the screening. These are handled on request, once we have
+            confirmed the fault.
           </li>
           <li>
-            <strong>Confirmed Regional Stream Blackout:</strong> Independent verification from our
-            video infrastructure partner confirming systemic delivery failure during your showtime
-            window.
-          </li>
-          <li>
-            <strong>Expired Seat Hold Reconciliation:</strong> If a delayed bank transfer or late
-            checkout payment arrives after the 10-minute hold expires, and the auditorium is at full
-            capacity, the payment is automatically refunded in full.
+            <strong>Late or Duplicate Payments:</strong> If a payment arrives after your 10-minute
+            hold has expired, or the same booking is charged twice, our team reviews it and refunds
+            the payment in full.
           </li>
         </ul>
       </section>
@@ -169,8 +155,8 @@ export default function RefundPolicyPage() {
           </li>
           <li>
             <strong>Unsupported Devices or Modified Hardware:</strong> Attempting to stream on
-            rooted/jailbroken devices, outdated operating systems, or browsers that block encrypted
-            media extensions (DRM).
+            rooted or jailbroken devices, outdated operating systems, or browsers that cannot play
+            protected video.
           </li>
           <li>
             <strong>Subjective Creative Opinion:</strong> Dissatisfaction with a film&rsquo;s
@@ -200,20 +186,6 @@ export default function RefundPolicyPage() {
         </ul>
       </section>
 
-      {/* SECTION 5 */}
-      <section id="private-suite-rules">
-        <h2>Private VIP Suite Rescheduling</h2>
-        <p>
-          Unlike Public Theatres, <strong>Private VIP Suites (Suite 5 and Suite 10)</strong> grant
-          the host the flexibility to reschedule their private screening up to 2 hours before the
-          scheduled premiere time.
-        </p>
-        <p>
-          Rescheduled private screenings must be set to a new showtime within 14 calendar days of
-          the original date.
-        </p>
-      </section>
-
       {/* SECTION 6 */}
       <section id="refund-methods">
         <h2>Refund Methods &amp; Settlement Times</h2>
@@ -225,10 +197,6 @@ export default function RefundPolicyPage() {
           </li>
           <li>
             <strong>Direct Bank Account Transfers:</strong> Settled within 24–48 banking hours.
-          </li>
-          <li>
-            <strong>Koncave Premiere Credit Vouchers:</strong> Issued instantly to your registered
-            email for immediate use on any future screening.
           </li>
         </ul>
       </section>
@@ -243,8 +211,8 @@ export default function RefundPolicyPage() {
         <div className="not-prose my-6 rounded-2xl border border-white/10 bg-surface-1/60 p-6">
           <h4 className="text-sm font-semibold text-foreground">Audience Support Concierge</h4>
           <p className="mt-1 text-xs text-muted-foreground">
-            Provide your registered email address, 6-character Ticket Code, and a brief description
-            of the issue.
+            Provide your registered email address, your pass number (for example PASS-000001), and a
+            brief description of the issue.
           </p>
           <div className="mt-4 flex flex-wrap gap-4 text-xs">
             <a

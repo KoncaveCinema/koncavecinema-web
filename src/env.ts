@@ -11,22 +11,23 @@ export const env = createEnv({
     // Base URL used by Server Components to reach the API. Defaults to the public URL; set it
     // when the server can reach the API over a private network.
     API_INTERNAL_URL: z.url().optional(),
-    // Where public catalog pages get films: the API, or built-in sample films (placeholder art,
-    // showtimes relative to now) for development, design review and screenshots
-    CATALOG_SOURCE: z.enum(["api", "fixtures"]).default("api"),
   },
   client: {
     // Public origin of this web app, used for canonical URLs, Open Graph and Paystack callbacks
     NEXT_PUBLIC_APP_URL: z.url(),
     // Base URL of koncavecinema-api including its global prefix, e.g. http://localhost:3000/api
     NEXT_PUBLIC_API_URL: z.url(),
+    // Where every page gets its data: the API, or built-in sample data for development, design
+    // review and screenshots (films with placeholder art, showtimes relative to now, and a demo
+    // booking flow that never charges). Read on the server and in the browser; not a secret.
+    NEXT_PUBLIC_DATA_SOURCE: z.enum(["api", "fixtures"]).default("api"),
   },
   runtimeEnv: {
     NODE_ENV: process.env.NODE_ENV,
     API_INTERNAL_URL: process.env.API_INTERNAL_URL,
-    CATALOG_SOURCE: process.env.CATALOG_SOURCE,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+    NEXT_PUBLIC_DATA_SOURCE: process.env.NEXT_PUBLIC_DATA_SOURCE,
   },
   emptyStringAsUndefined: true,
   // Lets tooling (lint, unit tests) import modules without a full environment

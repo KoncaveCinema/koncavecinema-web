@@ -23,6 +23,7 @@ export async function NowShowing() {
           eyebrow="Now showing"
           title="Premieres playing this week"
           description="Every film screens at a set time. The lobby opens 30 minutes before, then everyone watches together."
+          action={{ href: "/movies", label: "All films" }}
         />
         {screenings.length > 0 ? (
           <div className="-mx-5 mt-12 snap-rail gap-4 px-5 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-5 sm:overflow-visible sm:px-0 xl:grid-cols-[repeat(auto-fit,minmax(16rem,1fr))]">

@@ -54,3 +54,6 @@ next-env.d.ts
 /.next/analyze/
 
 .vercel
+
+# working plan (local only)
+implementation_plan.md

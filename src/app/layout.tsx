@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Archivo, Geist, Geist_Mono } from "next/font/google";
 import { preconnect } from "react-dom";
 
+import NextTopLoader from "nextjs-toploader";
+
 import { AppProviders } from "@/components/providers/app-providers";
 import { WebVitals } from "@/components/providers/web-vitals";
 import { env } from "@/env";
@@ -64,6 +66,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${fontSans.variable} ${fontDisplay.variable} ${fontMono.variable} dark h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
+        {/* Route progress: a thin brand-red line while a page loads */}
+        <NextTopLoader
+          color="#d60211"
+          height={2}
+          showSpinner={false}
+          shadow="0 0 12px #d60211, 0 0 4px #d60211"
+          zIndex={70}
+        />
         <AppProviders>{children}</AppProviders>
         {/* Development only until Phase F9 reports production vitals to monitoring */}
         {env.NODE_ENV === "development" && <WebVitals />}

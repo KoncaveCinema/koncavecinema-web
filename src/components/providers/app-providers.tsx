@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { lazy, Suspense, type ReactNode } from "react";
 
+import { SessionRestorer } from "@/features/auth/session";
 import { getQueryClient } from "@/lib/query-client";
 
 // Fetched after hydration so the animation engine never delays the first paint or interaction
@@ -36,6 +37,7 @@ export function AppProviders({ children }: { children: ReactNode }) {
         {/* `strict` makes the full `motion.*` components throw: use `m.*` from @/components/motion */}
         <LazyMotion features={loadMotionFeatures} strict>
           <MotionConfig reducedMotion="user">
+            <SessionRestorer />
             {children}
             <Toaster position="top-center" richColors closeButton />
           </MotionConfig>

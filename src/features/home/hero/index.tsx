@@ -1,8 +1,9 @@
 import { getCatalog } from "@/features/catalog/get-catalog";
+import { HeroStage } from "@/components/cinema/hero-stage";
 import { sortedShowtimes } from "@/features/catalog/screening";
 
 import { HeroCarousel } from "./carousel";
-import { EmptyHero, FeaturedSlide, HeroStage } from "./slides";
+import { EmptyHero, FeaturedSlide } from "./slides";
 
 const FEATURED_COUNT = 3;
 

@@ -1,9 +1,10 @@
 import "server-only";
 
+import { FIXTURE_TIERS, fixturePricing } from "./fixture-pricing";
 import type { CatalogFilm, CatalogShowtime, TicketTier } from "./types";
 
 /**
- * Sample catalog for development, design review and screenshots (CATALOG_SOURCE=fixtures).
+ * Sample catalog for development, design review and screenshots (NEXT_PUBLIC_DATA_SOURCE=fixtures).
  * Every title, person and production company here is fictional; the artwork is free-licence
  * placeholder photography (sources in docs/assets/placeholder-credits.md). Showtimes are placed relative to
  * `anchor` so each screening state is visible: live, lobby open, starting soon, later premieres.
@@ -13,17 +14,17 @@ const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
 
-// Same tier formula as the API's pricing (Phase 3): suites are base × seats + 20%
+// What the buyer pays per tier, from the same formula the API uses
 function tierPrices(base: number): Partial<Record<TicketTier, number>> {
-  return {
-    INDIVIDUAL: base,
-    PUBLIC: base,
-    PRIVATE_5: Math.round(base * 5 * 1.2),
-    PRIVATE_10: Math.round(base * 10 * 1.2),
-  };
+  return Object.fromEntries(
+    FIXTURE_TIERS.map(({ tier }) => [tier, fixturePricing(base, tier).totalPayable]),
+  );
 }
 
-interface FixtureFilm extends Omit<CatalogFilm, "showtimes" | "id"> {
+interface FixtureFilm extends Omit<
+  CatalogFilm,
+  "showtimes" | "id" | "nfvcbCertNumber" | "nfvcbCertUrl"
+> {
   basePrice: number;
   /** Start times as offsets from the anchor */
   screenings: number[];
@@ -45,6 +46,7 @@ const FILMS: FixtureFilm[] = [
     producerName: "Harmattan Pictures",
     trailerUrl: CLIENT_TRAILER,
     posterLandscape: "/placeholder/film-ember-and-ash.jpg",
+    posterFocus: "60% 35%",
     posterPortrait: "/placeholder/film-ember-and-ash.jpg",
     basePrice: 5000,
     screenings: [-22 * MINUTE, 3 * HOUR, DAY + 2 * HOUR],
@@ -76,6 +78,7 @@ const FILMS: FixtureFilm[] = [
     producerName: "Koncave Premieres",
     trailerUrl: null,
     posterLandscape: "/movies/sade-movie-poster.jpg",
+    posterFocus: "45% 30%",
     posterPortrait: "/movies/sade-movie-poster-2.jpg",
     basePrice: 5000,
     screenings: [15 * MINUTE, 4 * HOUR],
@@ -179,6 +182,9 @@ export function buildFixtureCatalog(anchor: number): CatalogFilm[] {
   return FILMS.map(({ basePrice, screenings, ...film }, filmIndex) => ({
     ...film,
     id: `fixture-film-${filmIndex + 1}`,
+    // Fictional certificate numbers in the NFVCB style; no certificate document to link to
+    nfvcbCertNumber: `NFVCB/SAMPLE/2026/${String(filmIndex + 101).padStart(4, "0")}`,
+    nfvcbCertUrl: null,
     showtimes: screenings.map((at, index): CatalogShowtime => {
       const start = base + at;
       return {

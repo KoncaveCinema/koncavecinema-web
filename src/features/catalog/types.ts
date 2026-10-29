@@ -9,7 +9,7 @@ export interface CatalogShowtime {
   endTime: string;
   currency: string;
   basePrice: number;
-  /** Ticket price per tier before the payment processing fee */
+  /** What one booking of each tier costs the buyer (the API's totalPayable) */
   tierPrices: Partial<Record<TicketTier, number>>;
 }
 
@@ -25,9 +25,17 @@ export interface CatalogFilm {
   durationMinutes: number;
   ageRating: AgeRating;
   producerName: string;
+  /** NFVCB classification certificate, once the film has been bound to one */
+  nfvcbCertNumber: string | null;
+  nfvcbCertUrl: string | null;
   trailerUrl: string | null;
   posterLandscape: string;
   posterPortrait: string;
+  /**
+   * Where to centre crops of the landscape art (CSS object-position), so faces stay in frame on
+   * tall cards. Not from the API: art direction, kept with the sample data for now.
+   */
+  posterFocus?: string;
   showtimes: CatalogShowtime[];
 }
 

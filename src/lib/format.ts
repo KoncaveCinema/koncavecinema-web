@@ -97,7 +97,8 @@ export function formatShortDate(iso: string, timeZone?: string): string {
     .toUpperCase();
 }
 
-function dayKey(time: number, timeZone?: string): string {
+/** "2026-10-28": the calendar day of a moment in a timezone, for grouping by day */
+export function dayKey(time: number, timeZone?: string): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: zone(timeZone) }).format(new Date(time));
 }
 

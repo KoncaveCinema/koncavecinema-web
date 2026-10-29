@@ -4,6 +4,7 @@ import { env } from "@/env";
 
 import { getAccessToken, setAccessToken } from "./access-token";
 import { toApiError } from "./errors";
+import { recordServerTime } from "./server-clock";
 import type { ApiEnvelope, Paginated } from "./types";
 
 /**
@@ -38,6 +39,13 @@ apiClient.interceptors.request.use((config) => {
     config.headers.set("Authorization", `Bearer ${token}`);
   }
   return config;
+});
+
+// Every envelope carries the server time: keep the device clock's offset from it
+apiClient.interceptors.response.use((response) => {
+  const body = response.data as { timestamp?: string } | undefined;
+  recordServerTime(body?.timestamp);
+  return response;
 });
 
 apiClient.interceptors.response.use(undefined, async (error: unknown) => {

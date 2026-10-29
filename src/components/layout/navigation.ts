@@ -1,17 +1,17 @@
-/** Primary navigation: sections of the home page until their own pages exist. */
+/** Primary navigation. Signed-in pages never appear here. */
 export const PRIMARY_NAV = [
-  { href: "/#now-showing", label: "Now Showing" },
+  { href: "/movies", label: "Now Showing" },
+  { href: "/showtimes", label: "Showtimes" },
   { href: "/#how-it-works", label: "How It Works" },
-  { href: "/#auditoriums", label: "Auditoriums" },
-  { href: "/#concessions", label: "Concessions" },
+  { href: "/producers", label: "For Filmmakers" },
 ] as const;
 
 export const FOOTER_NAV = [
   {
     title: "Explore",
     links: [
-      { href: "/#now-showing", label: "Now showing" },
-      { href: "/#coming-soon", label: "Coming soon" },
+      { href: "/movies", label: "Now showing" },
+      { href: "/showtimes", label: "Showtimes" },
       { href: "/#how-it-works", label: "How it works" },
       { href: "/#auditoriums", label: "Auditoriums" },
       { href: "/producers", label: "For filmmakers" },
