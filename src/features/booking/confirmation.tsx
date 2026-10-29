@@ -6,7 +6,7 @@ import {
   Copy,
   DoorOpen,
   LoaderCircle,
-  CalendarPlus,
+  Mail,
   Popcorn,
   Share2,
   Ticket,
@@ -35,14 +35,14 @@ import { getTicket, verifyPayment } from "./service";
 const POLL_MS = 3000;
 const POLL_LIMIT = 10;
 
-function InviteLinks({ code, seats }: { code: string; seats: number }) {
+function InviteLinks({ code, seatsLeft }: { code: string; seatsLeft: number }) {
   const link = `${env.NEXT_PUBLIC_APP_URL}/invite/${code}`;
   const [copied, setCopied] = useState(false);
   return (
     <div className="rounded-2xl border border-gold/30 bg-gold/5 p-6">
       <p className="font-display text-lg font-extrabold">Invite your guests</p>
       <p className="mt-2 text-sm text-muted-foreground">
-        Your suite has room for {seats - 1} more. Share this link; each guest signs in and takes a
+        Your suite has room for {seatsLeft} more. Share this link; each guest signs in and takes a
         seat.
       </p>
       <div className="mt-4 flex flex-col gap-3 sm:flex-row">
@@ -116,23 +116,22 @@ function ConfirmationBody({ ticketId, reference }: { ticketId: string; reference
     queryFn: () => verifyPayment(reference, ticketId),
     // Paystack's webhook can lag the redirect: poll while pending; keep retrying network errors
     refetchInterval: (query) =>
-      (query.state.data?.status === "PENDING" && query.state.dataUpdateCount < POLL_LIMIT) ||
+      (query.state.data?.outcome === "PENDING" && query.state.dataUpdateCount < POLL_LIMIT) ||
       (query.state.error && toApiError(query.state.error).is(ErrorCode.NETWORK_ERROR))
         ? POLL_MS
         : false,
     retry: false,
   });
-  // Read in every state: it says whether the hold is still live and, after a success, whether
-  // the seat was actually confirmed
+  // Read in every state: whether the hold is still live, and the pass itself after a success
   const ticket = useQuery({ queryKey: ["ticket", ticketId], queryFn: () => getTicket(ticketId) });
-  const detail = ticket.data?.ticket;
-  const lockExpiresAt = ticket.data?.receipt?.lockExpiresAt;
+  const detail = ticket.data;
+  const lockExpiresAt = detail?.lockExpiresAt;
   const holdLive =
     detail?.status === "RESERVED" &&
     Boolean(lockExpiresAt) &&
     now !== null &&
     Date.parse(lockExpiresAt ?? "") > now + serverOffset();
-  const movieSlug = ticket.data?.movieSlug;
+  const movieSlug = detail?.movieSlug;
   const showtimeHref =
     detail && movieSlug ? "/movies/" + movieSlug + "/showtimes/" + detail.showtimeId : "/showtimes";
   const reviewHref = "/checkout/" + ticketId + "?step=review";
@@ -162,7 +161,9 @@ function ConfirmationBody({ ticketId, reference }: { ticketId: string; reference
     );
   }
 
-  if (payment.isPending || payment.data?.status === "PENDING") {
+  const outcome = payment.data?.outcome;
+
+  if (payment.isPending || outcome === "PENDING") {
     const waitingLong = now !== null && now - startedAt > POLL_MS * POLL_LIMIT;
     if (!waitingLong) {
       return (
@@ -192,7 +193,7 @@ function ConfirmationBody({ ticketId, reference }: { ticketId: string; reference
     );
   }
 
-  if (payment.data?.status === "FAILED") {
+  if (outcome === "FAILED") {
     return (
       <StatePanel
         title="Payment didn’t go through"
@@ -215,11 +216,8 @@ function ConfirmationBody({ ticketId, reference }: { ticketId: string; reference
   }
 
   // Money moved, but a payment that lands after the hold expired confirms no seat
-  const ticketStatus = payment.data?.ticketStatus ?? detail?.status;
-  const refundPending =
-    payment.data?.outcome === "REFUND_PENDING" ||
-    (ticketStatus !== undefined && ticketStatus !== "CONFIRMED" && ticketStatus !== "CHECKED_IN");
-  if (refundPending) {
+  // Money arrived but no pass was confirmed (a duplicate payment, or a lapsed hold)
+  if (outcome === "REFUND_PENDING" || outcome === "REFUNDED") {
     return (
       <StatePanel
         title="Your seat couldn’t be confirmed"
@@ -230,15 +228,15 @@ function ConfirmationBody({ ticketId, reference }: { ticketId: string; reference
         }
       >
         <p>
-          We received your payment, but your hold had expired, so the seat could not be confirmed.
-          We&rsquo;ll refund you in full.
+          {outcome === "REFUNDED"
+            ? "We received your payment, but the seat could not be confirmed, so we have refunded you in full."
+            : "We received your payment, but your hold had expired or was already paid for, so this seat could not be confirmed. We\u2019ll refund you in full and have emailed you the details."}
         </p>
         <SupportLine reference={reference} />
       </StatePanel>
     );
   }
 
-  const receipt = ticket.data?.receipt;
   return (
     <div className="mx-auto max-w-2xl">
       <div className="text-center">
@@ -251,7 +249,7 @@ function ConfirmationBody({ ticketId, reference }: { ticketId: string; reference
         <p className="mt-4 text-muted-foreground">
           Payment received
           {payment.data && ` · ${formatMoney(payment.data.amountPaid, payment.data.currency)}`}.
-          Your seat is confirmed.
+          Your seat is confirmed and we&rsquo;ve emailed your pass.
         </p>
       </div>
 
@@ -262,7 +260,7 @@ function ConfirmationBody({ ticketId, reference }: { ticketId: string; reference
             <div>
               <div className="relative aspect-21/9">
                 <Image
-                  src={detail.posterPortrait}
+                  src={detail.posterLandscape}
                   alt=""
                   fill
                   sizes="(min-width: 640px) 36rem, 100vw"
@@ -320,8 +318,11 @@ function ConfirmationBody({ ticketId, reference }: { ticketId: string; reference
             </div>
           </article>
 
-          {receipt?.roomInviteCode && (
-            <InviteLinks code={receipt.roomInviteCode} seats={receipt.pricing.seatCount} />
+          {detail.isSuiteHost && detail.roomInviteCode && (
+            <InviteLinks
+              code={detail.roomInviteCode}
+              seatsLeft={Math.max(0, (detail.suiteSeats ?? 0) - (detail.suiteSeatsTaken ?? 1))}
+            />
           )}
 
           <section aria-labelledby="next-title">
@@ -331,9 +332,9 @@ function ConfirmationBody({ ticketId, reference }: { ticketId: string; reference
             <ol className="mt-4 grid gap-3 sm:grid-cols-3">
               {[
                 {
-                  icon: CalendarPlus,
-                  title: "Save the date",
-                  body: "Add it to your calendar so the lobby doesn't catch you out.",
+                  icon: Mail,
+                  title: "Check your email",
+                  body: "Your pass, the lobby time and a link back to it are on their way.",
                 },
                 {
                   icon: DoorOpen,
@@ -359,16 +360,19 @@ function ConfirmationBody({ ticketId, reference }: { ticketId: string; reference
           </section>
 
           <div className="flex flex-wrap justify-center gap-3">
-            {ticket.data?.movieSlug && (
+            {detail.movieSlug && (
               <AddToCalendar
                 appearance="label"
                 showtimeId={detail.showtimeId}
                 title={detail.movieTitle}
                 startTime={detail.startTime}
                 endTime={detail.endTime}
-                filmSlug={ticket.data.movieSlug}
+                filmSlug={detail.movieSlug}
               />
             )}
+            <Button asChild size="xl">
+              <Link href={`/account/tickets/${detail.id}`}>View your pass</Link>
+            </Button>
             <Button asChild size="xl" variant="glass">
               <Link href="/showtimes">Browse more showtimes</Link>
             </Button>

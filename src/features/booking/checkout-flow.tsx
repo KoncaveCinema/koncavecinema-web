@@ -334,13 +334,13 @@ function CheckoutSteps({ checkout }: { checkout: Checkout }) {
 }
 
 function CheckoutLoader({ ticketId }: { ticketId: string }) {
-  const { data, isPending } = useQuery({
+  // Rebuilt from GET /tickets/:id on every visit, so a reload or the Paystack redirect keeps it
+  const { data, isPending, isError } = useQuery({
     queryKey: ["checkout", ticketId],
     queryFn: () => getCheckout(ticketId),
-    staleTime: Infinity,
   });
   if (isPending) return <PageSkeleton />;
-  if (!data) {
+  if (isError || !data) {
     return (
       <div className="mx-auto max-w-lg py-16 text-center">
         <p className="font-display text-3xl font-black">We can&rsquo;t find that booking</p>
@@ -350,6 +350,17 @@ function CheckoutLoader({ ticketId }: { ticketId: string }) {
         </p>
         <Button asChild size="xl" className="mt-8">
           <Link href="/showtimes">See showtimes</Link>
+        </Button>
+      </div>
+    );
+  }
+  if (data.receipt.status === "CONFIRMED" || data.receipt.status === "CHECKED_IN") {
+    return (
+      <div className="mx-auto max-w-lg py-16 text-center">
+        <p className="font-display text-3xl font-black">This booking is already paid</p>
+        <p className="mt-3 text-white/60">Your pass for {data.showtime.movieTitle} is ready.</p>
+        <Button asChild size="xl" className="mt-8">
+          <Link href={`/account/tickets/${data.receipt.ticketId}`}>View your pass</Link>
         </Button>
       </div>
     );

@@ -22,7 +22,8 @@ import { cn } from "@/lib/utils";
 
 import { BookingSteps, type BookingStepId } from "./booking-steps";
 import { PriceBreakdown } from "./price-breakdown";
-import { findHeldTicket, rememberShowtime, reserveTicket, snacksAvailable } from "./service";
+import type { HeldTicketDetails } from "./api-types";
+import { heldTicketFrom, rememberShowtime, reserveTicket, snacksAvailable } from "./service";
 import { SummaryBar } from "./summary-bar";
 
 const TIERS = ["INDIVIDUAL", "PUBLIC", "PRIVATE_5", "PRIVATE_10"] as const;
@@ -45,7 +46,7 @@ function errorMessage(code: string): string {
     case ErrorCode.RESERVATION_ALREADY_HELD:
       return "You already have a seat on hold for this showtime.";
     case ErrorCode.RESERVATION_IN_PROGRESS:
-      return "We're already holding a seat for you. One moment, then try again.";
+      return "We're still holding your seat. Try again in a moment.";
     default:
       return "We couldn't hold your seat. Please try again.";
   }
@@ -159,7 +160,7 @@ export function RoomPicker({
   const now = useNow();
   const { status, user } = useSession();
   const [verifying, setVerifying] = useState(false);
-  const [heldTicketId, setHeldTicketId] = useState<string | null>(null);
+  const [held, setHeld] = useState<HeldTicketDetails | null>(null);
   const [room, setRoom] = useQueryState("room", roomParser);
   // A transition, not a flag: it ends by itself once the checkout page has loaded, so coming
   // back to this page (which keeps its state) never finds the button stuck on "Holding…"
@@ -189,7 +190,7 @@ export function RoomPicker({
   function reserve() {
     if (!selected) return;
     setError(null);
-    setHeldTicketId(null);
+    setHeld(null);
     startTransition(async () => {
       try {
         const receipt = await reserveTicket(
@@ -206,14 +207,15 @@ export function RoomPicker({
           setVerifying(true);
           return;
         }
-        if (apiError.is(ErrorCode.RESERVATION_ALREADY_HELD)) {
-          const ticketId = await findHeldTicket(
-            capacity.showtimeId,
-            apiError.details.ticketId,
-          ).catch(() => null);
-          setHeldTicketId(ticketId);
-        }
-        setError(errorMessage(apiError.code));
+        const existing = apiError.is(ErrorCode.RESERVATION_ALREADY_HELD)
+          ? heldTicketFrom(apiError)
+          : null;
+        setHeld(existing);
+        setError(
+          existing && existing.status !== "RESERVED"
+            ? "You already have a pass for this showtime."
+            : errorMessage(apiError.code),
+        );
       }
     });
   }
@@ -287,6 +289,26 @@ export function RoomPicker({
     </div>
   );
 
+  // A failed hold, with the way on when the member already has one. Rendered once per layout:
+  // only one copy is ever visible, so it is announced once
+  const notice = (
+    <div role="alert" className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+      <p className="text-destructive">{error}</p>
+      {held && (
+        <Link
+          href={
+            held.status === "RESERVED"
+              ? `/checkout/${held.ticketId}`
+              : `/account/tickets/${held.ticketId}`
+          }
+          className="font-semibold underline decoration-brand underline-offset-4"
+        >
+          {held.status === "RESERVED" ? "Continue your booking" : "View your pass"}
+        </Link>
+      )}
+    </div>
+  );
+
   return (
     <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_23rem] lg:gap-14">
       <div className="min-w-0">
@@ -301,7 +323,7 @@ export function RoomPicker({
           <BookingSteps
             steps={steps}
             current={verifying ? "identity" : "room"}
-            done={(step) => step === "room" && verifying}
+            done={(step) => (step === "room" && verifying) || (step === "identity" && verified)}
             onSelect={(step) => {
               if (step === "room") setVerifying(false);
             }}
@@ -364,19 +386,8 @@ export function RoomPicker({
             </ul>
           </>
         )}
-        {error && (
-          <div role="alert" className="mt-5 flex flex-wrap items-center gap-3 text-sm">
-            <p className="text-destructive">{error}</p>
-            {heldTicketId && (
-              <Link
-                href={`/checkout/${heldTicketId}`}
-                className="font-semibold underline decoration-brand underline-offset-4"
-              >
-                Continue your booking
-              </Link>
-            )}
-          </div>
-        )}
+        {/* Mobile: under the rooms, just above the bottom bar. Desktop shows it in the panel */}
+        {error && <div className="mt-5 lg:hidden">{notice}</div>}
       </div>
 
       {/* Desktop: the summary and the next step, pinned beside the rooms */}
@@ -395,6 +406,8 @@ export function RoomPicker({
                   : "—"}
               </span>
             </div>
+            {/* Beside the button that caused it, so the answer is where the click was */}
+            {error && <div className="mb-4">{notice}</div>}
             {cta(false)}
             <p className="mt-3 text-center text-xs text-white/45">
               Your seat is held for 10 minutes while you check out.
