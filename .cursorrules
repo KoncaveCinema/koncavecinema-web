@@ -16,9 +16,7 @@
 
 ## 3. Windows Shell Execution
 
-- **CRITICAL**: For all terminal commands on Windows, always prepend `cmd /c`.
-  - Example: `cmd /c npm run build`
-  - Example: `cmd /c npx shadcn@latest add dialog`
+- Run terminal commands directly on Windows (for example `npm run build`); no wrapper is needed.
 
 ## 4. Git & Commit Guidelines
 
