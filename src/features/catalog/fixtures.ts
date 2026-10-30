@@ -29,25 +29,40 @@ interface FixtureFilm extends Omit<CatalogFilm, "showtimes" | "id"> {
   screenings: number[];
 }
 
-// Tears of Steel (Blender Foundation, CC BY 3.0), adaptive HLS with subtitles, hosted by Mux
-const TEST_TRAILER = "https://test-streams.mux.dev/tos_ismc/main.m3u8";
+// The client's teaser, hosted on Mux (public playback ID); plays in our own HLS player
+const CLIENT_TRAILER = "https://stream.mux.com/tgzz2gfKV6uz00p8qW7iJFdirInYmn1dbkd3Yug6hiE00.m3u8";
 
 const FILMS: FixtureFilm[] = [
   {
-    slug: "a-way-to-you",
-    title: "A Way to You",
+    slug: "ember-and-ash",
+    title: "Ember & Ash",
     synopsis:
-      "When an explosive corporate scandal threatens to tear Lagos apart, two estranged " +
-      "lovers—now rival defense attorneys—find themselves pitted against each other in the " +
-      "courtroom, where winning the case might mean losing each other forever.",
-    durationMinutes: 116,
-    ageRating: "FIFTEEN_PLUS",
-    producerName: "Koncave Studios",
-    trailerUrl: "https://streamable.com/0icrxw",
-    posterLandscape: "/movies/a-way-to-you-movie-poster.png",
-    posterPortrait: "/movies/a-way-to-you-movie-poster.png",
+      "When her brother vanishes owing the wrong men, a Lagos fashion buyer follows his trail " +
+      "through the city's night markets and boardrooms, and learns how far she will go to bring " +
+      "him home.",
+    durationMinutes: 118,
+    ageRating: "EIGHTEEN_PLUS",
+    producerName: "Harmattan Pictures",
+    trailerUrl: CLIENT_TRAILER,
+    posterLandscape: "/placeholder/film-ember-and-ash.jpg",
+    posterPortrait: "/placeholder/film-ember-and-ash.jpg",
     basePrice: 5000,
-    screenings: [-20 * MINUTE, 3 * HOUR, DAY + 2 * HOUR],
+    screenings: [-22 * MINUTE, 3 * HOUR, DAY + 2 * HOUR],
+  },
+  {
+    slug: "lagos-after-dark",
+    title: "Lagos After Dark",
+    synopsis:
+      "A night-shift ride-hailing driver picks up a passenger who will not say where she is " +
+      "going, only that they must not stop before dawn.",
+    durationMinutes: 104,
+    ageRating: "FIFTEEN_PLUS",
+    producerName: "Third Mainland Films",
+    trailerUrl: CLIENT_TRAILER,
+    posterLandscape: "/placeholder/film-lagos-after-dark.jpg",
+    posterPortrait: "/placeholder/film-lagos-after-dark.jpg",
+    basePrice: 4500,
+    screenings: [14 * MINUTE, 2 * HOUR + 40 * MINUTE],
   },
   {
     slug: "sade",
@@ -60,57 +75,10 @@ const FILMS: FixtureFilm[] = [
     ageRating: "EIGHTEEN_PLUS",
     producerName: "Koncave Premieres",
     trailerUrl: null,
-    posterLandscape: "/movies/sade-movie-poster.png",
-    posterPortrait: "/movies/sade-movie-poster-2.png",
+    posterLandscape: "/movies/sade-movie-poster.jpg",
+    posterPortrait: "/movies/sade-movie-poster-2.jpg",
     basePrice: 5000,
     screenings: [15 * MINUTE, 4 * HOUR],
-  },
-  {
-    slug: "zaras-diary",
-    title: "Zara's Diary",
-    synopsis:
-      "When a missing young woman’s private diary containing explosive confessions falls into " +
-      "the wrong hands, a relentless father is thrust into a fiery underworld where every page " +
-      "reveals a deadly truth.",
-    durationMinutes: 112,
-    ageRating: "FIFTEEN_PLUS",
-    producerName: "Koncave Premieres",
-    trailerUrl: null,
-    posterLandscape: "/movies/zaras-diary-movie-poster-2.png",
-    posterPortrait: "/movies/zaras-diary-movie-poster.png",
-    basePrice: 5000,
-    screenings: [50 * MINUTE, 6 * HOUR],
-  },
-  {
-    slug: "ember-and-ash",
-    title: "Ember & Ash",
-    synopsis:
-      "When her brother vanishes owing the wrong men, a Lagos fashion buyer follows his trail " +
-      "through the city's night markets and boardrooms, and learns how far she will go to bring " +
-      "him home.",
-    durationMinutes: 118,
-    ageRating: "EIGHTEEN_PLUS",
-    producerName: "Harmattan Pictures",
-    trailerUrl: TEST_TRAILER,
-    posterLandscape: "/placeholder/film-ember-and-ash.jpg",
-    posterPortrait: "/placeholder/film-ember-and-ash.jpg",
-    basePrice: 5000,
-    screenings: [2 * HOUR + 30 * MINUTE, DAY + 4 * HOUR],
-  },
-  {
-    slug: "lagos-after-dark",
-    title: "Lagos After Dark",
-    synopsis:
-      "A night-shift ride-hailing driver picks up a passenger who will not say where she is " +
-      "going, only that they must not stop before dawn.",
-    durationMinutes: 104,
-    ageRating: "FIFTEEN_PLUS",
-    producerName: "Third Mainland Films",
-    trailerUrl: TEST_TRAILER,
-    posterLandscape: "/placeholder/film-lagos-after-dark.jpg",
-    posterPortrait: "/placeholder/film-lagos-after-dark.jpg",
-    basePrice: 4500,
-    screenings: [2 * DAY + 1 * HOUR, 3 * DAY + 4 * HOUR],
   },
   {
     slug: "love-in-seclusion",
@@ -125,7 +93,7 @@ const FILMS: FixtureFilm[] = [
     posterLandscape: "/placeholder/film-love-in-seclusion.jpg",
     posterPortrait: "/placeholder/film-love-in-seclusion.jpg",
     basePrice: 3500,
-    screenings: [3 * DAY + 2 * HOUR, 4 * DAY + 4 * HOUR],
+    screenings: [48 * MINUTE, DAY + 4 * HOUR],
   },
   {
     slug: "city-of-dust",
@@ -140,7 +108,7 @@ const FILMS: FixtureFilm[] = [
     posterLandscape: "/placeholder/film-city-of-dust.jpg",
     posterPortrait: "/placeholder/poster-city-of-dust.jpg",
     basePrice: 6000,
-    screenings: [4 * DAY + 6 * HOUR, 5 * DAY + 5 * HOUR],
+    screenings: [DAY + 6 * HOUR, 2 * DAY + 5 * HOUR],
   },
   {
     slug: "red-soil",
