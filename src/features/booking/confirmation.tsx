@@ -11,7 +11,7 @@ import { AddToCalendar } from "@/components/cinema/add-to-calendar";
 import { LocalTime } from "@/components/cinema/live-time";
 import { Button } from "@/components/ui/button";
 import { PageSkeleton, RequireSession } from "@/features/auth/require-session";
-import { lobbyOpensAt } from "@/features/catalog/screening";
+import { lobbyOpensAt } from "@/lib/screening-window";
 import { AUDITORIUMS } from "@/features/home/auditoriums/halls";
 import { SUPPORT_EMAIL } from "@/features/support/content";
 import { useNow } from "@/hooks/use-now";

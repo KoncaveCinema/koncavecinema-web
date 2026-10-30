@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import type { TicketDetail } from "@/features/booking/api-types";
 
-import { googleCalendarUrl, icsFor } from "./pass-view";
+import { buildIcs, googleCalendarUrl } from "@/lib/ics";
+
+import { passEvent } from "./pass-view";
 import { ticketView } from "./ticket-state";
 
 const MINUTE = 60_000;
@@ -100,7 +102,7 @@ describe("calendar", () => {
   const appUrl = "https://www.koncavecinema.com";
 
   it("writes a standard event with the times in UTC and a reminder as the lobby opens", () => {
-    const ics = icsFor(ticket(), appUrl, new Date(start - 86_400_000).toISOString());
+    const ics = buildIcs(passEvent(ticket(), appUrl), new Date(start - 86_400_000).toISOString());
     expect(ics).toContain("DTSTART:20261106T180000Z");
     expect(ics).toContain("DTEND:20261106T195800Z");
     expect(ics).toContain("SUMMARY:Ember & Ash on Koncave Cinema");
@@ -110,12 +112,12 @@ describe("calendar", () => {
   });
 
   it("escapes punctuation iCalendar reserves", () => {
-    const ics = icsFor(ticket({ movieTitle: "Love, Again; Part 2" }), appUrl);
+    const ics = buildIcs(passEvent(ticket({ movieTitle: "Love, Again; Part 2" }), appUrl));
     expect(ics).toContain("SUMMARY:Love\\, Again\\; Part 2 on Koncave Cinema");
   });
 
   it("links to Google Calendar with the same times", () => {
-    const url = new URL(googleCalendarUrl(ticket(), appUrl));
+    const url = new URL(googleCalendarUrl(passEvent(ticket(), appUrl)));
     expect(url.searchParams.get("dates")).toBe("20261106T180000Z/20261106T195800Z");
     expect(url.searchParams.get("text")).toBe("Ember & Ash on Koncave Cinema");
   });

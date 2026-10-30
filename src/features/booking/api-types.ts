@@ -1,6 +1,6 @@
 /** koncavecinema-api ticketing and payment shapes, field for field. */
 import type { ApiPricingBreakdown } from "@/features/catalog/api-types";
-import type { TicketTier } from "@/features/catalog/types";
+import type { TicketTier } from "@/types/domain";
 
 export type TicketStatus = "RESERVED" | "CONFIRMED" | "CHECKED_IN" | "EXPIRED" | "CANCELLED";
 export type PaymentStatus = "PENDING" | "SUCCESS" | "FAILED" | "REFUNDED";

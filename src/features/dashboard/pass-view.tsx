@@ -24,7 +24,7 @@ import { ErrorCode, toApiError } from "@/lib/api";
 import { formatCountdown, formatMoney } from "@/lib/format";
 
 import { useServerNow } from "@/hooks/use-now";
-import { buildIcs, type CalendarEvent } from "@/lib/ics";
+import { downloadIcs, googleCalendarUrl, type CalendarEvent } from "@/lib/ics";
 
 import { useSuiteGuests, useTicket } from "./queries";
 import { ticketView } from "./ticket-state";
@@ -32,7 +32,8 @@ import { ticketView } from "./ticket-state";
 /* "Add to calendar" for a pass, built in the browser: an .ics file every calendar app opens,
    and a Google Calendar link. No third party sees the booking until the member chooses. */
 
-function passEvent(ticket: TicketDetail, appUrl: string): CalendarEvent {
+/** A pass as a calendar event, with a reminder when the lobby opens */
+export function passEvent(ticket: TicketDetail, appUrl: string): CalendarEvent {
   const watchUrl = new URL(`/watch/${ticket.id}`, appUrl).toString();
   return {
     uid: `pass-${ticket.id}`,
@@ -45,40 +46,6 @@ function passEvent(ticket: TicketDetail, appUrl: string): CalendarEvent {
     // When the lobby opens
     reminderMinutes: 30,
   };
-}
-
-/** The pass as an iCalendar event */
-export function icsFor(ticket: TicketDetail, appUrl: string, stamp?: string): string {
-  return buildIcs(passEvent(ticket, appUrl), stamp);
-}
-
-/** "20261106T180000Z", as Google Calendar's `dates` expects */
-const googleTime = (iso: string) =>
-  new Date(iso)
-    .toISOString()
-    .replace(/[-:]/g, "")
-    .replace(/\.\d{3}/, "");
-
-/** A link that opens Google Calendar with the screening filled in */
-export function googleCalendarUrl(ticket: TicketDetail, appUrl: string): string {
-  const event = passEvent(ticket, appUrl);
-  const url = new URL("https://calendar.google.com/calendar/render");
-  url.searchParams.set("action", "TEMPLATE");
-  url.searchParams.set("text", event.title);
-  url.searchParams.set("dates", `${googleTime(event.start)}/${googleTime(event.end)}`);
-  url.searchParams.set("details", event.description ?? "");
-  return url.toString();
-}
-
-/** Saves the pass's .ics file through the browser's download. */
-function downloadIcs(ticket: TicketDetail, appUrl: string) {
-  const blob = new Blob([icsFor(ticket, appUrl)], { type: "text/calendar;charset=utf-8" });
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = `${ticket.movieSlug}-${ticket.seatIdentifier}.ics`;
-  link.click();
-  // Revoke after the download has started (immediate revocation cancels it in some browsers)
-  setTimeout(() => URL.revokeObjectURL(link.href), 10_000);
 }
 
 /**
@@ -402,7 +369,10 @@ export function PassView({ params }: { params: Promise<{ ticketId: string }> }) 
                 <Button
                   variant="outline"
                   onClick={() => {
-                    downloadIcs(detail, env.NEXT_PUBLIC_APP_URL);
+                    downloadIcs(
+                      passEvent(detail, env.NEXT_PUBLIC_APP_URL),
+                      `${detail.movieSlug}-${detail.seatIdentifier}`,
+                    );
                     toast.success("Calendar file saved", {
                       description: "Open it to add the screening, with a reminder at the lobby.",
                     });
@@ -413,7 +383,7 @@ export function PassView({ params }: { params: Promise<{ ticketId: string }> }) 
                 </Button>
                 <Button asChild variant="outline">
                   <a
-                    href={googleCalendarUrl(detail, env.NEXT_PUBLIC_APP_URL)}
+                    href={googleCalendarUrl(passEvent(detail, env.NEXT_PUBLIC_APP_URL))}
                     target="_blank"
                     rel="noreferrer"
                   >

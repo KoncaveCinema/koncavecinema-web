@@ -1,6 +1,6 @@
 "use client";
 
-import { screeningPhase } from "@/features/catalog/screening";
+import { screeningPhase } from "@/lib/screening-window";
 import { formatClock, formatCountdown, formatElapsed, formatShowtime } from "@/lib/format";
 import { useNow, useViewerTimeZone } from "@/hooks/use-now";
 import { cn } from "@/lib/utils";

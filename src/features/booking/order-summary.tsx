@@ -9,7 +9,8 @@ import { formatMoney } from "@/lib/format";
 
 import { HoldTimer } from "./hold-timer";
 import { PriceBreakdown } from "./price-breakdown";
-import { quoteCheckout, type Checkout } from "./service";
+import { quoteCheckout } from "./service";
+import type { Checkout } from "./types";
 
 /** The total the viewer will pay, from the quote (never added up here) */
 export function checkoutTotal(checkout: Checkout, concessions: ConcessionQuote | null) {

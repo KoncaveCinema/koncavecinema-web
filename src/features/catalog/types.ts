@@ -1,6 +1,4 @@
-import type { AgeRating } from "@/lib/format";
-
-export type TicketTier = "INDIVIDUAL" | "PUBLIC" | "PRIVATE_5" | "PRIVATE_10";
+import type { AgeRating, TicketTier } from "@/types/domain";
 
 /** A showtime as the API returns it (GET /movies/:slug), with tier prices from its capacity endpoint. */
 export interface CatalogShowtime {

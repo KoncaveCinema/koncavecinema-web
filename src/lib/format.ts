@@ -3,6 +3,8 @@
  * the server and the client.
  */
 
+import type { AgeRating } from "@/types/domain";
+
 /* Money */
 
 const formatters = new Map<string, Intl.NumberFormat>();
@@ -51,12 +53,6 @@ export function formatMoneyExact(amount: number | string, currency = "NGN"): str
 }
 
 /* NFVCB ratings */
-
-/**
- * National Film and Video Censors Board classifications (NFVCB Act No. 85), as stored by the
- * API. Nigerian releases never carry US ratings such as PG-13.
- */
-export type AgeRating = "G" | "PG" | "TWELVE_PLUS" | "FIFTEEN_PLUS" | "EIGHTEEN_PLUS";
 
 const RATINGS: Record<AgeRating, { label: string; description: string }> = {
   G: { label: "G", description: "General exhibition" },

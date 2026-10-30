@@ -2,10 +2,13 @@
 
 import { Clapperboard, Home, Settings, Ticket } from "lucide-react";
 
-import { BottomTabs } from "@/components/console/console-nav";
-import type { NavItem, NavSection } from "@/components/console/console-nav";
-import { NavTrail } from "@/components/console/console-nav";
-import { SidebarNav } from "@/components/console/console-nav";
+import {
+  BottomTabs,
+  NavTrail,
+  type NavItem,
+  type NavSection,
+} from "@/components/console/console-nav";
+import { SidebarNav } from "@/components/console/sidebar";
 
 import { useMyTickets } from "./queries";
 

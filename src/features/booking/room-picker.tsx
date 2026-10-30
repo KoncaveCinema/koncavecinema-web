@@ -12,13 +12,13 @@ import { Button } from "@/components/ui/button";
 import { IdentityCheck } from "@/features/auth/identity-check";
 import { useSession } from "@/features/auth/session";
 import type { ApiShowtimeCapacity, ApiTierCapacity } from "@/features/catalog/api-types";
-import { lobbyOpensAt, screeningPhase } from "@/features/catalog/screening";
-import type { TicketTier } from "@/features/catalog/types";
+import { lobbyOpensAt, screeningPhase } from "@/lib/screening-window";
 import { AUDITORIUMS } from "@/features/home/auditoriums/halls";
 import { useNow } from "@/hooks/use-now";
 import { ErrorCode, newIdempotencyKey, toApiError } from "@/lib/api";
 import { formatMoney, formatRuntime } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import type { TicketTier } from "@/types/domain";
 
 import { BookingSteps, type BookingStepId } from "./booking-steps";
 import { PriceBreakdown } from "./price-breakdown";

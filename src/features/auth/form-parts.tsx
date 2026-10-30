@@ -3,10 +3,10 @@
 import { Check, Eye, EyeOff, FlaskConical } from "lucide-react";
 import { forwardRef, useState, type ComponentProps, type ReactNode } from "react";
 
+import { isDemo } from "@/lib/demo";
 import { cn } from "@/lib/utils";
 
 import { PASSWORD_RULES } from "./schemas";
-import { isDemo } from "./service";
 
 /* Form pieces shared by the sign-in, registration, password and identity-check forms. */
 

@@ -1,5 +1,6 @@
+import type { TicketTier } from "@/types/domain";
 import { FIXTURE_TIERS, fixturePricing } from "./fixture-pricing";
-import type { CatalogFilm, CatalogShowtime, TicketTier } from "./types";
+import type { CatalogFilm, CatalogShowtime } from "./types";
 
 /**
  * Sample catalog for development, design review and screenshots (NEXT_PUBLIC_DATA_SOURCE=fixtures).

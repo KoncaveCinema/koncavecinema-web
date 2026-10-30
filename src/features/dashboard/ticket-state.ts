@@ -1,11 +1,9 @@
 import type { StatusKind } from "@/components/console/status-badge";
 import type { TicketDetail } from "@/features/booking/api-types";
+import { watchableUntil } from "@/lib/screening-window";
 
 /* What a pass is right now, and the one thing to do next with it. One function, so the
    dashboard home, the tickets list and the pass page always agree. */
-
-/** A screening stays watchable until 15 minutes after it ends (the API's hard cutoff) */
-const CUTOFF_MS = 15 * 60_000;
 
 export type TicketPhase =
   "hold" | "hold-expired" | "upcoming" | "lobby" | "live" | "ended" | "cancelled";
@@ -31,7 +29,7 @@ export function ticketView(ticket: TicketDetail, now: number): TicketView {
   const pass = `/dashboard/tickets/${ticket.id}`;
   const watch = `/watch/${ticket.id}`;
   const start = Date.parse(ticket.startTime);
-  const cutoff = Date.parse(ticket.endTime) + CUTOFF_MS;
+  const cutoff = watchableUntil(ticket);
   const showtimePage = `/movies/${ticket.movieSlug}/showtimes/${ticket.showtimeId}`;
 
   if (ticket.status === "CANCELLED") {

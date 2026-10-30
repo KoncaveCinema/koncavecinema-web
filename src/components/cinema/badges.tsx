@@ -1,5 +1,6 @@
-import { type AgeRating, formatMoney, ratingDescription, ratingLabel } from "@/lib/format";
+import { formatMoney, ratingDescription, ratingLabel } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import type { AgeRating } from "@/types/domain";
 
 /* Small labels used on cards and the billboard: the NFVCB rating and the starting price. */
 

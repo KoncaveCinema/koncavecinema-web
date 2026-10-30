@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 
 import type { ApiScheduleShowtime } from "./api-types";
 import { DateStrip, type StripDay } from "./date-strip";
-import { screeningPhase } from "./screening";
+import { screeningPhase } from "@/lib/screening-window";
 import { ShowtimeChip } from "./showtime-chip";
 
 /*
