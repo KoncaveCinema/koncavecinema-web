@@ -1,26 +1,5 @@
-import type { CatalogFilm, CatalogShowtime, Screening, TicketTier } from "./types";
-
-/** The lobby opens 30 minutes before the start (API Phase 5 screening window). */
-export const LOBBY_OPENS_BEFORE_MS = 30 * 60_000;
-
-export type ScreeningPhase = "upcoming" | "lobby" | "live" | "ended";
-
-/** Where a showtime is in its lifecycle at `now`. */
-export function screeningPhase(
-  showtime: Pick<CatalogShowtime, "startTime" | "endTime">,
-  now: number,
-): ScreeningPhase {
-  const start = Date.parse(showtime.startTime);
-  const end = Date.parse(showtime.endTime);
-  if (now >= end) return "ended";
-  if (now >= start) return "live";
-  if (now >= start - LOBBY_OPENS_BEFORE_MS) return "lobby";
-  return "upcoming";
-}
-
-export function lobbyOpensAt(showtime: Pick<CatalogShowtime, "startTime">): string {
-  return new Date(Date.parse(showtime.startTime) - LOBBY_OPENS_BEFORE_MS).toISOString();
-}
+import type { TicketTier } from "@/types/domain";
+import type { CatalogFilm, CatalogShowtime, Screening } from "./types";
 
 /** Showtimes that have not finished, soonest first. No clock needed: compares to `endTime` later. */
 export function sortedShowtimes(film: CatalogFilm): CatalogShowtime[] {

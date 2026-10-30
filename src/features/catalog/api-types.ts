@@ -1,10 +1,8 @@
+import type { AgeRating, TicketTier } from "@/types/domain";
 /**
  * koncavecinema-api response shapes for the catalog, field for field (movies, showtimes,
  * capacity, schedule). Replace with the generated types from `npm run api:types` once they exist.
  */
-import type { AgeRating } from "@/lib/format";
-
-import type { TicketTier } from "./types";
 
 /**
  * The one customer-facing price formula (API `common/money/pricing.ts`). Every amount the

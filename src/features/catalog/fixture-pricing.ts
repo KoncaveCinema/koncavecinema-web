@@ -1,5 +1,5 @@
+import type { TicketTier } from "@/types/domain";
 import type { ApiPricingBreakdown } from "./api-types";
-import type { TicketTier } from "./types";
 
 /*
  * Sample data only (NEXT_PUBLIC_DATA_SOURCE=fixtures). A copy of the API's single price formula

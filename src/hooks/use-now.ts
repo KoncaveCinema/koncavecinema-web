@@ -2,6 +2,8 @@
 
 import { useSyncExternalStore } from "react";
 
+import { serverOffset } from "@/lib/api";
+
 /**
  * One clock for the whole page. Every countdown subscribes to the same one-second tick, so
  * twenty showtime cards cost one timer, and the tick stops while the tab is hidden.
@@ -70,4 +72,14 @@ export function useNow(): number | null {
 export function useViewerTimeZone(): string | undefined {
   const current = useNow();
   return current === null ? undefined : Intl.DateTimeFormat().resolvedOptions().timeZone;
+}
+
+/**
+ * The time on the server's clock, ticking every second: holds, lobbies and screenings open by
+ * the API's time, so a phone with a wrong clock still shows the truth. Null before the page is
+ * interactive.
+ */
+export function useServerNow(): number | null {
+  const now = useNow();
+  return now === null ? null : now + serverOffset();
 }

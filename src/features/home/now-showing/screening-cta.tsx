@@ -4,7 +4,7 @@ import { Ticket } from "lucide-react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
-import { screeningPhase } from "@/features/catalog/screening";
+import { screeningPhase } from "@/lib/screening-window";
 import { formatMoney } from "@/lib/format";
 import { useNow } from "@/hooks/use-now";
 

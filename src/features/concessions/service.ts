@@ -1,5 +1,5 @@
-import { env } from "@/env";
 import { api } from "@/lib/api";
+import { demoDelay, isDemo } from "@/lib/demo";
 
 import type {
   AddressValidation,
@@ -13,8 +13,6 @@ import type {
  * check stand in for the API; the amounts are worked out here, playing the API's part, so the
  * interface only ever displays them.
  */
-
-const demo = env.NEXT_PUBLIC_DATA_SOURCE === "fixtures";
 
 /** Orders close 50 minutes before the start, when the kitchen dispatches (API phase 7) */
 export const DISPATCH_LEAD_MS = 50 * 60_000;
@@ -96,18 +94,16 @@ const DEMO_ZONES = [
   { match: /port harcourt|rumuola|gra/i, city: "Port Harcourt", fee: 1400 },
 ];
 
-const wait = (ms = 350) => new Promise((resolve) => setTimeout(resolve, ms));
-
 export async function getMenu(): Promise<ConcessionMenuItem[]> {
-  if (demo) return MENU;
+  if (isDemo) return MENU;
   return api.get<ConcessionMenuItem[]>("/concessions/catalog");
 }
 
 export async function validateAddress(address: string): Promise<AddressValidation> {
-  if (!demo) {
+  if (!isDemo) {
     return api.post<AddressValidation>("/concessions/validate-address", { address });
   }
-  await wait(600);
+  await demoDelay(600);
   const zone = DEMO_ZONES.find((candidate) => candidate.match.test(address));
   return {
     isServiceable: Boolean(zone),
@@ -128,8 +124,8 @@ export async function quoteOrder(params: {
   lines: ConcessionLine[];
   deliveryFee: number;
 }): Promise<ConcessionQuote> {
-  if (!demo) return api.post<ConcessionQuote>("/concessions/quote", params);
-  await wait(150);
+  if (!isDemo) return api.post<ConcessionQuote>("/concessions/quote", params);
+  await demoDelay(150);
   const items = params.lines.flatMap((line) => {
     const item = MENU.find((candidate) => candidate.id === line.menuItemId);
     if (!item || line.quantity < 1) return [];

@@ -6,7 +6,7 @@ import { PriceFrom } from "@/components/cinema/badges";
 import { SectionHeading } from "@/components/cinema/section-heading";
 import { getCatalog } from "@/features/catalog/get-catalog";
 import { lowestPrice } from "@/features/catalog/screening";
-import type { TicketTier } from "@/features/catalog/types";
+import type { TicketTier } from "@/types/domain";
 
 import { HallPreview } from "./hall-preview";
 import { AUDITORIUMS } from "./halls";

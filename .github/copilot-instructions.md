@@ -8,7 +8,7 @@
    - Wait for explicit user confirmation before writing files or running terminal scripts.
 
 2. **Windows Shell Rule**:
-   - Always prepend `cmd /c` to all terminal commands to prevent ConPTY pipe hangs on Windows.
+   - Run terminal commands directly; no wrapper is needed.
 
 3. **Git Standards**:
    - Conventional Commits (`feat:`, `fix:`, `refactor:`, `docs:`, `chore:`).

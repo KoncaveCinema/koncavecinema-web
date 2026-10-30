@@ -20,7 +20,7 @@ import { use, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { IdentityCheck } from "@/features/auth/identity-check";
 import { PageSkeleton, RequireSession } from "@/features/auth/require-session";
-import { isDemo } from "@/features/auth/service";
+import { isDemo } from "@/lib/demo";
 import { useSession } from "@/features/auth/session";
 import { useConcessionDraft } from "@/features/concessions/cart";
 import { SnackPicker } from "@/features/concessions/snack-picker";
@@ -31,13 +31,9 @@ import { formatMoney } from "@/lib/format";
 import { BookingSteps, STEP_LABELS, type BookingStepId } from "./booking-steps";
 import { useHoldExpired } from "./hold-timer";
 import { checkoutTotal, OrderSummaryContent } from "./order-summary";
-import {
-  demoReference,
-  getCheckout,
-  releaseTicket,
-  snacksAvailable,
-  type Checkout,
-} from "./service";
+import { demoReference } from "./demo";
+import { getCheckout, releaseTicket, snacksAvailable } from "./service";
+import type { Checkout } from "./types";
 import { SummaryBar } from "./summary-bar";
 
 const FLOW_STEPS = ["identity", "snacks", "review"] as const;
@@ -360,7 +356,7 @@ function CheckoutLoader({ ticketId }: { ticketId: string }) {
         <p className="font-display text-3xl font-black">This booking is already paid</p>
         <p className="mt-3 text-white/60">Your pass for {data.showtime.movieTitle} is ready.</p>
         <Button asChild size="xl" className="mt-8">
-          <Link href={`/account/tickets/${data.receipt.ticketId}`}>View your pass</Link>
+          <Link href={`/dashboard/tickets/${data.receipt.ticketId}`}>View your pass</Link>
         </Button>
       </div>
     );

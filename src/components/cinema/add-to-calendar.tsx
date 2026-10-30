@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { env } from "@/env";
-import { buildIcs } from "@/lib/ics";
+import { downloadIcs } from "@/lib/ics";
 import { cn } from "@/lib/utils";
 
 interface AddToCalendarProps {
@@ -35,22 +35,19 @@ export function AddToCalendar({
 }: AddToCalendarProps) {
   function download() {
     const url = `${env.NEXT_PUBLIC_APP_URL}/movies/${filmSlug}`;
-    const ics = buildIcs({
-      uid: `showtime-${showtimeId}`,
-      title: `${title} · Koncave Cinema premiere`,
-      start: startTime,
-      end: endTime,
-      description: `The lobby opens 30 minutes before the start. Your pass: ${url}`,
-      url,
-      location: "Koncave Cinema (online)",
-      reminderMinutes: 30,
-    });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(new Blob([ics], { type: "text/calendar;charset=utf-8" }));
-    link.download = `${filmSlug}.ics`;
-    link.click();
-    // Revoke after the download has started (immediate revocation cancels it in some browsers)
-    setTimeout(() => URL.revokeObjectURL(link.href), 10_000);
+    downloadIcs(
+      {
+        uid: `showtime-${showtimeId}`,
+        title: `${title} · Koncave Cinema premiere`,
+        start: startTime,
+        end: endTime,
+        description: `The lobby opens 30 minutes before the start. Your pass: ${url}`,
+        url,
+        location: "Koncave Cinema (online)",
+        reminderMinutes: 30,
+      },
+      filmSlug,
+    );
     toast.success("Added to your calendar", {
       description: "We'll remind you when the lobby opens.",
     });

@@ -73,3 +73,26 @@ export function buildIcs(event: CalendarEvent, stamp: string = new Date().toISOS
 
   return lines.map(fold).join("\r\n") + "\r\n";
 }
+
+/** A link that opens Google Calendar with the event filled in. */
+export function googleCalendarUrl(event: CalendarEvent): string {
+  const url = new URL("https://calendar.google.com/calendar/render");
+  url.searchParams.set("action", "TEMPLATE");
+  url.searchParams.set("text", event.title);
+  url.searchParams.set("dates", `${toIcsDate(event.start)}/${toIcsDate(event.end)}`);
+  if (event.description) url.searchParams.set("details", event.description);
+  if (event.location) url.searchParams.set("location", event.location);
+  return url.toString();
+}
+
+/** Saves the event as an .ics file through the browser's download (browser only). */
+export function downloadIcs(event: CalendarEvent, filename: string) {
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(
+    new Blob([buildIcs(event)], { type: "text/calendar;charset=utf-8" }),
+  );
+  link.download = filename.endsWith(".ics") ? filename : `${filename}.ics`;
+  link.click();
+  // Revoke after the download has started (immediate revocation cancels it in some browsers)
+  setTimeout(() => URL.revokeObjectURL(link.href), 10_000);
+}

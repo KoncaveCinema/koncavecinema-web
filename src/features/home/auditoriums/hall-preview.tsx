@@ -1,8 +1,8 @@
 import { Mic, MicOff, Pause, ShieldCheck, UserPlus, Volume2 } from "lucide-react";
 import Image from "next/image";
 
-import type { TicketTier } from "@/features/catalog/types";
 import { cn } from "@/lib/utils";
+import type { TicketTier } from "@/types/domain";
 
 /*
  * Faithful previews of each hall's interface, in plain HTML and CSS, for the "Peek inside"

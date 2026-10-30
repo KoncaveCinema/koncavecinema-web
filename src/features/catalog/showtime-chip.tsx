@@ -7,7 +7,7 @@ import { useNow, useViewerTimeZone } from "@/hooks/use-now";
 import { formatClock, formatMoney, formatRelativeDay } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-import { screeningPhase } from "./screening";
+import { screeningPhase } from "@/lib/screening-window";
 
 /**
  * One showtime as a bookable chip: the time large, the price under it, and the screening state

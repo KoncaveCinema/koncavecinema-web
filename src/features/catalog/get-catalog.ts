@@ -4,10 +4,11 @@ import { cacheLife, cacheTag } from "next/cache";
 
 import { env } from "@/env";
 import { serverApi } from "@/lib/api/server";
+import type { TicketTier } from "@/types/domain";
 
 import type { ApiMovieDetail, ApiMovieListItem, ApiShowtimeCapacity } from "./api-types";
-import { buildFixtureCatalog } from "./fixtures";
-import type { Catalog, CatalogFilm, CatalogShowtime, TicketTier } from "./types";
+import { buildFixtureCatalog } from "./fixture-films";
+import type { Catalog, CatalogFilm, CatalogShowtime } from "./types";
 
 // Capacity is fetched per showtime; cap the fan-out so a large catalog never floods the API
 const MAX_CAPACITY_LOOKUPS = 24;

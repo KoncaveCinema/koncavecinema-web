@@ -1,11 +1,12 @@
 "use client";
 
-import { Eye, EyeOff, FlaskConical } from "lucide-react";
+import { Check, Eye, EyeOff, FlaskConical } from "lucide-react";
 import { forwardRef, useState, type ComponentProps, type ReactNode } from "react";
 
+import { isDemo } from "@/lib/demo";
 import { cn } from "@/lib/utils";
 
-import { isDemo } from "./service";
+import { PASSWORD_RULES } from "./schemas";
 
 /* Form pieces shared by the sign-in, registration, password and identity-check forms. */
 
@@ -60,6 +61,29 @@ export const PasswordInput = forwardRef<HTMLInputElement, ComponentProps<"input"
     );
   },
 );
+
+/** The password rules as a live checklist under a new-password field */
+export function PasswordChecklist({ id, password }: { id: string; password: string }) {
+  return (
+    <ul id={id} className="mt-3 grid grid-cols-1 gap-x-4 gap-y-2 text-xs min-[380px]:grid-cols-2">
+      {PASSWORD_RULES.map((rule) => {
+        const met = rule.test(password);
+        return (
+          <li
+            key={rule.label}
+            className={cn(
+              "flex items-center gap-1.5",
+              met ? "text-lobby" : "text-muted-foreground",
+            )}
+          >
+            <Check className={cn("size-3.5", !met && "opacity-30")} />
+            {rule.label}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
 
 /** Sample-data mode only: how to reach each state without the API */
 export function DemoHint({ children }: { children: ReactNode }) {

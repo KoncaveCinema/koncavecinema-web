@@ -1,6 +1,6 @@
 /** koncavecinema-api ticketing and payment shapes, field for field. */
 import type { ApiPricingBreakdown } from "@/features/catalog/api-types";
-import type { TicketTier } from "@/features/catalog/types";
+import type { TicketTier } from "@/types/domain";
 
 export type TicketStatus = "RESERVED" | "CONFIRMED" | "CHECKED_IN" | "EXPIRED" | "CANCELLED";
 export type PaymentStatus = "PENDING" | "SUCCESS" | "FAILED" | "REFUNDED";
@@ -54,6 +54,27 @@ export interface TicketDetail {
   suiteSeats: number | null;
   /** Admitted members, the host included */
   suiteSeatsTaken: number | null;
+  /**
+   * Proposed to the backend (gap B2), not sent by the API yet; the demo fills them. Why a
+   * CANCELLED pass was cancelled, and what happened to its payment.
+   */
+  cancellation?: TicketCancellation | null;
+  refund?: TicketRefund | null;
+}
+
+/** Proposed (gap B2): a cancelled pass's reason. `message` is the reason staff gave */
+export interface TicketCancellation {
+  reason: "SHOWTIME_CANCELLED" | "CANCELLED_BY_SUPPORT";
+  message: string | null;
+  cancelledAt: string;
+}
+
+/** Proposed (gap B2): money owed back for a pass, and whether it has been returned */
+export interface TicketRefund {
+  state: "PENDING" | "REFUNDED";
+  amount: number;
+  currency: string;
+  refundedAt: string | null;
 }
 
 /** GET /tickets/:id/guests (suite host only) */

@@ -1,4 +1,4 @@
-import type { TicketTier } from "@/features/catalog/types";
+import type { TicketTier } from "@/types/domain";
 
 export interface Auditorium {
   tier: TicketTier;

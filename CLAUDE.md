@@ -54,12 +54,10 @@
 
 ---
 
-## 3. Windows Terminal Execution Safeguards
+## 3. Environment
 
-- **Environment**: Windows.
-- **Mandatory Rule**: CRITICAL — For all shell commands, PREPEND `cmd /c` to the command string.
-- **Reason**: Prevents ConPTY pipe leaks, process hangs, and ghost tasks on Windows shells.
-- **Example**: Run `cmd /c npm install` instead of `npm install`.
+- **Environment**: Windows. Run shell commands directly (`npm install`, `git status`); no
+  wrapper is needed.
 
 ---
 
@@ -73,7 +71,7 @@
   - Do NOT include JSX/HTML tags (e.g., `<div>`, `<form>`).
   - Do NOT include CSS classes or Tailwind utility names.
   - Do NOT include code-level variables, hook handles, or state handlers (e.g., `useState`, `userType`).
-- **Workflow**: Run `cmd /c git status` and `cmd /c git diff` to inspect exact functional changes.
+- **Workflow**: Run `git status` and `git diff` to inspect exact functional changes.
 - **Granular Flat Bullets**: Include detailed individual bullet points proportional to the changes. No nested bullets.
 - **On-Demand Generation Only**: Do NOT generate git commits automatically unless the user explicitly requests one.
 - **No Co-Author or AI Attribution**: Never add `Co-Authored-By` trailers, "Generated with" lines, or any other AI attribution to commit messages or pull requests.

@@ -18,12 +18,12 @@ import {
   FieldError,
   FieldLabel,
   FormAlert,
+  PasswordChecklist,
   PasswordInput,
   fieldClass,
   safeNext,
 } from "./form-parts";
 import {
-  PASSWORD_RULES,
   forgotPasswordSchema,
   registerSchema,
   resetPasswordSchema,
@@ -204,26 +204,7 @@ export function RegisterForm() {
               {...field("password")}
             />
           </div>
-          <ul
-            id="password-rules"
-            className="mt-3 grid grid-cols-1 gap-x-4 gap-y-2 text-xs min-[380px]:grid-cols-2"
-          >
-            {PASSWORD_RULES.map((rule) => {
-              const met = rule.test(password);
-              return (
-                <li
-                  key={rule.label}
-                  className={cn(
-                    "flex items-center gap-1.5",
-                    met ? "text-lobby" : "text-muted-foreground",
-                  )}
-                >
-                  <Check className={cn("size-3.5", !met && "opacity-30")} />
-                  {rule.label}
-                </li>
-              );
-            })}
-          </ul>
+          <PasswordChecklist id="password-rules" password={password} />
         </div>
         <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 bg-white/2 p-4 text-sm text-muted-foreground transition-colors has-checked:border-white/25">
           <input
@@ -410,26 +391,11 @@ export function ResetPasswordForm() {
               id="new-password"
               autoComplete="new-password"
               aria-invalid={errors.newPassword ? true : undefined}
+              aria-describedby="new-password-rules"
               {...field("newPassword")}
             />
           </div>
-          <ul className="mt-3 grid grid-cols-1 gap-x-4 gap-y-2 text-xs min-[380px]:grid-cols-2">
-            {PASSWORD_RULES.map((rule) => {
-              const met = rule.test(password);
-              return (
-                <li
-                  key={rule.label}
-                  className={cn(
-                    "flex items-center gap-1.5",
-                    met ? "text-lobby" : "text-muted-foreground",
-                  )}
-                >
-                  <Check className={cn("size-3.5", !met && "opacity-30")} />
-                  {rule.label}
-                </li>
-              );
-            })}
-          </ul>
+          <PasswordChecklist id="new-password-rules" password={password} />
         </div>
         <div>
           <FieldLabel htmlFor="confirm-password">Confirm new password</FieldLabel>

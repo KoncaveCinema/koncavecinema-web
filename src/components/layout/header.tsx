@@ -2,7 +2,9 @@ import Link from "next/link";
 
 import { Logo } from "@/components/brand/logo";
 
-import { AccountMenu, HeaderScrollState, MobileNav } from "./header-client";
+import { AccountMenu } from "@/features/auth/account-menu";
+
+import { HeaderScrollState, MobileNav } from "./header-client";
 import { PRIMARY_NAV } from "./navigation";
 
 /**
@@ -43,7 +45,7 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-2 justify-self-end">
-          <AccountMenu />
+          <AccountMenu variant="header" />
           <MobileNav />
         </div>
       </div>
