@@ -25,6 +25,31 @@ export function formatMoney(amount: number | string, currency = "NGN"): string {
   return formatter.format(typeof amount === "string" ? Number(amount) : amount);
 }
 
+const exactFormatters = new Map<string, Intl.NumberFormat>();
+
+/**
+ * Money to the kobo where there is any: `₦5,000`, `₦1,234.50`. For reports and settlements,
+ * whose shares and fees are not whole naira.
+ */
+export function formatMoneyExact(amount: number | string, currency = "NGN"): string {
+  const value = typeof amount === "string" ? Number(amount) : amount;
+  // Whole naira, or exactly two decimals: never "₦1,234.5"
+  const digits = Number.isInteger(value) ? 0 : 2;
+  const key = `${currency}:${digits}`;
+  let formatter = exactFormatters.get(key);
+  if (!formatter) {
+    formatter = new Intl.NumberFormat("en-NG", {
+      style: "currency",
+      currency,
+      currencyDisplay: "narrowSymbol",
+      minimumFractionDigits: digits,
+      maximumFractionDigits: digits,
+    });
+    exactFormatters.set(key, formatter);
+  }
+  return formatter.format(value);
+}
+
 /* NFVCB ratings */
 
 /**
@@ -145,6 +170,43 @@ export function formatElapsed(ms: number): string {
   const minutes = Math.max(0, Math.floor(ms / MINUTE));
   if (minutes < 60) return `${minutes}m`;
   return `${Math.floor(minutes / 60)}h ${pad(minutes % 60)}m`;
+}
+
+/* Console times: staff and support work from anywhere, so the console always shows Lagos time
+   and names it. Lagos is UTC+1 all year (no daylight saving), so the WAT label is always right. */
+
+/** "Fri 7 Nov, 7:00 pm WAT", or with the year: "Fri 7 Nov 2026, 7:00 pm WAT" */
+export function formatLagosDateTime(iso: string, options: { year?: boolean } = {}): string {
+  // Assembled from parts: en-GB adds a comma after the weekday only when the year is shown
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: HOME_TIME_ZONE,
+  }).formatToParts(new Date(iso));
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((item) => item.type === type)?.value ?? "";
+  const date = [part("weekday"), part("day"), part("month"), options.year ? part("year") : ""]
+    .filter(Boolean)
+    .join(" ");
+  const time = new Intl.DateTimeFormat("en-GB", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+    timeZone: HOME_TIME_ZONE,
+  }).format(new Date(iso));
+  return `${date}, ${time} WAT`;
+}
+
+/** "7 Nov 2026" */
+export function formatLagosDate(iso: string): string {
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: HOME_TIME_ZONE,
+  }).format(new Date(iso));
 }
 
 /** "1h 58m" for runtimes */
