@@ -1,10 +1,10 @@
-import "server-only";
-
 import { FIXTURE_TIERS, fixturePricing } from "./fixture-pricing";
 import type { CatalogFilm, CatalogShowtime, TicketTier } from "./types";
 
 /**
  * Sample catalog for development, design review and screenshots (NEXT_PUBLIC_DATA_SOURCE=fixtures).
+ * Shared by the server (public pages) and the browser demos (a member's
+ * passes, the admin console), so both describe the same films.
  * Every title, person and production company here is fictional; the artwork is free-licence
  * placeholder photography (sources in docs/assets/placeholder-credits.md). Showtimes are placed relative to
  * `anchor` so each screening state is visible: live, lobby open, starting soon, later premieres.

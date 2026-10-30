@@ -299,7 +299,7 @@ export function RoomPicker({
           href={
             held.status === "RESERVED"
               ? `/checkout/${held.ticketId}`
-              : `/account/tickets/${held.ticketId}`
+              : `/dashboard/tickets/${held.ticketId}`
           }
           className="font-semibold underline decoration-brand underline-offset-4"
         >

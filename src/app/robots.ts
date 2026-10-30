@@ -14,10 +14,10 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: "*",
       allow: "/",
       disallow: [
-        "/account",
+        "/dashboard",
+        "/admin",
         "/checkout",
         "/invite",
-        "/studio",
         "/watch",
         "/sign-in",
         "/register",

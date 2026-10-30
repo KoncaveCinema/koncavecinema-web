@@ -125,7 +125,7 @@ export function InviteClaim({ params }: { params: Promise<{ code: string }> }) {
         </p>
         <p className="mt-1 font-mono text-sm">{ticket.seatIdentifier}</p>
         <Button asChild size="xl" className="mt-8">
-          <Link href={`/account/tickets/${ticket.id}`}>View your pass</Link>
+          <Link href={`/dashboard/tickets/${ticket.id}`}>View your pass</Link>
         </Button>
       </div>
     );

@@ -360,7 +360,7 @@ function CheckoutLoader({ ticketId }: { ticketId: string }) {
         <p className="font-display text-3xl font-black">This booking is already paid</p>
         <p className="mt-3 text-white/60">Your pass for {data.showtime.movieTitle} is ready.</p>
         <Button asChild size="xl" className="mt-8">
-          <Link href={`/account/tickets/${data.receipt.ticketId}`}>View your pass</Link>
+          <Link href={`/dashboard/tickets/${data.receipt.ticketId}`}>View your pass</Link>
         </Button>
       </div>
     );

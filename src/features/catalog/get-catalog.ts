@@ -6,7 +6,7 @@ import { env } from "@/env";
 import { serverApi } from "@/lib/api/server";
 
 import type { ApiMovieDetail, ApiMovieListItem, ApiShowtimeCapacity } from "./api-types";
-import { buildFixtureCatalog } from "./fixtures";
+import { buildFixtureCatalog } from "./fixture-films";
 import type { Catalog, CatalogFilm, CatalogShowtime, TicketTier } from "./types";
 
 // Capacity is fetched per showtime; cap the fan-out so a large catalog never floods the API

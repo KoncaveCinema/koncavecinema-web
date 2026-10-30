@@ -1,6 +1,8 @@
 import { env } from "@/env";
 import { demoUserIsVerified } from "@/features/auth/service";
 import type { ApiShowtimeCapacity } from "@/features/catalog/api-types";
+import { buildFixtureCatalog } from "@/features/catalog/fixture-films";
+import { fixturePricing } from "@/features/catalog/fixture-pricing";
 import type { TicketTier } from "@/features/catalog/types";
 import {
   api,
@@ -19,7 +21,9 @@ import type {
   ReleaseTicketResponse,
   ReservationReceipt,
   SuiteGuest,
+  TicketCancellation,
   TicketDetail,
+  TicketRefund,
 } from "./api-types";
 
 /*
@@ -144,9 +148,159 @@ interface DemoTicket {
   detail: TicketDetail;
   /** Set for a guest's pass, claimed from a host's invite */
   claimedFrom?: string;
+  /** Another member's pass (a seeded suite guest): never listed or opened as yours */
+  foreign?: { alias: string | null };
 }
 
-const readDemo = () => readStore<Record<string, DemoTicket>>(DEMO_KEY, {});
+const SEEDED_KEY = "kc-demo-seeded";
+const MINUTE = 60_000;
+const DAY = 24 * 60 * MINUTE;
+
+/**
+ * The demo's starting passes, so every state of the dashboard can be reviewed at once: a hold
+ * in progress, a lobby open now, a suite with guests, a screening next week, watched screenings
+ * and cancelled ones with their refunds. Upcoming ones use the sample catalogue's real
+ * showtimes, so "Book again" and the watch links lead somewhere real.
+ */
+function seedDemoPasses(): Record<string, DemoTicket> {
+  const now = Date.now();
+  const films = new Map(buildFixtureCatalog(now).map((film) => [film.slug, film]));
+  const tickets: Record<string, DemoTicket> = {};
+  const iso = (time: number) => new Date(time).toISOString();
+
+  function add(seed: {
+    slug: string;
+    /** One of the film's sample showtimes, or a moment relative to now for a past screening */
+    showtime: number | { startsIn: number };
+    tier: TicketTier;
+    status: TicketDetail["status"];
+    holdMinutesLeft?: number;
+    guests?: (string | null)[];
+    cancellation?: TicketCancellation;
+    refund?: TicketRefund["state"];
+  }) {
+    const film = films.get(seed.slug)!;
+    const sample = typeof seed.showtime === "number" ? film.showtimes[seed.showtime]! : null;
+    const start = sample
+      ? Date.parse(sample.startTime)
+      : now + (seed.showtime as { startsIn: number }).startsIn;
+    const pricing = fixturePricing(film.showtimes[0]?.basePrice ?? 5000, seed.tier);
+    const suite = pricing.seatCount > 1;
+    const code = suite ? inviteCode() : null;
+    const seatIdentifier = nextPassNumber(tickets);
+    const id = crypto.randomUUID();
+    tickets[id] = {
+      detail: {
+        id,
+        showtimeId: sample?.id ?? `demo-past-${seed.slug}`,
+        tier: seed.tier,
+        seatIdentifier,
+        purchasePrice: pricing.totalPayable,
+        currency: pricing.currency,
+        status: seed.status,
+        movieTitle: film.title,
+        posterPortrait: film.posterPortrait,
+        startTime: iso(start),
+        endTime: iso(start + film.durationMinutes * MINUTE),
+        qrAdmissionPayload: `demo:${seatIdentifier}`,
+        createdAt: iso(Math.min(now, start) - 2 * DAY),
+        pricing,
+        lockExpiresAt: seed.holdMinutesLeft ? iso(now + seed.holdMinutesLeft * MINUTE) : null,
+        movieSlug: film.slug,
+        posterLandscape: film.posterLandscape,
+        lobbyOpensAt: iso(start - LOBBY_MS),
+        isSuiteHost: suite,
+        roomInviteCode: code,
+        suiteSeats: suite ? pricing.seatCount : null,
+        suiteSeatsTaken: suite ? 1 + (seed.guests?.length ?? 0) : null,
+        cancellation: seed.cancellation ?? null,
+        refund: seed.refund
+          ? {
+              state: seed.refund,
+              amount: pricing.totalPayable,
+              currency: pricing.currency,
+              refundedAt: seed.refund === "REFUNDED" ? iso(now - 6 * DAY) : null,
+            }
+          : null,
+      },
+    };
+    for (const alias of seed.guests ?? []) {
+      const guestId = crypto.randomUUID();
+      tickets[guestId] = {
+        detail: {
+          ...tickets[id]!.detail,
+          id: guestId,
+          seatIdentifier: nextPassNumber(tickets),
+          isSuiteHost: false,
+          roomInviteCode: null,
+          createdAt: iso(now - Math.floor(Math.random() * 20) * 60 * MINUTE),
+        },
+        claimedFrom: code!,
+        foreign: { alias },
+      };
+    }
+  }
+
+  add({ slug: "lagos-after-dark", showtime: 0, tier: "INDIVIDUAL", status: "CONFIRMED" });
+  add({
+    slug: "love-in-seclusion",
+    showtime: 0,
+    tier: "PUBLIC",
+    status: "RESERVED",
+    holdMinutesLeft: 7,
+  });
+  add({
+    slug: "city-of-dust",
+    showtime: 0,
+    tier: "PRIVATE_5",
+    status: "CONFIRMED",
+    guests: ["TundeWatches", null],
+  });
+  add({ slug: "red-soil", showtime: 0, tier: "PUBLIC", status: "CONFIRMED" });
+  add({ slug: "sade", showtime: { startsIn: -3 * DAY }, tier: "PUBLIC", status: "CHECKED_IN" });
+  add({
+    slug: "house-of-amina",
+    showtime: { startsIn: -2 * DAY },
+    tier: "INDIVIDUAL",
+    status: "CANCELLED",
+    cancellation: {
+      reason: "SHOWTIME_CANCELLED",
+      message: "The producer has moved the premiere to a later date.",
+      cancelledAt: iso(now - 4 * DAY),
+    },
+    refund: "PENDING",
+  });
+  add({
+    slug: "the-family-meeting",
+    showtime: { startsIn: -9 * DAY },
+    tier: "PRIVATE_10",
+    status: "CANCELLED",
+    cancellation: {
+      reason: "CANCELLED_BY_SUPPORT",
+      message: "Cancelled at your request.",
+      cancelledAt: iso(now - 11 * DAY),
+    },
+    refund: "REFUNDED",
+  });
+  add({
+    slug: "starlight-over-kaduna",
+    showtime: { startsIn: -12 * DAY },
+    tier: "INDIVIDUAL",
+    status: "CHECKED_IN",
+  });
+  return tickets;
+}
+
+/** The demo's passes, seeded once per demo session (see `seedDemoPasses`). */
+function readDemo(): Record<string, DemoTicket> {
+  const tickets = readStore<Record<string, DemoTicket>>(DEMO_KEY, {});
+  if (readStore(SEEDED_KEY, false)) return tickets;
+  const seeded = { ...seedDemoPasses(), ...tickets };
+  writeStore(SEEDED_KEY, true);
+  writeStore(DEMO_KEY, seeded);
+  return seeded;
+}
+
 const writeDemo = (tickets: Record<string, DemoTicket>) => writeStore(DEMO_KEY, tickets);
 const wait = (ms = 450) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -298,7 +452,8 @@ export async function getTicket(ticketId: string): Promise<TicketDetail> {
   await wait(200);
   const tickets = readDemo();
   const stored = tickets[ticketId];
-  if (!stored) throw demoError(ErrorCode.NOT_FOUND, "Ticket not found.", 404);
+  // Another member's pass answers as the API would for someone else's: not found
+  if (!stored || stored.foreign) throw demoError(ErrorCode.NOT_FOUND, "Ticket not found.", 404);
   return demoDetail(tickets, stored);
 }
 
@@ -388,9 +543,12 @@ export async function listMyTickets(
   await wait(250);
   const tickets = readDemo();
   const now = Date.now();
-  const all = Object.values(tickets).map((ticket) => demoDetail(tickets, ticket));
+  const all = Object.values(tickets)
+    .filter((ticket) => !ticket.foreign)
+    .map((ticket) => demoDetail(tickets, ticket));
+  // As the API: holds and passes whose screening can still be watched (until the cutoff)
   const watchable = (ticket: TicketDetail) =>
-    (ticket.status === "CONFIRMED" || ticket.status === "CHECKED_IN") &&
+    ["RESERVED", "CONFIRMED", "CHECKED_IN"].includes(ticket.status) &&
     Date.parse(ticket.endTime) + VIEWING_GRACE_MS > now;
   const items =
     when === "upcoming"
@@ -425,7 +583,7 @@ export async function listSuiteGuests(ticketId: string): Promise<SuiteGuest[]> {
   return Object.values(tickets)
     .filter((ticket) => ticket.claimedFrom === code)
     .map((ticket) => ({
-      publicScreenAlias: null,
+      publicScreenAlias: ticket.foreign?.alias ?? null,
       seatIdentifier: ticket.detail.seatIdentifier,
       joinedAt: ticket.detail.createdAt,
     }));
