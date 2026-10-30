@@ -1,6 +1,10 @@
 /** koncavecinema-api auth and identity-check shapes, field for field. */
 
-export type UserRole = "VIEWER" | "HOST" | "PRODUCER_ADMIN" | "SUPER_ADMIN";
+/**
+ * VIEWER: members. PRODUCER: producer partners (no console yet). ADMIN: Koncave staff.
+ * SUPER_ADMIN: the client. HOST is unused, kept until the API's cleanup migration.
+ */
+export type UserRole = "VIEWER" | "HOST" | "PRODUCER" | "ADMIN" | "SUPER_ADMIN";
 
 /** GET /auth/me, and `user` in the sign-in and register responses */
 export interface UserProfile {

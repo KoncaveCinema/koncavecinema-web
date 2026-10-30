@@ -16,6 +16,21 @@ export function RequireSession({
   children: ReactNode;
   fallback: ReactNode;
 }) {
+  const status = useSession((state) => state.status);
+  return (
+    <>
+      <SignInRedirect />
+      {status === "signed-in" ? children : fallback}
+    </>
+  );
+}
+
+/**
+ * Sends a signed-out visitor to sign-in, returning here afterwards. Renders nothing, so a layout
+ * can keep its pages rendering (and prerenderable) while the pages hold their data back until
+ * someone is signed in (see `useSignedIn`).
+ */
+export function SignInRedirect() {
   const router = useRouter();
   const pathname = usePathname();
   const search = useSearchParams().toString();
@@ -27,7 +42,12 @@ export function RequireSession({
     router.replace(`/sign-in?next=${encodeURIComponent(next)}`);
   }, [status, pathname, search, router]);
 
-  return status === "signed-in" ? children : fallback;
+  return null;
+}
+
+/** True once a member is signed in: gate private queries on it. */
+export function useSignedIn(): boolean {
+  return useSession((state) => state.status === "signed-in");
 }
 
 /** A neutral placeholder while the session is checked */

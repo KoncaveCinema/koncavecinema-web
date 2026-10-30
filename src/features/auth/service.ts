@@ -9,6 +9,7 @@ import type {
   UserProfile,
   VerifyKycResponse,
 } from "./api-types";
+import { demoRoleFor } from "./roles";
 import type { VerifyIdentityValues } from "./schemas";
 
 /*
@@ -23,11 +24,35 @@ const DEMO_USER_KEY = "kc-demo-user";
 
 /** Shown under the forms in demo mode, so reviewers can reach every state */
 export const DEMO_HINTS = {
-  signIn: "Demo: any email and password sign in.",
+  signIn:
+    "Demo: any email and password sign in. admin@… signs in as the super admin, staff@… as staff.",
   otp: "Demo: any 6-digit code works, except 000000 (wrong code).",
   alias: "Demo: the alias “taken” is already in use.",
   reset: "Demo: the link token “expired” shows the expired-link state.",
+  aliasChange: "Demo: the alias “taken” is in use, and a second change within 30 days is refused.",
+  password: "Demo: the current password “wrong” is refused.",
+  deleteAccount:
+    "Demo: the password “wrong” is refused, and “upcoming” shows the refusal for upcoming passes.",
 };
+
+const ALIAS_CHANGED_KEY = "kc-demo-alias-changed";
+const ALIAS_COOLDOWN_MS = 30 * 24 * 60 * 60_000;
+
+function readDemoValue(key: string): string | null {
+  try {
+    return sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writeDemoValue(key: string, value: string) {
+  try {
+    sessionStorage.setItem(key, value);
+  } catch {
+    // Storage blocked: the demo forgets on reload
+  }
+}
 
 export const isDemo = demo;
 
@@ -60,7 +85,7 @@ function demoUser(email: string): UserProfile {
     email,
     publicScreenAlias: null,
     isPhoneVerified: false,
-    role: "VIEWER",
+    role: demoRoleFor(email),
     createdAt: new Date().toISOString(),
   };
 }
@@ -185,11 +210,24 @@ export async function updateScreenAlias(publicScreenAlias: string): Promise<User
     if (!current?.isPhoneVerified) {
       throw demoError(ErrorCode.KYC_REQUIRED, "Verify your identity first.", 403);
     }
+    if (current.publicScreenAlias === publicScreenAlias) return current;
+    // As the API: once per 30 days, counted from the last change (not the first choice)
+    const changedAt = Number(readDemoValue(ALIAS_CHANGED_KEY) ?? 0);
+    const nextChangeAt = changedAt + ALIAS_COOLDOWN_MS;
+    if (changedAt && nextChangeAt > Date.now()) {
+      throw new ApiError({
+        status: 409,
+        code: ErrorCode.ALIAS_CHANGE_TOO_SOON,
+        messages: ["Your screen alias can change once every 30 days."],
+        details: { nextChangeAt: new Date(nextChangeAt).toISOString() },
+      });
+    }
     if (publicScreenAlias.toLowerCase() === "taken") {
       throw demoError(ErrorCode.ALIAS_TAKEN, "That alias is taken.", 409);
     }
     const user = { ...current, publicScreenAlias };
     writeDemoUser(user);
+    writeDemoValue(ALIAS_CHANGED_KEY, String(Date.now()));
     return user;
   }
   return api.patch<UserProfile>("/auth/me", { publicScreenAlias });
@@ -223,6 +261,21 @@ export async function deleteAccount(password: string): Promise<void> {
     await wait();
     if (password === "wrong") {
       throw demoError(ErrorCode.INVALID_CREDENTIALS, "That password isn't right.", 401);
+    }
+    if (readDemoUser()?.role !== "VIEWER") {
+      throw demoError(
+        ErrorCode.FORBIDDEN,
+        "Staff and producer accounts are closed through support, not self-service.",
+        403,
+      );
+    }
+    if (password === "upcoming") {
+      throw new ApiError({
+        status: 409,
+        code: ErrorCode.ACCOUNT_HAS_UPCOMING_PASSES,
+        messages: ["You have a paid pass for a screening that has not ended."],
+        details: { upcomingPasses: 2 },
+      });
     }
     writeDemoUser(null);
     return;

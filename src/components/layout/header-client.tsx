@@ -1,22 +1,13 @@
 "use client";
 
-import { LogOut, Menu } from "lucide-react";
+import { Menu } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { Logo } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { signOut } from "@/features/auth/service";
+import { accountLinks, useSignOut } from "@/features/auth/account-menu";
 import { useSession } from "@/features/auth/session";
 
 import { PRIMARY_NAV } from "./navigation";
@@ -42,68 +33,10 @@ export function HeaderScrollState() {
   return null;
 }
 
-function useSignOut() {
-  const router = useRouter();
-  const setUser = useSession((state) => state.setUser);
-  return async () => {
-    await signOut().catch(() => undefined);
-    setUser(null);
-    router.push("/");
-  };
-}
-
-/**
- * The header's right-hand action: Sign in, or the account menu once signed in. Holds its size
- * while the session is checked, so the header never shifts.
- */
-export function AccountMenu() {
-  const { status, user } = useSession();
-  const handleSignOut = useSignOut();
-
-  if (status === "loading") {
-    return <span aria-hidden="true" className="hidden h-9 w-24 rounded-full bg-white/5 sm:block" />;
-  }
-  if (status === "signed-out" || !user) {
-    return (
-      <Button asChild className="hidden sm:inline-flex">
-        <Link href="/sign-in" prefetch={false}>
-          Sign in
-        </Link>
-      </Button>
-    );
-  }
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="glass"
-          className="hidden gap-2 pr-4 pl-1.5 sm:inline-flex"
-          aria-label="Account menu"
-        >
-          <span className="grid size-7 place-items-center rounded-full bg-brand text-xs font-bold uppercase">
-            {(user.publicScreenAlias ?? user.email).charAt(0)}
-          </span>
-          My account
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-60">
-        <DropdownMenuLabel className="truncate font-normal text-muted-foreground">
-          {user.email}
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={() => void handleSignOut()}>
-          <LogOut />
-          Sign out
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
-
 /** The navigation drawer on small screens. */
 export function MobileNav() {
   const [open, setOpen] = useState(false);
-  const status = useSession((state) => state.status);
+  const { status, user } = useSession();
   const handleSignOut = useSignOut();
 
   return (
@@ -131,8 +64,21 @@ export function MobileNav() {
           ))}
         </nav>
         <div className="mx-6 space-y-3 border-t border-white/8 pt-6">
-          {status === "signed-in" ? (
+          {status === "signed-in" && user ? (
             <>
+              <nav aria-label="Account" className="-mx-3 -mt-3 flex flex-col">
+                {accountLinks(user.role).map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setOpen(false)}
+                    className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-white/80 transition-colors hover:bg-white/5 hover:text-foreground"
+                  >
+                    <item.icon className="size-4 text-white/50" />
+                    {item.label}
+                  </Link>
+                ))}
+              </nav>
               <Button
                 size="lg"
                 variant="ghost"
