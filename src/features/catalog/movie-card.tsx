@@ -32,7 +32,7 @@ export function MovieCard({
     <article className={cn("group flex reveal flex-col", className)}>
       <Link
         href={`/movies/${film.slug}`}
-        className="relative block aspect-16/10 overflow-hidden rounded-2xl bg-surface-2 ring-1 ring-white/8 transition-[box-shadow] duration-300 group-hover:ring-white/25"
+        className="relative block aspect-16/10 overflow-hidden rounded-2xl bg-surface-2 ring-1 ring-white/8 transition-shadow duration-300 group-hover:ring-white/25"
       >
         <ViewTransition name={filmArtTransition(film.slug)}>
           <Image

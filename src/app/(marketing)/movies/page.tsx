@@ -28,7 +28,7 @@ function LaterCard({ film }: { film: CatalogFilm }) {
   const first = sortedShowtimes(film)[0];
   return (
     <article className="group relative reveal">
-      <div className="relative aspect-video overflow-hidden rounded-2xl bg-surface-2 ring-1 ring-white/8 transition-[box-shadow] duration-300 group-hover:ring-white/25">
+      <div className="relative aspect-video overflow-hidden rounded-2xl bg-surface-2 ring-1 ring-white/8 transition-shadow duration-300 group-hover:ring-white/25">
         <ViewTransition name={filmArtTransition(film.slug)}>
           <Image
             src={film.posterLandscape}
