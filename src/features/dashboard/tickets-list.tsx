@@ -4,9 +4,11 @@ import { ArrowRight, History, Ticket } from "lucide-react";
 import Link from "next/link";
 
 import { PageHeader } from "@/components/console/page-header";
-import { EmptyState, ErrorState } from "@/components/console/states";
-import { Pager, UrlTabs, usePageParam, useTabParam } from "@/components/console/url-controls";
+import { UrlTabs, useTabParam } from "@/components/console/url-controls";
+import { DataTablePagination } from "@/components/data-table/data-table-pagination";
+import { EmptyState, ErrorState } from "@/components/states/states";
 import { Button } from "@/components/ui/button";
+import { usePagination } from "@/hooks/use-pagination";
 
 import { useMyTickets, type TicketsWhen } from "./queries";
 import { TicketCard, TicketCardSkeleton } from "./ticket-card";
@@ -29,8 +31,8 @@ const EMPTY = {
 /** /dashboard/tickets: every pass, Upcoming (soonest first) and Past (newest first). */
 export function TicketsList() {
   const [when] = useTabParam("when", WHEN, "upcoming");
-  const [page] = usePageParam();
-  const tickets = useMyTickets(when, page);
+  const pagination = usePagination();
+  const tickets = useMyTickets(when, pagination.page, pagination.pageSize);
 
   return (
     <>
@@ -86,7 +88,11 @@ export function TicketsList() {
               </li>
             ))}
           </ul>
-          <Pager meta={tickets.data.meta} className="mt-4 rounded-2xl border border-white/8" />
+          <DataTablePagination
+            meta={tickets.data.meta}
+            pagination={pagination}
+            className="mt-4 rounded-2xl border border-white/8"
+          />
         </>
       )}
     </>

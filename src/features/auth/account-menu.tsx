@@ -33,8 +33,26 @@ const ROLE_LABEL: Record<UserRole, string> = {
   SUPER_ADMIN: "Super admin",
 };
 
-/** The signed-in area's main doors; staff also get the admin console. */
-export function accountLinks(role: UserRole) {
+/** Where the menu opens: the site and the dashboard share it, the admin console has its own */
+export type AccountArea = "site" | "dashboard" | "admin";
+
+/**
+ * The menu's doors. On the site and in the dashboard: the member's area, and the admin console
+ * for staff. In the console the sidebar already reaches every section, so only what belongs to
+ * the person: their account, and their own passes (staff are members too).
+ */
+export function accountLinks(role: UserRole, area: AccountArea = "site") {
+  if (area === "admin") {
+    return [
+      {
+        href: "/dashboard/settings",
+        label: "Account settings",
+        hint: "Password, alias, account",
+        icon: Settings,
+      },
+      { href: "/dashboard/tickets", label: "My tickets", hint: "Your own passes", icon: Ticket },
+    ];
+  }
   return [
     { href: "/dashboard", label: "Dashboard", hint: "Your next screening", icon: LayoutDashboard },
     {
@@ -88,7 +106,13 @@ const displayName = (user: UserProfile) => user.publicScreenAlias ?? user.email.
  * in for visitors); `console` is the top bar's compact trigger. The open menu is the same in
  * both: who you are, the doors with a line on each, and signing out at the foot.
  */
-export function AccountMenu({ variant }: { variant: "header" | "console" }) {
+export function AccountMenu({
+  variant,
+  area = "site",
+}: {
+  variant: "header" | "console";
+  area?: AccountArea;
+}) {
   const { status, user } = useSession();
   const handleSignOut = useSignOut();
 
@@ -153,7 +177,7 @@ export function AccountMenu({ variant }: { variant: "header" | "console" }) {
         </div>
 
         <DropdownMenuGroup className="mt-2 space-y-0.5">
-          {accountLinks(user.role).map((item) => (
+          {accountLinks(user.role, area).map((item) => (
             <DropdownMenuItem
               key={item.href}
               asChild

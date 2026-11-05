@@ -25,6 +25,7 @@ export default function DashboardLayout({ children }: LayoutProps<"/dashboard">)
     <ConsoleShell
       area="Dashboard"
       homeHref="/dashboard"
+      account="dashboard"
       sidebar={<DashboardSidebar />}
       tabs={<DashboardTabs />}
       trail={<DashboardTrail />}

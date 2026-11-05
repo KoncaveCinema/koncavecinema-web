@@ -10,7 +10,8 @@ import { encode } from "uqr";
 import { LocalTime, ScreeningStatus } from "@/components/cinema/live-time";
 import { PageHeader } from "@/components/console/page-header";
 import { Panel } from "@/components/console/panel";
-import { ErrorState } from "@/components/console/states";
+import { QueryView } from "@/components/states/query-view";
+import { ErrorState } from "@/components/states/states";
 import { StatusBadge } from "@/components/console/status-badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -20,7 +21,6 @@ import { InviteLinks } from "@/features/booking/invite-links";
 import { PriceBreakdown } from "@/features/booking/price-breakdown";
 import { AUDITORIUMS } from "@/features/home/auditoriums/halls";
 import { SUPPORT_EMAIL } from "@/features/support/content";
-import { ErrorCode, toApiError } from "@/lib/api";
 import { formatCountdown, formatMoney } from "@/lib/format";
 
 import { useServerNow } from "@/hooks/use-now";
@@ -295,35 +295,34 @@ export function PassSkeleton() {
 export function PassView({ params }: { params: Promise<{ ticketId: string }> }) {
   const { ticketId } = use(params);
   const ticket = useTicket(ticketId);
+  return (
+    <QueryView
+      query={ticket}
+      loading={<PassSkeleton />}
+      errorTitle="This pass couldn't load"
+      notFound={{
+        title: "We can't find that pass",
+        hint: "It may belong to another account, or the link is incomplete.",
+        action: (
+          <Button asChild>
+            <Link href="/dashboard/tickets">See my tickets</Link>
+          </Button>
+        ),
+      }}
+      frame={(state) => (
+        <>
+          <PageHeader title="Pass" crumbs={CRUMBS} />
+          <div className="rounded-3xl border border-dashed border-white/12">{state}</div>
+        </>
+      )}
+    >
+      {(detail) => <PassDetail detail={detail} />}
+    </QueryView>
+  );
+}
+
+function PassDetail({ detail }: { detail: TicketDetail }) {
   const now = useServerNow();
-
-  if (ticket.isPending) return <PassSkeleton />;
-
-  if (ticket.isError) {
-    const notFound = toApiError(ticket.error).is(ErrorCode.NOT_FOUND, ErrorCode.FORBIDDEN);
-    return (
-      <>
-        <PageHeader title="Pass" crumbs={CRUMBS} />
-        <div className="rounded-3xl border border-dashed border-white/12">
-          {notFound ? (
-            <div className="px-6 py-14 text-center">
-              <p className="font-semibold">We can&rsquo;t find that pass</p>
-              <p className="mt-1.5 text-sm text-white/50">
-                It may belong to another account, or the link is incomplete.
-              </p>
-              <Button asChild className="mt-5">
-                <Link href="/dashboard/tickets">See my tickets</Link>
-              </Button>
-            </div>
-          ) : (
-            <ErrorState title="This pass couldn't load" onRetry={() => void ticket.refetch()} />
-          )}
-        </div>
-      </>
-    );
-  }
-
-  const detail = ticket.data;
   const view = ticketView(detail, now ?? 0);
   const passHref = `/dashboard/tickets/${detail.id}`;
   const primary = view.action && view.action.href !== passHref ? view.action : null;

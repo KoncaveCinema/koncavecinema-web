@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { useSignedIn } from "@/features/auth/require-session";
 import { getTicket, listMyTickets, listSuiteGuests } from "@/features/booking/service";
+import { DEFAULT_PAGE_SIZE } from "@/hooks/use-pagination";
 
 /*
  * The dashboard's server data. Keys come from one factory, so a change (a payment confirmed, a
@@ -14,7 +15,8 @@ import { getTicket, listMyTickets, listSuiteGuests } from "@/features/booking/se
 export type TicketsWhen = "upcoming" | "past";
 
 export const dashboardKeys = {
-  tickets: (when: TicketsWhen, page: number) => ["my-tickets", when, page] as const,
+  tickets: (when: TicketsWhen, page: number, pageSize: number) =>
+    ["my-tickets", when, page, pageSize] as const,
   ticket: (ticketId: string) => ["ticket", ticketId] as const,
   guests: (ticketId: string) => ["ticket", ticketId, "guests"] as const,
 };
@@ -22,11 +24,11 @@ export const dashboardKeys = {
 /* Every query waits for a signed-in member: until then it stays pending (the pages show their
    skeletons) and nothing is requested without a session. */
 
-export function useMyTickets(when: TicketsWhen, page = 1) {
+export function useMyTickets(when: TicketsWhen, page = 1, pageSize = DEFAULT_PAGE_SIZE) {
   const signedIn = useSignedIn();
   return useQuery({
-    queryKey: dashboardKeys.tickets(when, page),
-    queryFn: () => listMyTickets(when, page),
+    queryKey: dashboardKeys.tickets(when, page, pageSize),
+    queryFn: () => listMyTickets(when, page, pageSize),
     enabled: signedIn,
   });
 }

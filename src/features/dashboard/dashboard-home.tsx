@@ -19,7 +19,7 @@ import { LocalTime } from "@/components/cinema/live-time";
 import { PageHeader } from "@/components/console/page-header";
 import { SectionLabel } from "@/components/console/page-header";
 import { StatTile, StatTileSkeleton } from "@/components/console/stat-tile";
-import { EmptyState, ErrorState } from "@/components/console/states";
+import { EmptyState, ErrorState } from "@/components/states/states";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSession } from "@/features/auth/session";
