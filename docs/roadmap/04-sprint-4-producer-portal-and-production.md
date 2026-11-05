@@ -1,64 +1,86 @@
-# Sprint 4: Producer Distribution Portal, Financial Settlement & Production Launch
+# Sprint 4: Admin Console, Producer Portal and Launch
 
 ## Objective
 
-Equip independent filmmakers and distributors with transparent real-time box office analytics, digital TVOD agreement acceptance, and automated 85% revenue settlement ledgers. Harden the entire application for production deployment, conduct comprehensive performance audits, and finalize readiness for the December launch.
+Run Koncave Cinema day to day, then open it to producers and launch:
+
+- The admin console for staff: films, showtimes, money, members, staff and the audit log.
+- Later, a producer portal: their films, the distribution agreement and their box office.
+- Production hardening and launch readiness.
+
+**Changed:** the plan opened with the producer portal. The API built the staff side first (its
+Phase 5.5 admin module), so the admin console came first; producers have no console yet. The
+phase doc is [F6](../phases/phase-06-studio-producer-and-admin.md).
 
 ---
 
-## Actionable Execution Checklist
+## Routes
 
-### 1. Producer Distribution Portal (`/studio`)
+| Route                                       | Access      | Page                                                         |
+| :------------------------------------------ | :---------- | :----------------------------------------------------------- |
+| `/admin/login`                              | Public      | Staff sign-in                                                |
+| `/admin`                                    | Staff       | Today's screenings, refunds waiting, sales, drafts to finish |
+| `/admin/films`, `/admin/films/new`, `/[id]` | Staff       | Films from draft to published                                |
+| `/admin/showtimes`, `/[id]`                 | Staff       | The schedule; a screening's rooms, suites and revenue        |
+| `/admin/sales`, `/refunds`, `/payments`     | Staff       | Sales report, refunds owed back, payments search             |
+| `/admin/members`, `/[id]`                   | Staff       | Finding a member; their passes, payments and sign-ins        |
+| `/admin/staff`, `/admin/audit`              | Super admin | Staff access; the audit log                                  |
 
-- [ ] Implement `src/features/studio/components/studio-dashboard.tsx`:
-  - [ ] Secure filmmaker authentication and role-based access control (`ROLE_PRODUCER`).
-  - [ ] Film portfolio overview (Active Screenings, Upcoming Premieres, Archived Runs).
-  - [ ] Submission workflow for new titles:
-    - [ ] Video asset upload (ProRes / High-bitrate master for Mux DRM encoding).
-    - [ ] NFVCB Certificate upload and validation.
-    - [ ] Key art, poster, and trailer links.
-    - [ ] Cast/crew credits and synopsis.
+Code in `src/features/admin/`, one folder per area. On sample data, one store
+(`demo-store.ts`) behaves like the API, and every change is audited.
 
-### 2. Digital Producer Distribution Agreement Acceptance
+---
 
-- [ ] Implement `src/features/studio/components/agreement-acceptance-modal.tsx`:
-  - [ ] Embedded review of `docs/legal/producer-distribution-agreement.md`.
-  - [ ] Explicit affirmation of key terms:
-    - [ ] 85% net box office allocation to producer.
-    - [ ] 15% platform commission to Koncave Cinema.
-    - [ ] Non-exclusive theatrical TVOD windowing terms.
-    - [ ] Anti-piracy covenants and liability warranties.
-  - [ ] Cryptographic signature binding (Legal full name, timestamp, IP address, and hash of agreement version).
+## Checklist
 
-### 3. Real-Time Box Office & Financial Settlement Engine
+### 1. Admin console
 
-- [ ] Implement `src/features/studio/components/box-office-ledger.tsx`:
-  - [ ] Real-time ticket sales counter broken down by tier:
-    - Individual Watch tickets sold (₦5,000 each).
-    - Public Theatre seats occupied (₦5,000 each).
-    - Private Suites reserved (₦30,000 / ₦60,000 each).
-  - [ ] Gross Box Office (GBO) tally vs. Net Box Office (NBO) after Paystack gateway deductions.
-  - [ ] Automated 85% producer earnings calculation ledger.
-  - [ ] Weekly settlement payout status (Initiated, Processing, Paid) with exportable CSV / PDF financial statements.
+- [x] Staff sign-in; members and signed-out visitors are turned away; super admin sections hidden
+      from staff.
+- [x] Films: draft, posters, master and trailer uploads with progress, the NFVCB certificate, a
+      readiness list, publish with the API's refusal reasons, unpublish and delete.
+- [x] Showtimes: add and move in Lagos time, cancel with a reason, each room's sales.
+- [x] Money: sales report with CSV export, refunds queue (a super admin records refunds),
+      payments search.
+- [x] Members: search, a member's passes and payments, resend a booking email, cancel a pass, the
+      legal name revealed to a super admin only (each reveal audited).
+- [x] Staff: invite by email, change a role or remove access from the row's menu.
+- [x] Audit log: filtered by member or action, paged on the API's cursor.
+- [x] Every list pages at 10, 20, 50 or 100 rows, kept in the address.
+- [ ] Connect the console to the API (the sample data stands in today).
 
-### 4. Robustness, Error Boundaries & Offline Degradation
+### 2. Producer portal (`/studio`)
 
-- [ ] Implement `src/components/feedback/global-error-boundary.tsx`:
-  - [ ] Graceful recovery interfaces for failed network requests, stream disconnects, and API timeouts.
-  - [ ] Fallback static mock fixtures toggle if backend API experiences maintenance.
-  - [ ] Live internet connectivity status toaster (`useOnlineStatus`).
+- [ ] A producer's own films, screenings and box office. Waits for the API's producer endpoints.
+- [ ] Producers submitting a film (today staff upload it for them).
 
-### 5. Production Optimization & Launch Readiness Audit
+### 3. Producer distribution agreement
 
-- [ ] **Core Web Vitals Optimization**:
-  - [ ] Largest Contentful Paint (LCP) under 1.8s across 3G/4G Nigerian mobile networks.
-  - [ ] Cumulative Layout Shift (CLS) of 0.00.
-  - [ ] First Input Delay (FID) / INP under 100ms.
-- [ ] **Accessibility & Cross-Device Compatibility**:
-  - [ ] WCAG 2.1 AA contrast compliance across all cinema dark mode surfaces.
-  - [ ] Full responsiveness tested on iOS Safari, Android Chrome, and Desktop browsers.
-  - [ ] Touch-target minimum of 48px on all interactive mobile buttons.
-- [ ] **Final Deployment Configuration**:
-  - [ ] Staging and production environment variables verified.
-  - [ ] Custom domain DNS verification (`koncavecinema.com`, `www.koncavecinema.com`, `api.koncavecinema.com`).
-  - [ ] December launch readiness sign-off.
+- [ ] Reviewing and accepting `docs/legal/producer-distribution-agreement.md` in the portal, with
+      the producer's share, the non-exclusive window and the anti-piracy terms.
+- [ ] A signed record (legal name, time, IP address, agreement version). Needs the API.
+
+### 4. Box office and settlement
+
+- [x] For staff: gross, gateway fees, the producer's and the platform's share, by film and by
+      showtime (the sales report and each showtime's page).
+- [x] Money is always the API's figures; nothing is worked out in the browser.
+- [ ] For producers: their own figures and payout status, with a statement to download. Waits
+      for the portal.
+
+**Changed:** prices and the share come from the API (the base price is set per showtime, and the
+share per film), not from fixed amounts in this plan.
+
+### 5. Errors and resilience
+
+- [x] Every list and record has loading, error (with a retry) and empty states.
+- [x] A page that breaks keeps the sidebar and offers to try again (`error.tsx` in the dashboard
+      and the console).
+- [x] Sample data on a switch (`NEXT_PUBLIC_DATA_SOURCE`) while the API isn't connected.
+- [ ] An offline notice and a maintenance page: in [F9](../phases/phase-09-hardening-and-launch.md).
+
+### 6. Launch readiness
+
+In [F9](../phases/phase-09-hardening-and-launch.md): Web Vitals budgets
+([performance.md](../architecture/performance.md)), accessibility checks, the browsers to test,
+environments and domains, and the launch sign-off.
