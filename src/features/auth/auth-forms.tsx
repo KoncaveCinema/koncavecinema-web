@@ -333,8 +333,8 @@ export function ForgotPasswordForm() {
 }
 
 /**
- * Sets a password from an emailed link: a reset, or a staff invite (the same link; the API may add
- * `purpose=invite`, gap B4, which only changes the welcome).
+ * Sets a password from an emailed link: a reset, or a staff invite (the same link, with
+ * `purpose=invite` added, which only changes the welcome and where staff sign in afterwards).
  */
 export function ResetPasswordForm() {
   const router = useRouter();
