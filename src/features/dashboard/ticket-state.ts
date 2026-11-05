@@ -5,7 +5,7 @@ import type { TicketDetail } from "@/features/booking/api-types";
    dashboard home, the tickets list and the pass page always agree. */
 
 export type TicketPhase =
-  "hold" | "hold-expired" | "upcoming" | "lobby" | "live" | "ended" | "cancelled";
+  "hold" | "hold-expired" | "released" | "upcoming" | "lobby" | "live" | "ended" | "cancelled";
 
 export interface TicketView {
   phase: TicketPhase;
@@ -31,6 +31,26 @@ export function ticketView(ticket: TicketDetail, now: number): TicketView {
   // The API serves each pass its own end of access; never work it out from the end time
   const cutoff = Date.parse(ticket.accessEndsAt);
   const showtimePage = `/movies/${ticket.movieSlug}/showtimes/${ticket.showtimeId}`;
+
+  // A hold that ran out or was let go: the API cancels it with that reason (it never sets
+  // EXPIRED today); either way the member can book again while the screening is to come
+  const rebook = now < start ? { label: "Book again", href: showtimePage } : null;
+  if (ticket.status === "CANCELLED" && ticket.cancellation?.reason === "HOLD_EXPIRED") {
+    return {
+      phase: "hold-expired",
+      badge: { kind: "ticket", status: "EXPIRED", label: "Hold expired" },
+      action: rebook,
+      watchable: false,
+    };
+  }
+  if (ticket.status === "CANCELLED" && ticket.cancellation?.reason === "RELEASED_BY_MEMBER") {
+    return {
+      phase: "released",
+      badge: { kind: "ticket", status: "EXPIRED", label: "Released" },
+      action: rebook,
+      watchable: false,
+    };
+  }
 
   if (ticket.status === "CANCELLED") {
     return {
@@ -59,7 +79,7 @@ export function ticketView(ticket: TicketDetail, now: number): TicketView {
     return {
       phase: "hold-expired",
       badge: { kind: "ticket", status: "EXPIRED", label: "Hold expired" },
-      action: now < start ? { label: "Book again", href: showtimePage } : null,
+      action: rebook,
       watchable: false,
     };
   }

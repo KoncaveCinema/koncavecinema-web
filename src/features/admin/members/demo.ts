@@ -162,6 +162,11 @@ export async function cancelPass(ticketId: string, reason: string): Promise<Pass
     }
   }
   pass.status = "CANCELLED";
+  pass.cancellation = {
+    reason: "CANCELLED_BY_SUPPORT",
+    message: reason,
+    cancelledAt: new Date().toISOString(),
+  };
   const payment = store.payments.find(
     (item) => item.ticketId === pass.id && item.status === "SUCCESS" && !item.refundRequiredAt,
   );

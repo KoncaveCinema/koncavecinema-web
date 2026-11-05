@@ -239,6 +239,7 @@ export async function cancelShowtime(id: string, reason: string): Promise<Showti
   let refundTotal = 0;
   for (const pass of affected) {
     pass.status = "CANCELLED";
+    pass.cancellation = { reason: "SHOWTIME_CANCELLED", message: reason, cancelledAt: now };
     const payment = store.payments.find(
       (item) => item.ticketId === pass.id && item.status === "SUCCESS",
     );

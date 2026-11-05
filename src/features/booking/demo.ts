@@ -70,7 +70,8 @@ interface DemoTicket {
 
 const SEEDED_KEY = "kc-demo-seeded";
 const MINUTE = 60_000;
-const DAY = 24 * 60 * MINUTE;
+const HOUR = 60 * MINUTE;
+const DAY = 24 * HOUR;
 
 /**
  * The demo's starting passes, so every state of the dashboard can be reviewed at once: a hold
@@ -205,6 +206,29 @@ function seedDemoPasses(): Record<string, DemoTicket> {
     tier: "INDIVIDUAL",
     status: "CHECKED_IN",
   });
+  // Holds that ended for screenings still to come: in Past, with Book again
+  add({
+    slug: "the-family-meeting",
+    showtime: 0,
+    tier: "INDIVIDUAL",
+    status: "CANCELLED",
+    cancellation: { reason: "RELEASED_BY_MEMBER", message: null, cancelledAt: iso(now - DAY) },
+  });
+  add({
+    slug: "starlight-over-kaduna",
+    showtime: 0,
+    tier: "PUBLIC",
+    status: "CANCELLED",
+    cancellation: { reason: "HOLD_EXPIRED", message: null, cancelledAt: iso(now - 3 * HOUR) },
+  });
+  // Paid twice for one pass: the pass stands, and the second payment is owed back
+  add({
+    slug: "house-of-amina",
+    showtime: 0,
+    tier: "INDIVIDUAL",
+    status: "CONFIRMED",
+    refund: "PENDING",
+  });
   return tickets;
 }
 
@@ -230,14 +254,27 @@ function inviteCode(): string {
   return `VIP-${hex.join("").toUpperCase()}`;
 }
 
-/** Holds expire after 10 minutes; reading a demo ticket applies that rule */
+/**
+ * Holds expire after 10 minutes; reading a demo ticket applies that rule as the API does: the
+ * pass is cancelled with HOLD_EXPIRED (the API never sets status EXPIRED today).
+ */
 function withExpiry(ticket: DemoTicket): DemoTicket {
   const { detail } = ticket;
   if (detail.status === "RESERVED" && Date.parse(detail.lockExpiresAt ?? "") < Date.now()) {
-    return { ...ticket, detail: { ...detail, status: "EXPIRED", lockExpiresAt: null } };
+    return {
+      ...ticket,
+      detail: {
+        ...detail,
+        status: "CANCELLED",
+        lockExpiresAt: null,
+        cancellation: { reason: "HOLD_EXPIRED", message: null, cancelledAt: detail.lockExpiresAt! },
+      },
+    };
   }
   return ticket;
 }
+
+const holdExpired = (detail: StoredDetail) => detail.cancellation?.reason === "HOLD_EXPIRED";
 
 /** Suite seats taken for a host's invite code, the host included */
 function seatsTaken(tickets: Record<string, DemoTicket>, code: string): number {
@@ -389,9 +426,22 @@ export async function getTicket(ticketId: string): Promise<TicketDetail> {
   return demoDetail(tickets, stored);
 }
 
+/** As the API: the hold is cancelled as released by the member, and the pass stays in Past */
 export async function releaseTicket(ticketId: string): Promise<ReleaseTicketResponse> {
   const tickets = readDemo();
-  delete tickets[ticketId];
+  const stored = tickets[ticketId];
+  if (stored && stored.detail.status === "RESERVED") {
+    stored.detail = {
+      ...stored.detail,
+      status: "CANCELLED",
+      lockExpiresAt: null,
+      cancellation: {
+        reason: "RELEASED_BY_MEMBER",
+        message: null,
+        cancelledAt: new Date().toISOString(),
+      },
+    };
+  }
   writeDemo(tickets);
   return { message: "Reservation released.", ticketId };
 }
@@ -408,7 +458,7 @@ export async function verifyPayment(
   const ticket = withExpiry(stored);
   const amountPaid = ticket.detail.pricing.totalPayable;
   // Paid after the hold lapsed: money moved but no seat is confirmed
-  if (ticket.detail.status === "EXPIRED") {
+  if (holdExpired(ticket.detail)) {
     return {
       reference,
       status: "SUCCESS",
@@ -416,7 +466,7 @@ export async function verifyPayment(
       amountPaid,
       currency: ticket.detail.currency,
       outcome: "REFUND_PENDING",
-      ticketStatus: "EXPIRED",
+      ticketStatus: "CANCELLED",
     };
   }
   tickets[ticketId] = {
@@ -446,28 +496,33 @@ export async function listMyTickets(
   const all = Object.values(tickets)
     .filter((ticket) => !ticket.foreign)
     .map((ticket) => demoDetail(tickets, ticket));
-  // As the API: holds and passes whose screening can still be watched (until the cutoff)
-  const watchable = (ticket: TicketDetail) =>
-    ["RESERVED", "CONFIRMED", "CHECKED_IN"].includes(ticket.status) && watchableUntil(ticket) > now;
+  // As the API (its 1.5): every pass in exactly one tab. Upcoming: paid passes still watchable,
+  // and holds within their 10 minutes (a lapsed one is already cancelled when read). Past:
+  // everything else, cancelled ones included even when the screening is still to come.
+  const usable = (ticket: TicketDetail) =>
+    ticket.status === "RESERVED" ||
+    (["CONFIRMED", "CHECKED_IN"].includes(ticket.status) && watchableUntil(ticket) > now);
   const items =
     when === "upcoming"
-      ? all.filter(watchable).sort((a, b) => Date.parse(a.startTime) - Date.parse(b.startTime))
+      ? all.filter(usable).sort((a, b) => Date.parse(a.startTime) - Date.parse(b.startTime))
       : when === "past"
         ? all
-            .filter((ticket) => watchableUntil(ticket) <= now)
+            .filter((ticket) => !usable(ticket))
             .sort((a, b) => Date.parse(b.startTime) - Date.parse(a.startTime))
         : all.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+  const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
+  const current = Math.min(Math.max(1, page), totalPages);
   return {
-    items,
+    items: items.slice((current - 1) * pageSize, current * pageSize),
     meta: {
-      page,
+      page: current,
       pageSize,
       total: items.length,
-      totalPages: 1,
-      hasNextPage: false,
-      hasPreviousPage: false,
-      nextPage: null,
-      previousPage: null,
+      totalPages,
+      hasNextPage: current < totalPages,
+      hasPreviousPage: current > 1,
+      nextPage: current < totalPages ? current + 1 : null,
+      previousPage: current > 1 ? current - 1 : null,
     },
   };
 }

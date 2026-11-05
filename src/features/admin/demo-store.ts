@@ -1,5 +1,5 @@
 import type { UserProfile, UserRole } from "@/features/auth/api-types";
-import type { PaymentStatus, TicketStatus } from "@/features/booking/api-types";
+import type { PaymentStatus, TicketCancellation, TicketStatus } from "@/features/booking/api-types";
 import { buildFixtureCatalog } from "@/features/catalog/fixture-films";
 import { fixturePricing } from "@/features/catalog/fixture-pricing";
 import { readDemoStore, writeDemoStore } from "@/lib/demo";
@@ -126,6 +126,8 @@ export interface DemoPass {
   roomInviteCode: string | null;
   /** A suite guest's host pass */
   hostPassId: string | null;
+  /** Why it was cancelled, as the API records it; null unless `status` is CANCELLED */
+  cancellation: TicketCancellation | null;
 }
 
 export interface DemoPayment {
@@ -631,6 +633,15 @@ function seedStore(): AdminStore {
               .padStart(6, "0")
           : null,
       hostPassId: seed.hostPassId ?? null,
+      // A cancelled screening's passes carry its reason and the staff message
+      cancellation:
+        seed.status === "CANCELLED" && seed.showtime.cancelledAt
+          ? {
+              reason: "SHOWTIME_CANCELLED",
+              message: seed.showtime.cancellationReason,
+              cancelledAt: seed.showtime.cancelledAt,
+            }
+          : null,
     };
     store.passes.push(pass);
     if (seed.payment && !guest) {
@@ -699,14 +710,20 @@ function seedStore(): AdminStore {
       });
     }
     if (state === "PAST" && random() < 0.3) {
-      addPass({
+      // The hold ran out unpaid: the API cancels it as HOLD_EXPIRED (it never sets EXPIRED)
+      const abandoned = addPass({
         showtime,
         member: pick(viewers),
         tier: "PUBLIC",
-        status: "EXPIRED",
+        status: "CANCELLED",
         boughtAt: start - 2 * DAY,
         payment: "FAILED",
       });
+      abandoned.cancellation = {
+        reason: "HOLD_EXPIRED",
+        message: null,
+        cancelledAt: iso(start - 2 * DAY + 10 * MINUTE),
+      };
     }
   }
 
@@ -734,6 +751,11 @@ function seedStore(): AdminStore {
   const supportCancelled = upcomingPaid[0];
   if (supportCancelled) {
     supportCancelled.status = "CANCELLED";
+    supportCancelled.cancellation = {
+      reason: "CANCELLED_BY_SUPPORT",
+      message: "Booked the wrong night, cancelled at the member's request.",
+      cancelledAt: iso(now - 20 * HOUR),
+    };
     owe(paymentOf(supportCancelled)!, "CANCELLED_BY_SUPPORT", now - 20 * HOUR);
   }
   const refundedPasses = store.passes

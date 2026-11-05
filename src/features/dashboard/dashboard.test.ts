@@ -97,6 +97,34 @@ describe("ticketView", () => {
     expect(ticketView(ticket({ status: "EXPIRED" }), start + MINUTE).action).toBeNull();
   });
 
+  it("reads why the API cancelled a hold: ran out, or let go by the member", () => {
+    const now = start - 60 * MINUTE;
+    const cancelledAt = new Date(now - MINUTE).toISOString();
+    const ranOut = ticket({
+      status: "CANCELLED",
+      cancellation: { reason: "HOLD_EXPIRED", message: null, cancelledAt },
+    });
+    expect(ticketView(ranOut, now)).toMatchObject({
+      phase: "hold-expired",
+      badge: { label: "Hold expired" },
+      action: { label: "Book again" },
+    });
+    const letGo = ticket({
+      status: "CANCELLED",
+      cancellation: { reason: "RELEASED_BY_MEMBER", message: null, cancelledAt },
+    });
+    expect(ticketView(letGo, now)).toMatchObject({
+      phase: "released",
+      badge: { label: "Released" },
+    });
+    // A staff cancellation stays a cancellation
+    const bySupport = ticket({
+      status: "CANCELLED",
+      cancellation: { reason: "CANCELLED_BY_SUPPORT", message: "At your request.", cancelledAt },
+    });
+    expect(ticketView(bySupport, now).phase).toBe("cancelled");
+  });
+
   it("says what happened to a cancelled pass's money", () => {
     const refund = { amount: 5178, currency: "NGN", refundedAt: null };
     const pending = ticketView(
