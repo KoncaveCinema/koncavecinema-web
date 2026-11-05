@@ -2,14 +2,14 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { PageSkeleton } from "@/features/auth/require-session";
-import { InviteClaim } from "@/features/booking/invite-claim";
+import { InvitePage } from "@/features/booking/invite-page";
 
 export const metadata: Metadata = { title: "You're invited" };
 
-export default function InvitePage({ params }: PageProps<"/invite/[code]">) {
+export default function Page({ params }: PageProps<"/invite/[code]">) {
   return (
     <Suspense fallback={<PageSkeleton />}>
-      <InviteClaim params={params} />
+      <InvitePage params={params} />
     </Suspense>
   );
 }

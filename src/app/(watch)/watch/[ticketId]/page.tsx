@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
-import { WatchRoom } from "@/features/watch/watch-room";
+import { WatchPage } from "@/features/watch/watch-page";
 
 export const metadata: Metadata = { title: "Screening room" };
 
 /** The pass's screening. The id comes from the address, so the room streams in behind black. */
-export default function WatchPage({ params }: PageProps<"/watch/[ticketId]">) {
+export default function Page({ params }: PageProps<"/watch/[ticketId]">) {
   return (
     <Suspense fallback={<div className="min-h-svh bg-black" />}>
-      <WatchRoom params={params} />
+      <WatchPage params={params} />
     </Suspense>
   );
 }

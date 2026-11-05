@@ -109,6 +109,11 @@ network) are in [performance.md](./performance.md).
   `/admin/films` and `film-details-page.tsx` (`FilmDetailsPage`) for `/admin/films/[id]`. A file
   that doesn't end in `-page` is a part of a page: a panel, a dialog, a form or a helper. A
   page file exports its page (and its loading skeleton), nothing another page imports.
+- **Two kinds of route stay as they are.**
+  - **Auth routes** frame a form (`SignInForm` and others), and a form is a part of a page.
+  - **Marketing and legal pages** (home, films, showtimes, help, producers, the legal documents)
+    are Server Components that compose their sections in the route file itself, with their
+    metadata and static params.
 - **No `index.tsx` files.** Every page would open as an "index.tsx" tab, and index files read as
   barrels, which slow builds and defeat tree-shaking.
 - **Shared code:** `src/components/ui/` (shadcn primitives, owned here),

@@ -2,14 +2,14 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { PageSkeleton } from "@/features/auth/require-session";
-import { CheckoutFlow } from "@/features/booking/checkout-flow";
+import { CheckoutPage } from "@/features/booking/checkout-page";
 
 export const metadata: Metadata = { title: "Checkout" };
 
-export default function CheckoutPage({ params }: PageProps<"/checkout/[ticketId]">) {
+export default function Page({ params }: PageProps<"/checkout/[ticketId]">) {
   return (
     <Suspense fallback={<PageSkeleton />}>
-      <CheckoutFlow params={params} />
+      <CheckoutPage params={params} />
     </Suspense>
   );
 }

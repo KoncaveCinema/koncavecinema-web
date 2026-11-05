@@ -68,7 +68,7 @@ function useIdle(active: boolean): boolean {
  * once the doors open, then plays the room's moment. Every refusal has its own screen with the
  * way on; the pass and the API's checks decide, never the page.
  */
-export function WatchRoom({ params }: { params: Promise<{ ticketId: string }> }) {
+export function WatchPage({ params }: { params: Promise<{ ticketId: string }> }) {
   const { ticketId } = use(params);
   const ticket = useTicket(ticketId);
   const now = useServerNow();

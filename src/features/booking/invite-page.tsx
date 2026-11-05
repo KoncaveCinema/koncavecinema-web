@@ -81,7 +81,7 @@ function PreviewCard({ preview, code }: { preview: InvitePreview; code: string }
  * their seat. Claiming needs an account, so a signed-out guest goes through sign-in or
  * registration and comes straight back here.
  */
-export function InviteClaim({ params }: { params: Promise<{ code: string }> }) {
+export function InvitePage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = use(params);
   const pathname = usePathname();
   const status = useSession((state) => state.status);

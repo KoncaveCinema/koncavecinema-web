@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
-import { RoomPicker } from "@/features/booking/room-picker";
+import { ChooseRoomPage } from "@/features/booking/choose-room-page";
 import { getSchedule, getShowtime, getShowtimeCapacity } from "@/features/catalog/queries";
 
 type Props = PageProps<"/movies/[slug]/showtimes/[showtimeId]">;
@@ -27,7 +27,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 /** Booking step 1: choose a room for this showtime. */
-export default async function ShowtimePage({ params }: Props) {
+export default async function Page({ params }: Props) {
   const { slug, showtimeId } = await params;
   const match = await getShowtime(slug, showtimeId);
   if (!match) notFound();
@@ -45,7 +45,7 @@ export default async function ShowtimePage({ params }: Props) {
   return (
     // The chosen room lives in the link (?room=), so it survives signing in
     <Suspense>
-      <RoomPicker
+      <ChooseRoomPage
         capacity={capacity}
         film={{
           slug: film.slug,

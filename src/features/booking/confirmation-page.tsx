@@ -352,7 +352,7 @@ function ConfirmationReader({ ticketId }: { ticketId: string }) {
 }
 
 /** /checkout/[ticketId]/confirmation: where Paystack returns, with ?reference= */
-export function Confirmation({ params }: { params: Promise<{ ticketId: string }> }) {
+export function ConfirmationPage({ params }: { params: Promise<{ ticketId: string }> }) {
   const { ticketId } = use(params);
   return (
     <RequireSession fallback={<PageSkeleton />}>

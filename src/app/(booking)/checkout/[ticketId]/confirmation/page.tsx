@@ -2,16 +2,14 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { PageSkeleton } from "@/features/auth/require-session";
-import { Confirmation } from "@/features/booking/confirmation";
+import { ConfirmationPage } from "@/features/booking/confirmation-page";
 
 export const metadata: Metadata = { title: "Booking confirmed" };
 
-export default function ConfirmationPage({
-  params,
-}: PageProps<"/checkout/[ticketId]/confirmation">) {
+export default function Page({ params }: PageProps<"/checkout/[ticketId]/confirmation">) {
   return (
     <Suspense fallback={<PageSkeleton />}>
-      <Confirmation params={params} />
+      <ConfirmationPage params={params} />
     </Suspense>
   );
 }

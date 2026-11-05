@@ -365,7 +365,7 @@ function CheckoutLoader({ ticketId }: { ticketId: string }) {
 }
 
 /** /checkout/[ticketId]: identity (Public halls), snacks and review, around a held seat. */
-export function CheckoutFlow({ params }: { params: Promise<{ ticketId: string }> }) {
+export function CheckoutPage({ params }: { params: Promise<{ ticketId: string }> }) {
   const { ticketId } = use(params);
   return (
     <RequireSession fallback={<PageSkeleton />}>

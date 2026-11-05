@@ -20,7 +20,7 @@ for the film, and a demo-only switcher reaches every refusal. The phase doc is
 | :------------------ | :------------------ | :--------------------------------------------------------------- | :----------------------------------------------------------------------- |
 | `/watch/[ticketId]` | Signed in, the pass | Lobby, then the film; every refusal on its own screen; noindexed | `POST /stream-security/authorize-playback`, `/heartbeat`, `/secure-stop` |
 
-Code in `src/features/watch/`: `watch-room.tsx` (the room's states), `player.tsx` (Mux Player,
+Code in `src/features/watch/`: `watch-page.tsx` (the room's states), `player.tsx` (Mux Player,
 sync, heartbeat, DRM renewal), `sync.ts` (the clock and the watermark's drift), `screens.tsx`
 (lobby countdown and refusals). Mux Player loads on this route only.
 

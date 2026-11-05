@@ -148,7 +148,7 @@ function RoomCard({
  * Step 1 of booking: choose a room for one showtime. Continuing holds the seat for 10 minutes
  * (signed in), or goes through sign-in first and comes back with the room still chosen.
  */
-export function RoomPicker({
+export function ChooseRoomPage({
   capacity,
   film,
 }: {
