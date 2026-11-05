@@ -1,3 +1,5 @@
+import { downloadFile } from "./download";
+
 /**
  * Builds an iCalendar (RFC 5545) event that Google Calendar, Apple Calendar and Outlook all
  * import. Used for "Add to calendar" on showtimes, with no backend involved.
@@ -87,12 +89,9 @@ export function googleCalendarUrl(event: CalendarEvent): string {
 
 /** Saves the event as an .ics file through the browser's download (browser only). */
 export function downloadIcs(event: CalendarEvent, filename: string) {
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(
-    new Blob([buildIcs(event)], { type: "text/calendar;charset=utf-8" }),
+  downloadFile(
+    buildIcs(event),
+    "text/calendar;charset=utf-8",
+    filename.endsWith(".ics") ? filename : `${filename}.ics`,
   );
-  link.download = filename.endsWith(".ics") ? filename : `${filename}.ics`;
-  link.click();
-  // Revoke after the download has started (immediate revocation cancels it in some browsers)
-  setTimeout(() => URL.revokeObjectURL(link.href), 10_000);
 }
