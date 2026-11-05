@@ -14,6 +14,8 @@ export interface UserProfile {
   isPhoneVerified: boolean;
   role: UserRole;
   createdAt: string;
+  /** When the screen alias may next change (once every 30 days); null when it may change now */
+  aliasChangeableAt: string | null;
 }
 
 /** POST /auth/login. The refresh token arrives as an HttpOnly cookie. */
