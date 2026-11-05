@@ -12,9 +12,13 @@ export interface AuditQuery {
   userId?: string;
   /** An action prefix, e.g. ADMIN_ or PAYMENT_ */
   action?: string;
+  /** Where this page starts: the previous page's `nextCursor`; the newest when absent */
+  cursor?: string;
+  /** Entries a page: 50 when absent (the API's default), at most 100 */
+  limit?: number;
 }
 
-export function listAudit(query: AuditQuery & { cursor?: string }): Promise<AuditPage> {
+export function listAudit(query: AuditQuery): Promise<AuditPage> {
   if (isDemo) return demo.listAudit(query);
-  return api.get<AuditPage>("/admin/audit-logs", { params: { ...query, limit: 50 } });
+  return api.get<AuditPage>("/admin/audit-logs", { params: query });
 }

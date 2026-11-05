@@ -1,16 +1,15 @@
 "use client";
 
 import { cn } from "cn";
-import { ChevronRight, ScrollText, X } from "lucide-react";
+import { ScrollText, X } from "lucide-react";
 import { parseAsString, useQueryStates } from "nuqs";
 
 import { PageHeader } from "@/components/console/page-header";
 import { Panel } from "@/components/console/panel";
-import { EmptyState, ErrorState } from "@/components/states/states";
 import { StatusBadge } from "@/components/console/status-badge";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { DataTable, type Column } from "@/components/data-table/data-table";
 import { fieldClass } from "@/features/auth/form-parts";
+import { useCursorPagination } from "@/hooks/use-cursor-pagination";
 import { formatLagosDateTime } from "@/lib/format";
 import { browserSummary } from "@/lib/user-agent";
 
@@ -43,45 +42,46 @@ const ACTIONS: Record<string, string> = {
   ADMIN_STAFF_ROLE_CHANGED: "Staff role changed",
 };
 
-function Entry({ entry }: { entry: AuditEntry }) {
-  const hasMetadata = entry.metadata && Object.keys(entry.metadata).length > 0;
-  const summary = (
-    <>
-      <span className="min-w-0">
-        <span className="block font-medium">{ACTIONS[entry.action] ?? entry.action}</span>
-        <span className="block truncate text-xs text-white/45">
+const COLUMNS: Column<AuditEntry>[] = [
+  {
+    id: "action",
+    header: "What happened",
+    cell: (entry) => (
+      <span className="block min-w-0">
+        <span className="block">{ACTIONS[entry.action] ?? entry.action}</span>
+        <span className="block truncate text-xs font-normal text-white/45">
           {entry.user ? entry.user.email : "No account"} · {entry.ipAddress ?? "Unknown address"} ·{" "}
           {browserSummary(entry.userAgent)}
         </span>
       </span>
-      <span className="flex shrink-0 flex-col items-end gap-1.5 sm:flex-row sm:items-center sm:gap-3">
-        {entry.user && <StatusBadge kind="role" status={entry.user.role} />}
-        <span className="text-xs whitespace-nowrap text-white/55">
-          {formatLagosDateTime(entry.timestamp)}
-        </span>
+    ),
+  },
+  {
+    id: "role",
+    header: "Role",
+    cell: (entry) =>
+      entry.user ? (
+        <StatusBadge kind="role" status={entry.user.role} />
+      ) : (
+        <span className="text-white/35">None</span>
+      ),
+  },
+  {
+    id: "when",
+    header: "When",
+    align: "end",
+    cell: (entry) => (
+      <span className="whitespace-nowrap text-white/55">
+        {formatLagosDateTime(entry.timestamp)}
       </span>
-    </>
-  );
+    ),
+  },
+];
 
-  if (!hasMetadata) {
-    return (
-      <div className="flex items-start justify-between gap-4 py-3.5 pr-5 pl-11">{summary}</div>
-    );
-  }
-  return (
-    <details className="group">
-      <summary className="flex cursor-pointer list-none items-start justify-between gap-4 py-3.5 pr-5 pl-4 transition-colors hover:bg-white/3 [&::-webkit-details-marker]:hidden">
-        <ChevronRight
-          aria-hidden="true"
-          className="mt-0.5 size-4 shrink-0 text-white/40 transition-transform group-open:rotate-90"
-        />
-        <span className="flex min-w-0 flex-1 items-start justify-between gap-4">{summary}</span>
-      </summary>
-      <pre className="mx-5 mb-4 overflow-x-auto rounded-lg bg-black/40 p-4 font-mono text-xs leading-relaxed text-white/70">
-        {JSON.stringify(entry.metadata, null, 2)}
-      </pre>
-    </details>
-  );
+/** What the API recorded with the entry, opened beneath its row; nothing when it kept none */
+function metadataOf(entry: AuditEntry) {
+  if (!entry.metadata || Object.keys(entry.metadata).length === 0) return null;
+  return <pre className="font-mono leading-relaxed">{JSON.stringify(entry.metadata, null, 2)}</pre>;
 }
 
 /** /admin/audit: everything that happened, newest first, by member and by kind of action. */
@@ -90,13 +90,19 @@ export function AuditLog() {
     userId: parseAsString.withDefault(""),
     action: parseAsString.withDefault(""),
   });
+  // The API's own page size for the log; a new filter starts again from the newest
+  const pagination = useCursorPagination(50);
+  const setFilter = (next: Partial<Record<"userId" | "action", string | null>>) => {
+    void setFilters(next);
+    pagination.first();
+  };
   // The API takes capital letters and underscores only; anything else isn't asked for
   const actionValid = !filters.action || /^[A-Z_]+$/.test(filters.action);
   const audit = useAudit({
     userId: filters.userId || undefined,
     action: actionValid ? filters.action || undefined : undefined,
+    ...pagination.query,
   });
-  const entries = audit.data?.pages.flatMap((page) => page.items) ?? [];
 
   return (
     <>
@@ -115,7 +121,7 @@ export function AuditLog() {
                   key={preset.value}
                   type="button"
                   aria-pressed={active}
-                  onClick={() => void setFilters({ action: active ? null : preset.value })}
+                  onClick={() => setFilter({ action: active ? null : preset.value })}
                   className={cn(
                     "h-9 rounded-full border px-3.5 text-sm transition-colors",
                     active
@@ -134,7 +140,7 @@ export function AuditLog() {
               <input
                 value={filters.action}
                 onChange={(event) =>
-                  void setFilters({ action: event.target.value.toUpperCase() || null })
+                  setFilter({ action: event.target.value.toUpperCase() || null })
                 }
                 placeholder="Action, e.g. ADMIN_STAFF"
                 aria-invalid={!actionValid}
@@ -145,7 +151,7 @@ export function AuditLog() {
               <span className="sr-only">Member id</span>
               <input
                 value={filters.userId}
-                onChange={(event) => void setFilters({ userId: event.target.value.trim() || null })}
+                onChange={(event) => setFilter({ userId: event.target.value.trim() || null })}
                 placeholder="Member id (from a member's page)"
                 className={cn(fieldClass, "h-10 rounded-full pr-10 font-mono text-xs")}
               />
@@ -153,7 +159,7 @@ export function AuditLog() {
                 <button
                   type="button"
                   aria-label="Show everyone"
-                  onClick={() => void setFilters({ userId: null })}
+                  onClick={() => setFilter({ userId: null })}
                   className="absolute top-1/2 right-2 grid size-7 -translate-y-1/2 place-items-center rounded-full text-white/50 hover:bg-white/8 hover:text-foreground"
                 >
                   <X className="size-3.5" />
@@ -168,37 +174,34 @@ export function AuditLog() {
           )}
         </div>
 
-        {audit.isPending ? (
-          <div className="space-y-3 p-5">
-            {Array.from({ length: 8 }, (_, index) => (
-              <Skeleton key={index} className="h-10" />
-            ))}
-          </div>
-        ) : audit.isError ? (
-          <ErrorState onRetry={() => void audit.refetch()} />
-        ) : entries.length === 0 ? (
-          <EmptyState icon={ScrollText} title="Nothing recorded for these filters" />
-        ) : (
-          <ul className="divide-y divide-white/6 text-sm">
-            {entries.map((entry) => (
-              <li key={entry.id}>
-                <Entry entry={entry} />
-              </li>
-            ))}
-          </ul>
-        )}
-
-        {audit.hasNextPage && (
-          <div className="border-t border-white/8 p-4 text-center">
-            <Button
-              variant="outline"
-              disabled={audit.isFetchingNextPage}
-              onClick={() => void audit.fetchNextPage()}
-            >
-              {audit.isFetchingNextPage ? "Loading…" : "Load more"}
-            </Button>
-          </div>
-        )}
+        <DataTable
+          rows={audit.data?.items}
+          columns={COLUMNS}
+          rowKey={(entry) => entry.id}
+          expanded={metadataOf}
+          isLoading={audit.isPending}
+          error={audit.error}
+          onRetry={() => void audit.refetch()}
+          caption="Audit log"
+          loadingRows={8}
+          empty={{ icon: ScrollText, title: "Nothing recorded yet" }}
+          filtered={
+            filters.action || filters.userId
+              ? {
+                  title: "Nothing recorded for these filters",
+                  hint: "Try another kind of action or another member, or clear the filters.",
+                  onClear: () => setFilter({ action: null, userId: null }),
+                }
+              : undefined
+          }
+          pagination={{
+            cursor: audit.data && {
+              count: audit.data.items.length,
+              nextCursor: audit.data.nextCursor,
+            },
+            state: pagination,
+          }}
+        />
       </Panel>
     </>
   );

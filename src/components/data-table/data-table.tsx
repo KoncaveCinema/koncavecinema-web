@@ -2,9 +2,9 @@
 // (already the boundary) import it, and its props never cross from the server.
 
 import { cn } from "cn";
-import { FilterX } from "lucide-react";
+import { ChevronRight, FilterX } from "lucide-react";
 import Link from "next/link";
-import type { ComponentProps, ReactNode } from "react";
+import { Fragment, useState, type ComponentProps, type ReactNode } from "react";
 
 import { EmptyState, ErrorState } from "@/components/states/states";
 import { Button } from "@/components/ui/button";
@@ -18,10 +18,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import type { CursorPagination } from "@/hooks/use-cursor-pagination";
 import type { Pagination } from "@/hooks/use-pagination";
 import type { PaginationMeta } from "@/lib/api";
 
-import { DataTablePagination } from "./data-table-pagination";
+import { DataTableCursorPagination, DataTablePagination } from "./data-table-pagination";
 
 export interface Column<Row> {
   id: string;
@@ -44,7 +45,10 @@ export interface Column<Row> {
  * under the rows.
  *
  * With `rowHref`, the first column's text becomes a link stretched over the whole row, so a row
- * opens its record by click, tap or keyboard, without nesting interactive elements.
+ * opens its record by click, tap or keyboard, without nesting interactive elements. With
+ * `expanded`, a row with more to show gets a chevron that opens it beneath the row.
+ *
+ * Pagination is by page number (the API's `meta`) or, for lists too large to count, by cursor.
  */
 export function DataTable<Row>({
   rows,
@@ -57,6 +61,7 @@ export function DataTable<Row>({
   empty,
   filtered,
   pagination,
+  expanded,
   caption,
   loadingRows = 6,
   className,
@@ -72,15 +77,40 @@ export function DataTable<Row>({
   empty: ComponentProps<typeof EmptyState>;
   /** Set while a search or filter narrows the list: an empty result then offers to clear it */
   filtered?: { onClear: () => void; title?: string; hint?: ReactNode };
-  pagination?: { meta: PaginationMeta | undefined; state: Pagination };
+  pagination?:
+    | { meta: PaginationMeta | undefined; state: Pagination }
+    | {
+        cursor: { count: number; nextCursor: string | null } | undefined;
+        state: CursorPagination;
+      };
+  /** More about a row, opened beneath it; null for a row with nothing more */
+  expanded?: (row: Row) => ReactNode | null;
   /** For screen readers: what the table lists */
   caption: string;
   loadingRows?: number;
   className?: string;
 }) {
-  const footer = pagination?.meta && (
-    <DataTablePagination meta={pagination.meta} pagination={pagination.state} />
-  );
+  const [open, setOpen] = useState<ReadonlySet<string>>(new Set());
+  const toggle = (key: string) =>
+    setOpen((current) => {
+      const next = new Set(current);
+      if (!next.delete(key)) next.add(key);
+      return next;
+    });
+
+  const footer =
+    pagination &&
+    ("meta" in pagination
+      ? pagination.meta && (
+          <DataTablePagination meta={pagination.meta} pagination={pagination.state} />
+        )
+      : pagination.cursor && (
+          <DataTableCursorPagination
+            count={pagination.cursor.count}
+            nextCursor={pagination.cursor.nextCursor}
+            pagination={pagination.state}
+          />
+        ));
 
   if (error && !rows?.length) {
     return <ErrorState onRetry={onRetry} className={className} />;
@@ -122,28 +152,58 @@ export function DataTable<Row>({
     );
   };
 
+  /** The chevron that opens a row; the same on the card and in the table */
+  const opener = (key: string) => (
+    <button
+      type="button"
+      aria-expanded={open.has(key)}
+      aria-controls={`more-${key}`}
+      aria-label={open.has(key) ? "Hide details" : "Show details"}
+      onClick={() => toggle(key)}
+      className="grid size-7 place-items-center rounded-md text-white/40 transition-colors hover:bg-white/6 hover:text-foreground"
+    >
+      <ChevronRight
+        aria-hidden="true"
+        className={cn("size-4 transition-transform", open.has(key) && "rotate-90")}
+      />
+    </button>
+  );
+  const moreClass = "overflow-x-auto rounded-lg bg-black/40 p-4 text-xs text-white/70";
+
   return (
     <div className={className}>
       {/* Phones: one card per record */}
       <ul className="divide-y divide-white/8 md:hidden">
-        {rows.map((row) => (
-          <li
-            key={rowKey(row)}
-            className={cn("relative px-4 py-4", rowHref && "transition-colors hover:bg-white/3")}
-          >
-            <div className="text-sm font-medium">{firstCell(row)}</div>
-            <dl className="mt-2.5 grid grid-cols-2 gap-x-4 gap-y-2">
-              {rest
-                .filter((column) => !column.hideOnMobile)
-                .map((column) => (
-                  <div key={column.id} className="min-w-0">
-                    <dt className="text-[0.7rem] text-white/40">{column.header}</dt>
-                    <dd className="mt-0.5 truncate text-sm">{column.cell(row)}</dd>
-                  </div>
-                ))}
-            </dl>
-          </li>
-        ))}
+        {rows.map((row) => {
+          const key = rowKey(row);
+          const more = expanded?.(row);
+          return (
+            <li
+              key={key}
+              className={cn("relative px-4 py-4", rowHref && "transition-colors hover:bg-white/3")}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 text-sm font-medium">{firstCell(row)}</div>
+                {more && opener(key)}
+              </div>
+              <dl className="mt-2.5 grid grid-cols-2 gap-x-4 gap-y-2">
+                {rest
+                  .filter((column) => !column.hideOnMobile)
+                  .map((column) => (
+                    <div key={column.id} className="min-w-0">
+                      <dt className="text-[0.7rem] text-white/40">{column.header}</dt>
+                      <dd className="mt-0.5 truncate text-sm">{column.cell(row)}</dd>
+                    </div>
+                  ))}
+              </dl>
+              {more && open.has(key) && (
+                <div id={`more-${key}`} className={cn(moreClass, "mt-3")}>
+                  {more}
+                </div>
+              )}
+            </li>
+          );
+        })}
       </ul>
 
       {/* Tablets and up: a real table */}
@@ -151,32 +211,50 @@ export function DataTable<Row>({
         <Table>
           <TableCaption className="sr-only">{caption}</TableCaption>
           <TableHeader>
-            <HeaderRow columns={columns} />
+            <HeaderRow columns={columns} opener={Boolean(expanded)} />
           </TableHeader>
           <TableBody>
-            {rows.map((row) => (
-              <TableRow
-                key={rowKey(row)}
-                className={cn(
-                  "relative border-white/6",
-                  rowHref ? "hover:bg-white/3" : "hover:bg-white/2",
-                )}
-              >
-                {columns.map((column, index) => (
-                  <TableCell
-                    key={column.id}
+            {rows.map((row) => {
+              const key = rowKey(row);
+              const more = expanded?.(row);
+              return (
+                <Fragment key={key}>
+                  <TableRow
                     className={cn(
-                      cellClass(column),
-                      "h-12 whitespace-normal",
-                      index === 0 && "font-medium",
-                      column.align === "end" && "tabular-nums",
+                      "relative border-white/6",
+                      rowHref ? "hover:bg-white/3" : "hover:bg-white/2",
+                      more && open.has(key) && "border-b-0",
                     )}
                   >
-                    {index === 0 ? firstCell(row) : column.cell(row)}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))}
+                    {expanded && (
+                      <TableCell className="w-10 pr-0 pl-3">{more && opener(key)}</TableCell>
+                    )}
+                    {columns.map((column, index) => (
+                      <TableCell
+                        key={column.id}
+                        className={cn(
+                          cellClass(column),
+                          "h-12 whitespace-normal",
+                          index === 0 && "font-medium",
+                          column.align === "end" && "tabular-nums",
+                        )}
+                      >
+                        {index === 0 ? firstCell(row) : column.cell(row)}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                  {more && open.has(key) && (
+                    <TableRow className="border-white/6 hover:bg-transparent">
+                      <TableCell colSpan={columns.length + 1} className="px-5 pt-0 pb-4">
+                        <div id={`more-${key}`} className={moreClass}>
+                          {more}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </Fragment>
+              );
+            })}
           </TableBody>
         </Table>
       </div>
@@ -191,9 +269,21 @@ function cellClass(column: { align?: "start" | "end"; className?: string }) {
   return cn("px-4 first:pl-5 last:pr-5", column.align === "end" && "text-right", column.className);
 }
 
-function HeaderRow<Row>({ columns }: { columns: Column<Row>[] }) {
+function HeaderRow<Row>({
+  columns,
+  opener = false,
+}: {
+  columns: Column<Row>[];
+  /** A narrow first column for the rows' chevrons */
+  opener?: boolean;
+}) {
   return (
     <TableRow className="border-white/8 hover:bg-transparent">
+      {opener && (
+        <TableHead className="w-10 pr-0 pl-3">
+          <span className="sr-only">Details</span>
+        </TableHead>
+      )}
       {columns.map((column) => (
         <TableHead
           key={column.id}

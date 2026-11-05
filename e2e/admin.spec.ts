@@ -87,13 +87,25 @@ test("staff invites are refused for an existing member of staff", async ({ page 
   await expect(page.getByText("This account is already staff.")).toBeVisible();
 });
 
-test("the audit log pages on with Load more", async ({ page }) => {
-  await page.goto("/admin/audit");
-  const entries = page.locator("main li");
-  await expect(entries.first()).toBeVisible();
-  const before = await entries.count();
-  await page.getByRole("button", { name: "Load more" }).click();
-  await expect.poll(() => entries.count()).toBeGreaterThan(before);
+test("the audit log pages on its cursor, and an entry opens to show what was recorded", async ({
+  page,
+}) => {
+  await page.goto("/admin/audit?pageSize=10");
+  const pages = page.getByRole("navigation", { name: "Pages" });
+  await expect(pages.getByText("Page 1", { exact: true })).toBeVisible();
+  await expect(pages.getByText(/^Showing 1[–-]10$/)).toBeVisible();
+  await pages.getByRole("button", { name: "Next page" }).click();
+  await expect(pages.getByText("Page 2", { exact: true })).toBeVisible();
+  await expect(pages.getByText(/^Showing 11[–-]20$/)).toBeVisible();
+  await pages.getByRole("button", { name: "Previous page" }).click();
+  await expect(pages.getByText("Page 1", { exact: true })).toBeVisible();
+
+  // The first row with details; its name turns to "Hide details" once open
+  const opener = visibleTable(page).locator("button[aria-controls]").first();
+  await expect(opener).toHaveAccessibleName("Show details");
+  await opener.click();
+  await expect(opener).toHaveAttribute("aria-expanded", "true");
+  await expect(visibleTable(page).locator("pre").first()).toBeVisible();
 });
 
 test("a long list pages through at the size you choose", async ({ page }) => {
