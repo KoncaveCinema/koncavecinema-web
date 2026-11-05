@@ -34,6 +34,8 @@ function ticket(overrides: Partial<TicketDetail> = {}): TicketDetail {
     roomInviteCode: null,
     suiteSeats: null,
     suiteSeatsTaken: null,
+    cancellation: null,
+    refund: null,
     ...overrides,
   };
 }

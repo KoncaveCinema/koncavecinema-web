@@ -54,22 +54,32 @@ export interface TicketDetail {
   suiteSeats: number | null;
   /** Admitted members, the host included */
   suiteSeatsTaken: number | null;
-  /**
-   * Proposed to the backend (gap B2), not sent by the API yet; the demo fills them. Why a
-   * CANCELLED pass was cancelled, and what happened to its payment.
-   */
-  cancellation?: TicketCancellation | null;
-  refund?: TicketRefund | null;
+  /** Why the pass was cancelled; null unless `status` is CANCELLED */
+  cancellation: TicketCancellation | null;
+  /** Money owed back for the pass, whatever caused it (a CONFIRMED pass can have one too) */
+  refund: TicketRefund | null;
 }
 
-/** Proposed (gap B2): a cancelled pass's reason. `message` is the reason staff gave */
+/**
+ * SHOWTIME_CANCELLED and CANCELLED_BY_SUPPORT are staff decisions (with `message`); the member
+ * releases a hold, or it runs out (HOLD_EXPIRED: the API never sets status EXPIRED today).
+ * Null for passes cancelled before reasons were recorded.
+ */
+export type CancellationReason =
+  | "SHOWTIME_CANCELLED"
+  | "CANCELLED_BY_SUPPORT"
+  | "RELEASED_BY_MEMBER"
+  | "HOLD_EXPIRED"
+  | "ACCOUNT_DELETED";
+
 export interface TicketCancellation {
-  reason: "SHOWTIME_CANCELLED" | "CANCELLED_BY_SUPPORT";
+  reason: CancellationReason | null;
+  /** What staff wrote (the two staff reasons only) */
   message: string | null;
   cancelledAt: string;
 }
 
-/** Proposed (gap B2): money owed back for a pass, and whether it has been returned */
+/** REFUNDED once every owed payment for the pass has been refunded */
 export interface TicketRefund {
   state: "PENDING" | "REFUNDED";
   amount: number;

@@ -71,7 +71,7 @@ const DAY = 24 * 60 * MINUTE;
 
 /**
  * The demo's starting passes, so every state of the dashboard can be reviewed at once: a hold
- * in progress, a lobby open now, a suite with guests, a screening next week, watched screenings
+ * in progress, a screening live now, a lobby open now, a suite with guests, a screening next week, watched screenings
  * and cancelled ones with their refunds. Upcoming ones use the sample catalogue's real
  * showtimes, so "Book again" and the watch links lead somewhere real.
  */
@@ -154,6 +154,7 @@ function seedDemoPasses(): Record<string, DemoTicket> {
     }
   }
 
+  add({ slug: "ember-and-ash", showtime: 0, tier: "INDIVIDUAL", status: "CHECKED_IN" });
   add({ slug: "lagos-after-dark", showtime: 0, tier: "INDIVIDUAL", status: "CONFIRMED" });
   add({
     slug: "love-in-seclusion",
@@ -247,6 +248,48 @@ function demoDetail(tickets: Record<string, DemoTicket>, ticket: DemoTicket): Ti
   return { ...detail, suiteSeatsTaken: seatsTaken(tickets, detail.roomInviteCode) };
 }
 
+/* Cancelled screenings: the admin console's demo cancels them in this tab */
+
+const CANCELLED_KEY = "kc-demo-cancelled-showtimes";
+
+/** As the API refuses members: a cancelled screening can't be booked, joined or paid for */
+function refuseCancelled(showtimeId: string) {
+  if (readDemoStore<string[]>(CANCELLED_KEY, []).includes(showtimeId)) {
+    throw demoError(ErrorCode.SHOWTIME_CANCELLED, "This screening has been cancelled.");
+  }
+}
+
+/**
+ * Demo only: a showtime cancelled from the admin console. The member's passes for it are
+ * cancelled with the reason staff gave, and a paid one is owed back, as the API would record.
+ */
+export function cancelDemoShowtime(showtimeId: string, message: string) {
+  writeDemoStore(CANCELLED_KEY, [...readDemoStore<string[]>(CANCELLED_KEY, []), showtimeId]);
+  const tickets = readDemo();
+  const cancelledAt = new Date().toISOString();
+  for (const ticket of Object.values(tickets)) {
+    const { detail } = ticket;
+    if (detail.showtimeId !== showtimeId) continue;
+    if (!["RESERVED", "CONFIRMED", "CHECKED_IN"].includes(detail.status)) continue;
+    const paid = detail.status !== "RESERVED";
+    ticket.detail = {
+      ...detail,
+      status: "CANCELLED",
+      lockExpiresAt: null,
+      cancellation: { reason: "SHOWTIME_CANCELLED", message, cancelledAt },
+      refund: paid
+        ? {
+            state: "PENDING",
+            amount: detail.purchasePrice,
+            currency: detail.currency,
+            refundedAt: null,
+          }
+        : null,
+    };
+  }
+  writeDemo(tickets);
+}
+
 /* Endpoints, in the API's place */
 
 export async function reserveTicket(
@@ -254,6 +297,7 @@ export async function reserveTicket(
   tier: TicketTier,
 ): Promise<ReservationReceipt> {
   await demoDelay();
+  refuseCancelled(showtimeId);
   const showtime = demoShowtime(showtimeId);
   const pricing = showtime?.capacity.tiers.find((item) => item.tier === tier)?.pricing;
   if (!showtime || !pricing) {
@@ -314,6 +358,8 @@ export async function reserveTicket(
     roomInviteCode: code,
     suiteSeats: suite ? pricing.seatCount : null,
     suiteSeatsTaken: suite ? 1 : null,
+    cancellation: null,
+    refund: null,
   };
   tickets[ticketId] = { detail };
   writeDemo(tickets);
@@ -354,6 +400,7 @@ export async function verifyPayment(
   const tickets = readDemo();
   const stored = tickets[ticketId];
   if (!stored) throw demoError(ErrorCode.NOT_FOUND, "Payment not found.", 404);
+  refuseCancelled(stored.detail.showtimeId);
   const ticket = withExpiry(stored);
   const amountPaid = ticket.detail.pricing.totalPayable;
   // Paid after the hold lapsed: money moved but no seat is confirmed
@@ -463,6 +510,7 @@ export async function claimInvite(code: string): Promise<TicketDetail> {
   const host = Object.values(tickets).find(
     (ticket) => ticket.detail.roomInviteCode === inviteCode && !ticket.claimedFrom,
   );
+  if (host) refuseCancelled(host.detail.showtimeId);
   if (!host || host.detail.status !== "CONFIRMED") {
     throw demoError(ErrorCode.SUITE_NOT_ACTIVE, "This invite isn't active.", 409);
   }
