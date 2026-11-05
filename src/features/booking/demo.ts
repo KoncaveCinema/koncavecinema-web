@@ -57,8 +57,11 @@ export function rememberShowtime(
 const demoShowtime = (showtimeId: string) =>
   readDemoStore<Record<string, DemoShowtime>>(SHOWTIMES_KEY, {})[showtimeId] ?? null;
 
+/** A pass as stored; its end of access is worked out on every read, as the API serves it */
+type StoredDetail = Omit<TicketDetail, "accessEndsAt">;
+
 interface DemoTicket {
-  detail: TicketDetail;
+  detail: StoredDetail;
   /** Set for a guest's pass, claimed from a host's invite */
   claimedFrom?: string;
   /** Another member's pass (a seeded suite guest): never listed or opened as yours */
@@ -241,11 +244,12 @@ function seatsTaken(tickets: Record<string, DemoTicket>, code: string): number {
   return 1 + Object.values(tickets).filter((ticket) => ticket.claimedFrom === code).length;
 }
 
-/** A demo ticket as GET /tickets/:id returns it, with live suite counts */
+/** A demo ticket as GET /tickets/:id returns it, with its end of access and live suite counts */
 function demoDetail(tickets: Record<string, DemoTicket>, ticket: DemoTicket): TicketDetail {
   const { detail } = withExpiry(ticket);
-  if (!detail.isSuiteHost || !detail.roomInviteCode) return detail;
-  return { ...detail, suiteSeatsTaken: seatsTaken(tickets, detail.roomInviteCode) };
+  const served = { ...detail, accessEndsAt: new Date(watchableUntil(detail)).toISOString() };
+  if (!detail.isSuiteHost || !detail.roomInviteCode) return served;
+  return { ...served, suiteSeatsTaken: seatsTaken(tickets, detail.roomInviteCode) };
 }
 
 /* Cancelled screenings: the admin console's demo cancels them in this tab */
@@ -335,7 +339,7 @@ export async function reserveTicket(
   const seatIdentifier = nextPassNumber(tickets);
   const suite = pricing.seatCount > 1;
   const code = suite ? inviteCode() : null;
-  const detail: TicketDetail = {
+  const detail: StoredDetail = {
     id: ticketId,
     showtimeId,
     tier,
@@ -530,7 +534,7 @@ export async function claimInvite(code: string): Promise<TicketDetail> {
   ] as const) {
     zero[key] = 0;
   }
-  const detail: TicketDetail = {
+  const detail: StoredDetail = {
     ...host.detail,
     id,
     seatIdentifier: nextPassNumber(tickets),
@@ -546,5 +550,5 @@ export async function claimInvite(code: string): Promise<TicketDetail> {
   };
   tickets[id] = { detail, claimedFrom: inviteCode };
   writeDemo(tickets);
-  return detail;
+  return demoDetail(tickets, tickets[id]);
 }

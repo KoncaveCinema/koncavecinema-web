@@ -11,6 +11,9 @@ const MINUTE = 60_000;
 const start = Date.parse("2026-11-06T18:00:00.000Z");
 
 function ticket(overrides: Partial<TicketDetail> = {}): TicketDetail {
+  const tier = overrides.tier ?? "INDIVIDUAL";
+  // As the API serves it: an hour after the end for Individual Watch, 15 minutes otherwise
+  const accessEndsAfter = (tier === "INDIVIDUAL" ? 178 : 133) * MINUTE;
   return {
     id: "t1",
     showtimeId: "s1",
@@ -30,6 +33,7 @@ function ticket(overrides: Partial<TicketDetail> = {}): TicketDetail {
     movieSlug: "ember-and-ash",
     posterLandscape: "/l.jpg",
     lobbyOpensAt: new Date(start - 30 * MINUTE).toISOString(),
+    accessEndsAt: new Date(start + accessEndsAfter).toISOString(),
     isSuiteHost: false,
     roomInviteCode: null,
     suiteSeats: null,
@@ -42,7 +46,7 @@ function ticket(overrides: Partial<TicketDetail> = {}): TicketDetail {
 
 describe("ticketView", () => {
   it("walks a paid pass from confirmed to lobby, live and ended", () => {
-    const pass = ticket();
+    const pass = ticket({ tier: "PUBLIC" });
     expect(ticketView(pass, start - 2 * 60 * MINUTE).phase).toBe("upcoming");
     expect(ticketView(pass, start - 10 * MINUTE)).toMatchObject({
       phase: "lobby",
@@ -59,6 +63,15 @@ describe("ticketView", () => {
     expect(ticketView(ticket({ status: "CHECKED_IN" }), start + 200 * MINUTE).badge.label).toBe(
       "Watched",
     );
+  });
+
+  it("keeps an Individual pass watchable for an hour after the end", () => {
+    const pass = ticket();
+    expect(ticketView(pass, start + 148 * MINUTE)).toMatchObject({
+      phase: "live",
+      action: { label: "Watch now" },
+    });
+    expect(ticketView(pass, start + 178 * MINUTE).phase).toBe("ended");
   });
 
   it("sends a live hold back to checkout, and a lapsed one to book again", () => {

@@ -27,7 +27,8 @@ import { SUPPORT_EMAIL } from "@/features/support/content";
 import { useServerNow } from "@/hooks/use-now";
 import { ErrorCode, toApiError } from "@/lib/api";
 import { isDemo } from "@/lib/demo";
-import { screeningPhase, watchableUntil } from "@/lib/screening-window";
+import { formatClock } from "@/lib/format";
+import { screeningPhase, watchesAtOwnPace } from "@/lib/screening-window";
 
 import { DEMO_REFUSALS, setDemoRefusal, type DemoRefusal } from "./demo";
 import type { PlaybackEnd } from "./player";
@@ -77,7 +78,7 @@ export function WatchRoom({ params }: { params: Promise<{ ticketId: string }> })
 
   const pass = ticket.data;
   const phase = pass && now !== null ? screeningPhase(pass, now) : null;
-  const over = pass && now !== null && now >= watchableUntil(pass);
+  const over = pass && now !== null && now >= Date.parse(pass.accessEndsAt);
   const paid = pass?.status === "CONFIRMED" || pass?.status === "CHECKED_IN";
   const doorsOpen = paid && !over && (phase === "lobby" || phase === "live" || phase === "ended");
 
@@ -96,6 +97,7 @@ export function WatchRoom({ params }: { params: Promise<{ ticketId: string }> })
   });
   const authorization = ended ? undefined : playback.data;
   const playing = authorization !== undefined;
+  const ownPace = pass !== undefined && watchesAtOwnPace(pass.tier);
   const idle = useIdle(playing);
 
   const retry = () => {
@@ -223,6 +225,8 @@ export function WatchRoom({ params }: { params: Promise<{ ticketId: string }> })
         <Player
           ticketId={ticketId}
           title={pass.movieTitle}
+          ownPace={ownPace}
+          idle={idle}
           authorization={authorization}
           onEnd={setEnded}
           demoNudge={nudge}
@@ -309,7 +313,14 @@ export function WatchRoom({ params }: { params: Promise<{ ticketId: string }> })
         </Link>
         <div className="min-w-0 flex-1">
           <p className="truncate font-display text-base font-bold">{pass?.movieTitle ?? " "}</p>
-          {pass && <p className="truncate text-xs text-white/50">{roomName(pass.tier)}</p>}
+          {pass && (
+            <p className="truncate text-xs text-white/50">
+              {roomName(pass.tier)}
+              {/* The API's end of access for this pass, never worked out here. Once the film
+                  plays, the player shows it (in full screen too) */}
+              {ownPace && !playing && ` · Access ends at ${formatClock(pass.accessEndsAt)}`}
+            </p>
+          )}
         </div>
         {status && (
           <span className="flex shrink-0 items-center gap-2 rounded-full border border-white/12 bg-black/60 px-3 py-1 text-xs font-semibold">
@@ -335,6 +346,8 @@ export function WatchRoom({ params }: { params: Promise<{ ticketId: string }> })
       <footer className="flex flex-col items-center gap-4 px-4 py-6 text-center text-xs text-white/40">
         {isDemo && pass && (
           <DemoSwitcher
+            // Nobody to fall behind in Individual Watch
+            canFallBehind={playing && !ownPace}
             playing={playing}
             onRefuse={(code) => {
               setDemoRefusal(code);
@@ -360,10 +373,12 @@ export function WatchRoom({ params }: { params: Promise<{ ticketId: string }> })
 /** Demo only: reach every screen of the room without waiting for it to happen */
 function DemoSwitcher({
   playing,
+  canFallBehind,
   onRefuse,
   onBehind,
 }: {
   playing: boolean;
+  canFallBehind: boolean;
   onRefuse: (code: DemoRefusal) => void;
   onBehind: () => void;
 }) {
@@ -384,7 +399,7 @@ function DemoSwitcher({
             {DEMO_REFUSALS[code].label}
           </button>
         ))}
-      {playing && (
+      {canFallBehind && (
         <button
           type="button"
           onClick={onBehind}

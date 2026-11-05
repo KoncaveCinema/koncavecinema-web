@@ -48,6 +48,11 @@ export interface TicketDetail {
   posterLandscape: string;
   /** Start minus 30 minutes */
   lobbyOpensAt: string;
+  /**
+   * When this pass stops playing: the scheduled end plus 60 minutes for Individual Watch, plus
+   * 15 for the hall and suites. The API's rule; never work it out from `endTime`.
+   */
+  accessEndsAt: string;
   isSuiteHost: boolean;
   /** Suite host only */
   roomInviteCode: string | null;

@@ -2,7 +2,7 @@ import type { UserProfile } from "@/features/auth/api-types";
 import { getTicket } from "@/features/booking/demo";
 import { ErrorCode } from "@/lib/api";
 import { demoDelay, demoError, readDemoStore, writeDemoStore } from "@/lib/demo";
-import { LOBBY_OPENS_BEFORE_MS, watchableUntil } from "@/lib/screening-window";
+import { LOBBY_OPENS_BEFORE_MS } from "@/lib/screening-window";
 
 import type { HeartbeatResponse, PlaybackAuthorization } from "./api-types";
 
@@ -58,7 +58,7 @@ export async function authorizePlayback(ticketId: string): Promise<PlaybackAutho
   if (now < Date.parse(ticket.startTime) - LOBBY_OPENS_BEFORE_MS) {
     throw demoError(ErrorCode.STREAM_NOT_OPEN, "The lobby is not open yet.", 403);
   }
-  if (now >= watchableUntil(ticket)) {
+  if (now >= Date.parse(ticket.accessEndsAt)) {
     throw demoError(ErrorCode.STREAM_CLOSED, "This screening has ended.", 403);
   }
 
@@ -76,7 +76,7 @@ export async function authorizePlayback(ticketId: string): Promise<PlaybackAutho
     schedule: {
       startTime: ticket.startTime,
       endTime: ticket.endTime,
-      hardCutoff: new Date(watchableUntil(ticket)).toISOString(),
+      hardCutoff: ticket.accessEndsAt,
       serverTime: new Date(now).toISOString(),
     },
     watermark: {
@@ -94,13 +94,13 @@ export async function heartbeat(ticketId: string): Promise<HeartbeatResponse> {
   await demoDelay(200);
   takeRefusal([ErrorCode.STREAM_SESSION_INVALID, ErrorCode.STREAM_CLOSED]);
   const now = Date.now();
-  if (now >= watchableUntil(ticket)) {
+  if (now >= Date.parse(ticket.accessEndsAt)) {
     throw demoError(ErrorCode.STREAM_CLOSED, "This screening has ended.", 403);
   }
   return {
     leaseExpiresInSeconds: 90,
     serverTime: new Date(now).toISOString(),
-    hardCutoff: new Date(watchableUntil(ticket)).toISOString(),
+    hardCutoff: ticket.accessEndsAt,
   };
 }
 

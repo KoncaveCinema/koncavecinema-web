@@ -3,7 +3,7 @@
 
 import MuxPlayer from "@mux/mux-player-react";
 import { cn } from "cn";
-import { Play, Radio } from "lucide-react";
+import { Clock, Play, Radio } from "lucide-react";
 import { useEffect, useEffectEvent, useRef, useState, type ComponentRef } from "react";
 
 import { LogoMark } from "@/components/brand/logo";
@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { useServerNow } from "@/hooks/use-now";
 import { ErrorCode, serverOffset, toApiError } from "@/lib/api";
 import { isDemo } from "@/lib/demo";
-import { formatCountdown } from "@/lib/format";
+import { formatClock, formatCountdown } from "@/lib/format";
 
 import type { PlaybackAuthorization } from "./api-types";
 import { heartbeat, refreshDrmToken, secureStop } from "./service";
@@ -28,7 +28,9 @@ import {
 
 /*
  * The screening itself: Mux Player held on the first frame until the start, then playing the
- * room's moment. Loaded on the watch page only (next/dynamic), so no other page carries it.
+ * room's moment, or, for Individual Watch, the member's own film from the beginning, theirs to
+ * pause and rewind until the pass's cutoff. Loaded on the watch page only (next/dynamic), so no
+ * other page carries it.
  */
 
 export type PlaybackEnd = "another-device" | "closed";
@@ -36,6 +38,26 @@ export type PlaybackEnd = "another-device" | "closed";
 type PlayerElement = ComponentRef<typeof MuxPlayer>;
 
 const STAGE_ID = "watch-stage";
+
+/** Where an Individual viewer got to, kept on this device so a reload picks up from there */
+const positionKey = (ticketId: string) => `kc-watch-position:${ticketId}`;
+
+function readPosition(ticketId: string): number {
+  try {
+    const saved = Number(sessionStorage.getItem(positionKey(ticketId)));
+    return Number.isFinite(saved) && saved > 0 ? saved : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function savePosition(ticketId: string, seconds: number) {
+  try {
+    sessionStorage.setItem(positionKey(ticketId), String(Math.floor(seconds)));
+  } catch {
+    // Private windows may refuse storage; a reload then starts from the beginning
+  }
+}
 
 /** The viewer's alias and reference, drifting across the picture from the session's seed */
 function Watermark({ watermark }: { watermark: NonNullable<PlaybackAuthorization["watermark"]> }) {
@@ -68,12 +90,18 @@ function Watermark({ watermark }: { watermark: NonNullable<PlaybackAuthorization
 export default function Player({
   ticketId,
   title,
+  ownPace,
+  idle,
   authorization,
   onEnd,
   demoNudge,
 }: {
   ticketId: string;
   title: string;
+  /** Individual Watch: no room to keep up with, so pause and seek are the viewer's */
+  ownPace: boolean;
+  /** No pointer or key for a moment: what sits over the picture fades with the controls */
+  idle: boolean;
   authorization: PlaybackAuthorization;
   onEnd: (reason: PlaybackEnd) => void;
   /** Demo only: "behind" drops the player back 30 s; "heartbeat" sends one at once */
@@ -84,9 +112,11 @@ export default function Player({
   const now = useServerNow();
   const [zone, setZone] = useState<SyncZone>("live");
   const [needsTap, setNeedsTap] = useState(false);
+  const [shortOfTime, setShortOfTime] = useState(false);
   const { schedule, sessionId } = authorization;
   const startsAt = Date.parse(schedule.startTime);
   const started = now !== null && now >= startsAt;
+  const endsAt = formatClock(schedule.hardCutoff);
 
   /** Where the room is now. The demo's film is a short teaser, so it loops to stay in range. */
   const roomPosition = () => {
@@ -95,15 +125,17 @@ export default function Player({
     return isDemo && duration && Number.isFinite(duration) ? position % duration : position;
   };
 
-  const play = () => {
+  /** Plays from `from` (Individual Watch) or the room's moment; with neither, carries on */
+  const play = (from?: number) => {
     const player = ref.current;
     if (!player) return;
     // The room's moment needs the film's length (the demo loops), known once metadata loads
     if (player.readyState < 1) {
-      player.addEventListener("loadedmetadata", play, { once: true });
+      player.addEventListener("loadedmetadata", () => play(from), { once: true });
       return;
     }
-    player.currentTime = roomPosition();
+    const position = ownPace ? from : roomPosition();
+    if (position !== undefined) player.currentTime = position;
     player.play().then(
       () => setNeedsTap(false),
       // The browser wants a tap before sound plays
@@ -111,18 +143,27 @@ export default function Player({
     );
   };
 
-  // The start: everyone begins together, and a late arrival joins at the room's moment
-  const onStart = useEffectEvent(play);
+  // The start: the room begins together and a late arrival joins at the room's moment; an
+  // Individual viewer starts from the beginning, or where this device left off
+  const onStart = useEffectEvent(() => play(ownPace ? readPosition(ticketId) : undefined));
   useEffect(() => {
     if (started) onStart();
   }, [started]);
 
-  // Stay with the room: catch up gently, snap back from ahead, offer a jump when far behind
+  // Stay with the room: catch up gently, snap back from ahead, offer a jump when far behind.
+  // Individual Watch only keeps its place and watches the clock against the cutoff.
   const onSyncCheck = useEffectEvent(() => {
     const player = ref.current;
     if (!player) return;
-    if (Date.now() + serverOffset() >= Date.parse(schedule.hardCutoff)) {
+    const timeLeft = Date.parse(schedule.hardCutoff) - (Date.now() + serverOffset());
+    if (timeLeft <= 0) {
       onEnd("closed");
+      return;
+    }
+    if (ownPace) {
+      savePosition(ticketId, player.currentTime);
+      const rest = player.duration - player.currentTime;
+      setShortOfTime(!isDemo && Number.isFinite(rest) && rest * 1000 > timeLeft);
       return;
     }
     const target = roomPosition();
@@ -217,7 +258,7 @@ export default function Player({
         // Seeking past the room is undone at once: everyone watches the same moment
         onSeeking={() => {
           const player = ref.current;
-          if (started && player && player.currentTime > roomPosition() + 1.5) {
+          if (!ownPace && started && player && player.currentTime > roomPosition() + 1.5) {
             player.currentTime = roomPosition();
           }
         }}
@@ -226,8 +267,9 @@ export default function Player({
         style={{
           width: "100%",
           height: "100%",
-          // No speed control for now: the room sets the rate itself (1×, or a gentle catch-up)
-          // every sync check, so a viewer's choice can't hold. Remove this line to bring it back.
+          // No speed control for now, in any room: the hall sets the rate itself (1×, or a
+          // gentle catch-up) every sync check, so a viewer's choice can't hold there, and
+          // Individual Watch keeps the same controls. Remove this line to bring it back.
           "--playback-rate-button": "none",
           ...((!started || needsTap) && { "--controls": "none" }),
         }}
@@ -254,7 +296,9 @@ export default function Player({
               {now === null ? "…" : formatCountdown(startsAt - now)}
             </p>
             <p className="mt-3 text-sm text-white/60">
-              The film starts for everyone at once. Stay on this page.
+              {ownPace
+                ? `Your film starts here. Pause and rewind as you like until ${endsAt}.`
+                : "The film starts for everyone at once. Stay on this page."}
             </p>
           </div>
         </div>
@@ -262,17 +306,34 @@ export default function Player({
 
       {needsTap && (
         <div className="absolute inset-0 z-20 grid place-items-center bg-black/60">
-          <Button size="xl" onClick={play}>
+          <Button size="xl" onClick={() => play()}>
             <Play data-icon="inline-start" />
             Start watching
           </Button>
         </div>
       )}
 
-      {started && zone === "behind" && !needsTap && (
+      {/* Individual Watch's end of access, in full screen too: with the controls, or held on
+          screen once the rest of the film runs past it (a warning, never a block) */}
+      {ownPace && started && !needsTap && (
+        <div
+          role="status"
+          className={cn(
+            "absolute top-4 left-4 z-20 flex items-center gap-2 rounded-full border border-white/15 bg-black/80 px-4 py-2 text-sm backdrop-blur-xl transition-opacity duration-500",
+            idle && !shortOfTime && "opacity-0",
+          )}
+        >
+          <Clock aria-hidden="true" className="size-4 text-lobby" />
+          {shortOfTime
+            ? `You may not finish before access ends at ${endsAt}.`
+            : `Access ends at ${endsAt}`}
+        </div>
+      )}
+
+      {!ownPace && started && zone === "behind" && !needsTap && (
         <div className="absolute top-4 right-4 z-20 flex items-center gap-3 rounded-full border border-white/15 bg-black/80 py-1.5 pr-1.5 pl-4 text-sm backdrop-blur-xl">
           You&rsquo;re behind the room
-          <Button size="sm" onClick={play}>
+          <Button size="sm" onClick={() => play()}>
             <Radio data-icon="inline-start" />
             Jump to live
           </Button>

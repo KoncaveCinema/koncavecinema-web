@@ -40,6 +40,19 @@ test("the lobby holds the film until the start, and every refusal has its screen
   await expect(page.getByText("The film isn't ready yet")).toBeVisible();
 });
 
+test("an Individual pass is the member's own film, with its own end time", async ({ page }) => {
+  await page.goto(`/watch/${await passId(page, "Ember & Ash")}`);
+  await expect(page.locator("mux-player")).toHaveCount(1);
+  // The browser may want a tap before sound plays
+  const start = page.getByRole("button", { name: "Start watching" });
+  await start.or(page.getByRole("status").filter({ hasText: "Access ends at" })).waitFor();
+  if (await start.isVisible()) await start.click();
+  await expect(page.getByRole("status").filter({ hasText: /^Access ends at/ })).toBeVisible();
+  // Nobody to keep up with: the room's catch-up has nothing to offer
+  await expect(page.getByRole("button", { name: "Fall behind" })).toHaveCount(0);
+  await expect(page.getByText("You're behind the room")).toHaveCount(0);
+});
+
 test("a screening next week counts down to the doors", async ({ page }) => {
   await page.goto(`/watch/${await passId(page, "Red Soil")}`);
   await expect(page.getByText("The doors aren't open yet")).toBeVisible();

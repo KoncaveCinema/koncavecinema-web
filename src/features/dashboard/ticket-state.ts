@@ -1,6 +1,5 @@
 import type { StatusKind } from "@/components/console/status-badge";
 import type { TicketDetail } from "@/features/booking/api-types";
-import { watchableUntil } from "@/lib/screening-window";
 
 /* What a pass is right now, and the one thing to do next with it. One function, so the
    dashboard home, the tickets list and the pass page always agree. */
@@ -29,7 +28,8 @@ export function ticketView(ticket: TicketDetail, now: number): TicketView {
   const pass = `/dashboard/tickets/${ticket.id}`;
   const watch = `/watch/${ticket.id}`;
   const start = Date.parse(ticket.startTime);
-  const cutoff = watchableUntil(ticket);
+  // The API serves each pass its own end of access; never work it out from the end time
+  const cutoff = Date.parse(ticket.accessEndsAt);
   const showtimePage = `/movies/${ticket.movieSlug}/showtimes/${ticket.showtimeId}`;
 
   if (ticket.status === "CANCELLED") {
