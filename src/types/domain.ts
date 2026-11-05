@@ -11,3 +11,9 @@ export type TicketTier = "INDIVIDUAL" | "PUBLIC" | "PRIVATE_5" | "PRIVATE_10";
  * them. Nigerian releases never carry US ratings such as PG-13.
  */
 export type AgeRating = "G" | "PG" | "TWELVE_PLUS" | "FIFTEEN_PLUS" | "EIGHTEEN_PLUS";
+
+/**
+ * DRAFT: staff only. COMING_SOON: announced, its page and trailer public, not bookable.
+ * PUBLISHED: in the catalogue, scheduled and booked.
+ */
+export type FilmStatus = "DRAFT" | "COMING_SOON" | "PUBLISHED";

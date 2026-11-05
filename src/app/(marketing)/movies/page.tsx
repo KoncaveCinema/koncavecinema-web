@@ -9,7 +9,7 @@ import { RatingBadge } from "@/components/cinema/badges";
 import { FeaturedFilm } from "@/features/catalog/featured-film";
 import { getCatalog } from "@/features/catalog/get-catalog";
 import { MovieCard } from "@/features/catalog/movie-card";
-import { filmArtTransition, groupNowShowing, sortedShowtimes } from "@/features/catalog/screening";
+import { filmArtTransition, groupNowShowing } from "@/features/catalog/screening";
 import type { CatalogFilm } from "@/features/catalog/types";
 import { formatRuntime, formatShortDate } from "@/lib/format";
 
@@ -23,9 +23,12 @@ export const metadata: Metadata = {
 const eyebrow =
   "flex items-center gap-3 text-[0.7rem] font-bold tracking-[0.32em] text-brand uppercase";
 
-/** A premiere further out: the still with its opening date as a ribbon. */
+/**
+ * A premiere further out: the still with its opening date as a ribbon. An announced film has no
+ * date yet and can't be booked.
+ */
 function LaterCard({ film }: { film: CatalogFilm }) {
-  const first = sortedShowtimes(film)[0];
+  const announced = film.status === "COMING_SOON";
   return (
     <article className="group relative reveal">
       <div className="relative aspect-video overflow-hidden rounded-2xl bg-surface-2 ring-1 ring-white/8 transition-shadow duration-300 group-hover:ring-white/25">
@@ -38,14 +41,12 @@ function LaterCard({ film }: { film: CatalogFilm }) {
             className="object-cover transition-transform duration-700 ease-cinema group-hover:scale-[1.04]"
           />
         </ViewTransition>
-        {first && (
-          <span
-            suppressHydrationWarning
-            className="absolute top-3.5 left-3.5 rounded-lg bg-black/70 px-2.5 py-1.5 font-display text-sm font-extrabold tracking-wide backdrop-blur-md"
-          >
-            {formatShortDate(first.startTime)}
-          </span>
-        )}
+        <span
+          suppressHydrationWarning
+          className="absolute top-3.5 left-3.5 rounded-lg bg-black/70 px-2.5 py-1.5 font-display text-sm font-extrabold tracking-wide backdrop-blur-md"
+        >
+          {film.nextShowtimeAt ? formatShortDate(film.nextShowtimeAt) : "Date to be announced"}
+        </span>
         <RatingBadge rating={film.ageRating} className="absolute top-3.5 right-3.5" />
       </div>
       <div className="mt-3 flex items-start justify-between gap-3">
@@ -56,7 +57,7 @@ function LaterCard({ film }: { film: CatalogFilm }) {
             </Link>
           </h3>
           <p className="mt-0.5 text-sm text-white/50">
-            {formatRuntime(film.durationMinutes)} · Tickets on sale
+            {formatRuntime(film.durationMinutes)} · {announced ? "Coming soon" : "Tickets on sale"}
           </p>
         </div>
       </div>
@@ -65,8 +66,10 @@ function LaterCard({ film }: { film: CatalogFilm }) {
 }
 
 export default async function NowShowingPage() {
-  const { films, unavailable } = await getCatalog();
-  const { thisWeek, later } = groupNowShowing(films);
+  const { films, announced, unavailable } = await getCatalog();
+  const { thisWeek, later: dated } = groupNowShowing(films);
+  // Dated premieres first, then the films announced without a date
+  const later = [...dated, ...announced];
   const [featured, ...rest] = thisWeek;
 
   return (
@@ -94,7 +97,7 @@ export default async function NowShowingPage() {
           </Link>
         </header>
 
-        {films.length === 0 ? (
+        {films.length === 0 && announced.length === 0 ? (
           <p className="mt-12 rounded-3xl border border-dashed border-white/12 p-10 text-center text-muted-foreground">
             {unavailable
               ? "We couldn't load the films. Please refresh in a moment."

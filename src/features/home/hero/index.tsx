@@ -1,6 +1,5 @@
 import { getCatalog } from "@/features/catalog/get-catalog";
 import { HeroStage } from "@/components/cinema/hero-stage";
-import { sortedShowtimes } from "@/features/catalog/screening";
 
 import { HeroCarousel } from "./carousel";
 import { EmptyHero, FeaturedSlide } from "./slides";
@@ -9,14 +8,8 @@ const FEATURED_COUNT = 3;
 
 export async function Hero() {
   const { films } = await getCatalog();
-  // Soonest screening first: films playing or about to play lead the billboard
-  const featured = films
-    .filter((film) => film.showtimes.length > 0)
-    .sort(
-      (a, b) =>
-        Date.parse(sortedShowtimes(a)[0]!.startTime) - Date.parse(sortedShowtimes(b)[0]!.startTime),
-    )
-    .slice(0, FEATURED_COUNT);
+  // The API lists them soonest screening first: films playing or about to play lead the billboard
+  const featured = films.slice(0, FEATURED_COUNT);
 
   if (featured.length === 0) return <EmptyHero />;
 

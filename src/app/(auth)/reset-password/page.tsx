@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { ResetPasswordForm } from "@/features/auth/auth-forms";
 
 export const metadata: Metadata = {
-  title: "Choose a new password",
+  title: "Set your password",
   description: "Set a new password for your account.",
 };
 

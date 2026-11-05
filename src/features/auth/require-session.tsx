@@ -28,9 +28,9 @@ export function RequireSession({
 /**
  * Sends a signed-out visitor to sign-in, returning here afterwards. Renders nothing, so a layout
  * can keep its pages rendering (and prerenderable) while the pages hold their data back until
- * someone is signed in (see `useSignedIn`).
+ * someone is signed in (see `useSignedIn`). The admin console sends staff to its own sign-in.
  */
-export function SignInRedirect() {
+export function SignInRedirect({ signInPath = "/sign-in" }: { signInPath?: string }) {
   const router = useRouter();
   const pathname = usePathname();
   const search = useSearchParams().toString();
@@ -39,8 +39,8 @@ export function SignInRedirect() {
   useEffect(() => {
     if (status !== "signed-out") return;
     const next = search ? `${pathname}?${search}` : pathname;
-    router.replace(`/sign-in?next=${encodeURIComponent(next)}`);
-  }, [status, pathname, search, router]);
+    router.replace(`${signInPath}?next=${encodeURIComponent(next)}`);
+  }, [status, pathname, search, router, signInPath]);
 
   return null;
 }

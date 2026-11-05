@@ -4,7 +4,7 @@ import { Suspense, type ReactNode } from "react";
 import { ScreenGlow } from "@/components/brand/atmosphere";
 import { LogoMark } from "@/components/brand/logo";
 
-import { AccountMenu } from "@/features/auth/account-menu";
+import { AccountMenu, type AccountArea } from "@/features/auth/account-menu";
 
 /**
  * The frame shared by the member dashboard and the admin console: the sidebar on desktop, a top
@@ -18,6 +18,7 @@ import { AccountMenu } from "@/features/auth/account-menu";
 export function ConsoleShell({
   area,
   homeHref,
+  account,
   sidebar,
   tabs,
   trail,
@@ -26,6 +27,8 @@ export function ConsoleShell({
 }: {
   area: string;
   homeHref: string;
+  /** Which account menu the top bar opens: the console's own, or the member's */
+  account: Exclude<AccountArea, "site">;
   sidebar: ReactNode;
   tabs: ReactNode;
   /** Where you are, e.g. "Dashboard / My tickets" (desktop) */
@@ -68,7 +71,7 @@ export function ConsoleShell({
           </div>
           <div className="flex items-center gap-3">
             {actions && <div className="hidden sm:block">{actions}</div>}
-            <AccountMenu variant="console" />
+            <AccountMenu variant="console" area={account} />
           </div>
         </header>
 

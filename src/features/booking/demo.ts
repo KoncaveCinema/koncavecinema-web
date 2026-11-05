@@ -57,8 +57,11 @@ export function rememberShowtime(
 const demoShowtime = (showtimeId: string) =>
   readDemoStore<Record<string, DemoShowtime>>(SHOWTIMES_KEY, {})[showtimeId] ?? null;
 
+/** A pass as stored; its end of access is worked out on every read, as the API serves it */
+type StoredDetail = Omit<TicketDetail, "accessEndsAt">;
+
 interface DemoTicket {
-  detail: TicketDetail;
+  detail: StoredDetail;
   /** Set for a guest's pass, claimed from a host's invite */
   claimedFrom?: string;
   /** Another member's pass (a seeded suite guest): never listed or opened as yours */
@@ -67,11 +70,12 @@ interface DemoTicket {
 
 const SEEDED_KEY = "kc-demo-seeded";
 const MINUTE = 60_000;
-const DAY = 24 * 60 * MINUTE;
+const HOUR = 60 * MINUTE;
+const DAY = 24 * HOUR;
 
 /**
  * The demo's starting passes, so every state of the dashboard can be reviewed at once: a hold
- * in progress, a lobby open now, a suite with guests, a screening next week, watched screenings
+ * in progress, a screening live now, a lobby open now, a suite with guests, a screening next week, watched screenings
  * and cancelled ones with their refunds. Upcoming ones use the sample catalogue's real
  * showtimes, so "Book again" and the watch links lead somewhere real.
  */
@@ -154,6 +158,7 @@ function seedDemoPasses(): Record<string, DemoTicket> {
     }
   }
 
+  add({ slug: "ember-and-ash", showtime: 0, tier: "INDIVIDUAL", status: "CHECKED_IN" });
   add({ slug: "lagos-after-dark", showtime: 0, tier: "INDIVIDUAL", status: "CONFIRMED" });
   add({
     slug: "love-in-seclusion",
@@ -201,6 +206,29 @@ function seedDemoPasses(): Record<string, DemoTicket> {
     tier: "INDIVIDUAL",
     status: "CHECKED_IN",
   });
+  // Holds that ended for screenings still to come: in Past, with Book again
+  add({
+    slug: "the-family-meeting",
+    showtime: 0,
+    tier: "INDIVIDUAL",
+    status: "CANCELLED",
+    cancellation: { reason: "RELEASED_BY_MEMBER", message: null, cancelledAt: iso(now - DAY) },
+  });
+  add({
+    slug: "starlight-over-kaduna",
+    showtime: 0,
+    tier: "PUBLIC",
+    status: "CANCELLED",
+    cancellation: { reason: "HOLD_EXPIRED", message: null, cancelledAt: iso(now - 3 * HOUR) },
+  });
+  // Paid twice for one pass: the pass stands, and the second payment is owed back
+  add({
+    slug: "house-of-amina",
+    showtime: 0,
+    tier: "INDIVIDUAL",
+    status: "CONFIRMED",
+    refund: "PENDING",
+  });
   return tickets;
 }
 
@@ -226,25 +254,81 @@ function inviteCode(): string {
   return `VIP-${hex.join("").toUpperCase()}`;
 }
 
-/** Holds expire after 10 minutes; reading a demo ticket applies that rule */
+/**
+ * Holds expire after 10 minutes; reading a demo ticket applies that rule as the API does: the
+ * pass is cancelled with HOLD_EXPIRED (the API never sets status EXPIRED today).
+ */
 function withExpiry(ticket: DemoTicket): DemoTicket {
   const { detail } = ticket;
   if (detail.status === "RESERVED" && Date.parse(detail.lockExpiresAt ?? "") < Date.now()) {
-    return { ...ticket, detail: { ...detail, status: "EXPIRED", lockExpiresAt: null } };
+    return {
+      ...ticket,
+      detail: {
+        ...detail,
+        status: "CANCELLED",
+        lockExpiresAt: null,
+        cancellation: { reason: "HOLD_EXPIRED", message: null, cancelledAt: detail.lockExpiresAt! },
+      },
+    };
   }
   return ticket;
 }
+
+const holdExpired = (detail: StoredDetail) => detail.cancellation?.reason === "HOLD_EXPIRED";
 
 /** Suite seats taken for a host's invite code, the host included */
 function seatsTaken(tickets: Record<string, DemoTicket>, code: string): number {
   return 1 + Object.values(tickets).filter((ticket) => ticket.claimedFrom === code).length;
 }
 
-/** A demo ticket as GET /tickets/:id returns it, with live suite counts */
+/** A demo ticket as GET /tickets/:id returns it, with its end of access and live suite counts */
 function demoDetail(tickets: Record<string, DemoTicket>, ticket: DemoTicket): TicketDetail {
   const { detail } = withExpiry(ticket);
-  if (!detail.isSuiteHost || !detail.roomInviteCode) return detail;
-  return { ...detail, suiteSeatsTaken: seatsTaken(tickets, detail.roomInviteCode) };
+  const served = { ...detail, accessEndsAt: new Date(watchableUntil(detail)).toISOString() };
+  if (!detail.isSuiteHost || !detail.roomInviteCode) return served;
+  return { ...served, suiteSeatsTaken: seatsTaken(tickets, detail.roomInviteCode) };
+}
+
+/* Cancelled screenings: the admin console's demo cancels them in this tab */
+
+const CANCELLED_KEY = "kc-demo-cancelled-showtimes";
+
+/** As the API refuses members: a cancelled screening can't be booked, joined or paid for */
+function refuseCancelled(showtimeId: string) {
+  if (readDemoStore<string[]>(CANCELLED_KEY, []).includes(showtimeId)) {
+    throw demoError(ErrorCode.SHOWTIME_CANCELLED, "This screening has been cancelled.");
+  }
+}
+
+/**
+ * Demo only: a showtime cancelled from the admin console. The member's passes for it are
+ * cancelled with the reason staff gave, and a paid one is owed back, as the API would record.
+ */
+export function cancelDemoShowtime(showtimeId: string, message: string) {
+  writeDemoStore(CANCELLED_KEY, [...readDemoStore<string[]>(CANCELLED_KEY, []), showtimeId]);
+  const tickets = readDemo();
+  const cancelledAt = new Date().toISOString();
+  for (const ticket of Object.values(tickets)) {
+    const { detail } = ticket;
+    if (detail.showtimeId !== showtimeId) continue;
+    if (!["RESERVED", "CONFIRMED", "CHECKED_IN"].includes(detail.status)) continue;
+    const paid = detail.status !== "RESERVED";
+    ticket.detail = {
+      ...detail,
+      status: "CANCELLED",
+      lockExpiresAt: null,
+      cancellation: { reason: "SHOWTIME_CANCELLED", message, cancelledAt },
+      refund: paid
+        ? {
+            state: "PENDING",
+            amount: detail.purchasePrice,
+            currency: detail.currency,
+            refundedAt: null,
+          }
+        : null,
+    };
+  }
+  writeDemo(tickets);
 }
 
 /* Endpoints, in the API's place */
@@ -254,6 +338,7 @@ export async function reserveTicket(
   tier: TicketTier,
 ): Promise<ReservationReceipt> {
   await demoDelay();
+  refuseCancelled(showtimeId);
   const showtime = demoShowtime(showtimeId);
   const pricing = showtime?.capacity.tiers.find((item) => item.tier === tier)?.pricing;
   if (!showtime || !pricing) {
@@ -291,7 +376,7 @@ export async function reserveTicket(
   const seatIdentifier = nextPassNumber(tickets);
   const suite = pricing.seatCount > 1;
   const code = suite ? inviteCode() : null;
-  const detail: TicketDetail = {
+  const detail: StoredDetail = {
     id: ticketId,
     showtimeId,
     tier,
@@ -314,6 +399,8 @@ export async function reserveTicket(
     roomInviteCode: code,
     suiteSeats: suite ? pricing.seatCount : null,
     suiteSeatsTaken: suite ? 1 : null,
+    cancellation: null,
+    refund: null,
   };
   tickets[ticketId] = { detail };
   writeDemo(tickets);
@@ -339,9 +426,22 @@ export async function getTicket(ticketId: string): Promise<TicketDetail> {
   return demoDetail(tickets, stored);
 }
 
+/** As the API: the hold is cancelled as released by the member, and the pass stays in Past */
 export async function releaseTicket(ticketId: string): Promise<ReleaseTicketResponse> {
   const tickets = readDemo();
-  delete tickets[ticketId];
+  const stored = tickets[ticketId];
+  if (stored && stored.detail.status === "RESERVED") {
+    stored.detail = {
+      ...stored.detail,
+      status: "CANCELLED",
+      lockExpiresAt: null,
+      cancellation: {
+        reason: "RELEASED_BY_MEMBER",
+        message: null,
+        cancelledAt: new Date().toISOString(),
+      },
+    };
+  }
   writeDemo(tickets);
   return { message: "Reservation released.", ticketId };
 }
@@ -354,10 +454,11 @@ export async function verifyPayment(
   const tickets = readDemo();
   const stored = tickets[ticketId];
   if (!stored) throw demoError(ErrorCode.NOT_FOUND, "Payment not found.", 404);
+  refuseCancelled(stored.detail.showtimeId);
   const ticket = withExpiry(stored);
   const amountPaid = ticket.detail.pricing.totalPayable;
   // Paid after the hold lapsed: money moved but no seat is confirmed
-  if (ticket.detail.status === "EXPIRED") {
+  if (holdExpired(ticket.detail)) {
     return {
       reference,
       status: "SUCCESS",
@@ -365,7 +466,7 @@ export async function verifyPayment(
       amountPaid,
       currency: ticket.detail.currency,
       outcome: "REFUND_PENDING",
-      ticketStatus: "EXPIRED",
+      ticketStatus: "CANCELLED",
     };
   }
   tickets[ticketId] = {
@@ -395,28 +496,33 @@ export async function listMyTickets(
   const all = Object.values(tickets)
     .filter((ticket) => !ticket.foreign)
     .map((ticket) => demoDetail(tickets, ticket));
-  // As the API: holds and passes whose screening can still be watched (until the cutoff)
-  const watchable = (ticket: TicketDetail) =>
-    ["RESERVED", "CONFIRMED", "CHECKED_IN"].includes(ticket.status) && watchableUntil(ticket) > now;
+  // As the API (its 1.5): every pass in exactly one tab. Upcoming: paid passes still watchable,
+  // and holds within their 10 minutes (a lapsed one is already cancelled when read). Past:
+  // everything else, cancelled ones included even when the screening is still to come.
+  const usable = (ticket: TicketDetail) =>
+    ticket.status === "RESERVED" ||
+    (["CONFIRMED", "CHECKED_IN"].includes(ticket.status) && watchableUntil(ticket) > now);
   const items =
     when === "upcoming"
-      ? all.filter(watchable).sort((a, b) => Date.parse(a.startTime) - Date.parse(b.startTime))
+      ? all.filter(usable).sort((a, b) => Date.parse(a.startTime) - Date.parse(b.startTime))
       : when === "past"
         ? all
-            .filter((ticket) => watchableUntil(ticket) <= now)
+            .filter((ticket) => !usable(ticket))
             .sort((a, b) => Date.parse(b.startTime) - Date.parse(a.startTime))
         : all.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+  const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
+  const current = Math.min(Math.max(1, page), totalPages);
   return {
-    items,
+    items: items.slice((current - 1) * pageSize, current * pageSize),
     meta: {
-      page,
+      page: current,
       pageSize,
       total: items.length,
-      totalPages: 1,
-      hasNextPage: false,
-      hasPreviousPage: false,
-      nextPage: null,
-      previousPage: null,
+      totalPages,
+      hasNextPage: current < totalPages,
+      hasPreviousPage: current > 1,
+      nextPage: current < totalPages ? current + 1 : null,
+      previousPage: current > 1 ? current - 1 : null,
     },
   };
 }
@@ -463,6 +569,7 @@ export async function claimInvite(code: string): Promise<TicketDetail> {
   const host = Object.values(tickets).find(
     (ticket) => ticket.detail.roomInviteCode === inviteCode && !ticket.claimedFrom,
   );
+  if (host) refuseCancelled(host.detail.showtimeId);
   if (!host || host.detail.status !== "CONFIRMED") {
     throw demoError(ErrorCode.SUITE_NOT_ACTIVE, "This invite isn't active.", 409);
   }
@@ -482,7 +589,7 @@ export async function claimInvite(code: string): Promise<TicketDetail> {
   ] as const) {
     zero[key] = 0;
   }
-  const detail: TicketDetail = {
+  const detail: StoredDetail = {
     ...host.detail,
     id,
     seatIdentifier: nextPassNumber(tickets),
@@ -498,5 +605,5 @@ export async function claimInvite(code: string): Promise<TicketDetail> {
   };
   tickets[id] = { detail, claimedFrom: inviteCode };
   writeDemo(tickets);
-  return detail;
+  return demoDetail(tickets, tickets[id]);
 }

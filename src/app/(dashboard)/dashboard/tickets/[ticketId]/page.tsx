@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
-import { PassSkeleton, PassView } from "@/features/dashboard/pass-view";
+import { PassDetailsPage, PassSkeleton } from "@/features/dashboard/pass-details-page";
 
 export const metadata: Metadata = { title: "Your pass" };
 
@@ -10,10 +10,10 @@ export const metadata: Metadata = { title: "Your pass" };
  * comes from the address, so the pass streams in behind its own skeleton and moving between
  * passes stays instant.
  */
-export default function PassPage({ params }: PageProps<"/dashboard/tickets/[ticketId]">) {
+export default function Page({ params }: PageProps<"/dashboard/tickets/[ticketId]">) {
   return (
     <Suspense fallback={<PassSkeleton />}>
-      <PassView params={params} />
+      <PassDetailsPage params={params} />
     </Suspense>
   );
 }

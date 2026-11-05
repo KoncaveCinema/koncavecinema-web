@@ -2,20 +2,20 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
-import { RoomPicker } from "@/features/booking/room-picker";
-import { getCatalog } from "@/features/catalog/get-catalog";
-import { getShowtime, getShowtimeCapacity } from "@/features/catalog/queries";
+import { ChooseRoomPage } from "@/features/booking/choose-room-page";
+import { getSchedule, getShowtime, getShowtimeCapacity } from "@/features/catalog/queries";
 
 type Props = PageProps<"/movies/[slug]/showtimes/[showtimeId]">;
 
-// Every known showtime is prerendered whole, and an unknown one must answer a real 404
+// Every showtime in the schedule is prerendered whole (later ones render on first visit), and
+// an unknown one must answer a real 404
 export const instant = false;
 
 export async function generateStaticParams() {
-  const { films } = await getCatalog();
-  const params = films.flatMap((film) =>
-    film.showtimes.map((showtime) => ({ slug: film.slug, showtimeId: showtime.id })),
-  );
+  const params = (await getSchedule()).map((showtime) => ({
+    slug: showtime.movie.slug,
+    showtimeId: showtime.id,
+  }));
   // Cache Components needs at least one param; an empty catalog renders the not-found page
   return params.length ? params : [{ slug: "none", showtimeId: "none" }];
 }
@@ -27,7 +27,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 /** Booking step 1: choose a room for this showtime. */
-export default async function ShowtimePage({ params }: Props) {
+export default async function Page({ params }: Props) {
   const { slug, showtimeId } = await params;
   const match = await getShowtime(slug, showtimeId);
   if (!match) notFound();
@@ -45,7 +45,7 @@ export default async function ShowtimePage({ params }: Props) {
   return (
     // The chosen room lives in the link (?room=), so it survives signing in
     <Suspense>
-      <RoomPicker
+      <ChooseRoomPage
         capacity={capacity}
         film={{
           slug: film.slug,

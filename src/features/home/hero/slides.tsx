@@ -7,7 +7,7 @@ import { LocalTime, ScreeningStatus } from "@/components/cinema/live-time";
 import { HeroStage } from "@/components/cinema/hero-stage";
 import { TrailerButton } from "@/components/cinema/trailer-button";
 import { Button } from "@/components/ui/button";
-import { lowestPrice, sortedShowtimes, splitTitle } from "@/features/catalog/screening";
+import { sortedShowtimes, splitTitle } from "@/features/catalog/screening";
 import type { CatalogFilm } from "@/features/catalog/types";
 import { formatMoney, formatRuntime } from "@/lib/format";
 
@@ -18,7 +18,7 @@ const stagger = (step: number): CSSProperties => ({ animationDelay: `${150 + ste
 
 export function FeaturedSlide({ film, priority }: { film: CatalogFilm; priority: boolean }) {
   const next = sortedShowtimes(film)[0];
-  const price = lowestPrice(film.showtimes);
+  const price = film.priceFrom;
   const { lead, accent } = splitTitle(film.title);
 
   return (

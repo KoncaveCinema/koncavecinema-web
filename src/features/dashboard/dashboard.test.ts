@@ -4,13 +4,16 @@ import type { TicketDetail } from "@/features/booking/api-types";
 
 import { buildIcs, googleCalendarUrl } from "@/lib/ics";
 
-import { passEvent } from "./pass-view";
+import { passEvent } from "./pass-details-page";
 import { ticketView } from "./ticket-state";
 
 const MINUTE = 60_000;
 const start = Date.parse("2026-11-06T18:00:00.000Z");
 
 function ticket(overrides: Partial<TicketDetail> = {}): TicketDetail {
+  const tier = overrides.tier ?? "INDIVIDUAL";
+  // As the API serves it: an hour after the end for Individual Watch, 15 minutes otherwise
+  const accessEndsAfter = (tier === "INDIVIDUAL" ? 178 : 133) * MINUTE;
   return {
     id: "t1",
     showtimeId: "s1",
@@ -30,17 +33,20 @@ function ticket(overrides: Partial<TicketDetail> = {}): TicketDetail {
     movieSlug: "ember-and-ash",
     posterLandscape: "/l.jpg",
     lobbyOpensAt: new Date(start - 30 * MINUTE).toISOString(),
+    accessEndsAt: new Date(start + accessEndsAfter).toISOString(),
     isSuiteHost: false,
     roomInviteCode: null,
     suiteSeats: null,
     suiteSeatsTaken: null,
+    cancellation: null,
+    refund: null,
     ...overrides,
   };
 }
 
 describe("ticketView", () => {
   it("walks a paid pass from confirmed to lobby, live and ended", () => {
-    const pass = ticket();
+    const pass = ticket({ tier: "PUBLIC" });
     expect(ticketView(pass, start - 2 * 60 * MINUTE).phase).toBe("upcoming");
     expect(ticketView(pass, start - 10 * MINUTE)).toMatchObject({
       phase: "lobby",
@@ -57,6 +63,15 @@ describe("ticketView", () => {
     expect(ticketView(ticket({ status: "CHECKED_IN" }), start + 200 * MINUTE).badge.label).toBe(
       "Watched",
     );
+  });
+
+  it("keeps an Individual pass watchable for an hour after the end", () => {
+    const pass = ticket();
+    expect(ticketView(pass, start + 148 * MINUTE)).toMatchObject({
+      phase: "live",
+      action: { label: "Watch now" },
+    });
+    expect(ticketView(pass, start + 178 * MINUTE).phase).toBe("ended");
   });
 
   it("sends a live hold back to checkout, and a lapsed one to book again", () => {
@@ -80,6 +95,34 @@ describe("ticketView", () => {
     });
     // Nothing to book once the screening has started
     expect(ticketView(ticket({ status: "EXPIRED" }), start + MINUTE).action).toBeNull();
+  });
+
+  it("reads why the API cancelled a hold: ran out, or let go by the member", () => {
+    const now = start - 60 * MINUTE;
+    const cancelledAt = new Date(now - MINUTE).toISOString();
+    const ranOut = ticket({
+      status: "CANCELLED",
+      cancellation: { reason: "HOLD_EXPIRED", message: null, cancelledAt },
+    });
+    expect(ticketView(ranOut, now)).toMatchObject({
+      phase: "hold-expired",
+      badge: { label: "Hold expired" },
+      action: { label: "Book again" },
+    });
+    const letGo = ticket({
+      status: "CANCELLED",
+      cancellation: { reason: "RELEASED_BY_MEMBER", message: null, cancelledAt },
+    });
+    expect(ticketView(letGo, now)).toMatchObject({
+      phase: "released",
+      badge: { label: "Released" },
+    });
+    // A staff cancellation stays a cancellation
+    const bySupport = ticket({
+      status: "CANCELLED",
+      cancellation: { reason: "CANCELLED_BY_SUPPORT", message: "At your request.", cancelledAt },
+    });
+    expect(ticketView(bySupport, now).phase).toBe("cancelled");
   });
 
   it("says what happened to a cancelled pass's money", () => {

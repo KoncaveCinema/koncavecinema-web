@@ -106,9 +106,10 @@ export default function CookiePolicyPage() {
           close the tab) or <code>localStorage</code> (kept until you clear it).
         </p>
         <p>
-          Koncave Cinema uses one cookie, to keep you signed in. We do not use{" "}
-          <code>sessionStorage</code> or <code>localStorage</code>: your bookings live on our
-          servers, so a reload never loses your place.
+          Koncave Cinema uses one cookie, to keep you signed in, and two small browser entries that
+          hold no personal information: one so a screening survives a reload, one to remember how
+          you like your account sidebar. Your bookings live on our servers, so a reload never loses
+          your place.
         </p>
       </section>
 
@@ -128,7 +129,8 @@ export default function CookiePolicyPage() {
           </li>
           <li>
             <strong>Watching:</strong> playback tokens are not stored in your browser. The
-            one-screen-per-ticket check runs on our servers.
+            one-screen-per-ticket check runs on our servers; the tab keeps only a playback session
+            number, so reloading the page carries on instead of counting as a second screen.
           </li>
         </ul>
       </section>
@@ -156,6 +158,21 @@ export default function CookiePolicyPage() {
                     Keeps you signed in. Scripts on the page cannot read it, and it is sent only to
                     our sign-in service.
                   </td>
+                </tr>
+                <tr>
+                  <td className="p-3 font-mono text-foreground">kc-watch-session:…</td>
+                  <td className="p-3">sessionStorage</td>
+                  <td className="p-3">Until the tab closes, or you leave the screening</td>
+                  <td className="p-3">
+                    A playback session number, so a reload picks up your screening on the same
+                    screen. Not a sign-in token.
+                  </td>
+                </tr>
+                <tr>
+                  <td className="p-3 font-mono text-foreground">kc-console-sidebar-collapsed</td>
+                  <td className="p-3">localStorage</td>
+                  <td className="p-3">Until you clear it</td>
+                  <td className="p-3">Whether you folded the sidebar in your account area.</td>
                 </tr>
               </tbody>
             </table>

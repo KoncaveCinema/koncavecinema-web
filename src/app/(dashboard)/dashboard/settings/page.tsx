@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
-import { Settings } from "@/features/dashboard/settings";
+import { SettingsPage } from "@/features/dashboard/settings-page";
 
 export const metadata: Metadata = { title: "Settings" };
 
-export default function SettingsPage() {
-  return <Settings />;
+export default function Page() {
+  return <SettingsPage />;
 }

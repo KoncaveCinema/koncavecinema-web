@@ -95,3 +95,31 @@ network) are in [performance.md](./performance.md).
 - Legal names and phone numbers are never displayed back after KYC; only the public alias.
 - The playback page shows "IP Geolocation by DB-IP" linking to [db-ip.com](https://db-ip.com) (licence
   condition of the API's location check).
+
+## 7. Code Layout and Naming
+
+- **Routes stay thin.** A route's `page.tsx` (default export `Page`) sets its metadata and
+  renders one component from its feature. The code lives outside `app/`, one of the layouts the
+  Next.js project-organisation guide describes.
+- **Feature code** lives in `src/features/<feature>/`: `api-types.ts` (the API's shapes),
+  `service.ts` (the calls, and the sample data's stand-in), `queries.ts` (TanStack Query hooks),
+  `schemas.ts` (Zod), `demo.ts` (sample data), and the components.
+- **Page components end in `-page.tsx`.** The component a route renders is
+  `<name>-page.tsx`, exporting `<Name>Page`, for example `films-page.tsx` (`FilmsPage`) for
+  `/admin/films` and `film-details-page.tsx` (`FilmDetailsPage`) for `/admin/films/[id]`. A file
+  that doesn't end in `-page` is a part of a page: a panel, a dialog, a form or a helper. A
+  page file exports its page (and its loading skeleton), nothing another page imports.
+- **Two kinds of route stay as they are.**
+  - **Auth routes** frame a form (`SignInForm` and others), and a form is a part of a page.
+  - **Marketing and legal pages** (home, films, showtimes, help, producers, the legal documents)
+    are Server Components that compose their sections in the route file itself, with their
+    metadata and static params.
+- **No `index.tsx` files.** Every page would open as an "index.tsx" tab, and index files read as
+  barrels, which slow builds and defeat tree-shaking.
+- **Shared code:** `src/components/ui/` (shadcn primitives, owned here),
+  `src/components/data-table/` (every list: `DataTable`, its pagination footers),
+  `src/components/states/` (empty, error, `QueryView`, the route error), `src/components/console/`
+  (the dashboard and admin frame), `src/hooks/` (`usePagination`, `useCursorPagination`, the
+  server clock), and `src/lib/` (helpers with no React).
+- **Lists** page by number (`?page=`, `?pageSize=` of 10, 20, 50 or 100, the API's 20 by
+  default), or by the API's cursor for a list too large to count (the audit log).

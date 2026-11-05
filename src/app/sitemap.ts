@@ -8,12 +8,12 @@ import { absoluteUrl } from "@/lib/seo";
  * booking pages, checkout and the account area are left out (noindex).
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const { films } = await getCatalog();
+  const { films, announced } = await getCatalog();
   return [
     { url: absoluteUrl("/"), changeFrequency: "daily", priority: 1.0 },
     { url: absoluteUrl("/movies"), changeFrequency: "daily", priority: 0.9 },
     { url: absoluteUrl("/showtimes"), changeFrequency: "daily", priority: 0.9 },
-    ...films.map((film) => ({
+    ...[...films, ...announced].map((film) => ({
       url: absoluteUrl(`/movies/${film.slug}`),
       changeFrequency: "daily" as const,
       priority: 0.8,

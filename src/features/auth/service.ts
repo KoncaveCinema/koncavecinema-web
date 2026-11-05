@@ -25,6 +25,8 @@ const DEMO_USER_KEY = "kc-demo-user";
 export const DEMO_HINTS = {
   signIn:
     "Demo: any email and password sign in. admin@… signs in as the super admin, staff@… as staff.",
+  staffSignIn:
+    "Demo: admin@… signs in as the super admin, staff@… as staff. Any other email is a member.",
   otp: "Demo: any 6-digit code works, except 000000 (wrong code).",
   alias: "Demo: the alias “taken” is already in use.",
   reset: "Demo: the link token “expired” shows the expired-link state.",
@@ -52,6 +54,7 @@ function demoUser(email: string): UserProfile {
     email,
     publicScreenAlias: null,
     isPhoneVerified: false,
+    aliasChangeableAt: null,
     role: demoRoleFor(email),
     createdAt: new Date().toISOString(),
   };

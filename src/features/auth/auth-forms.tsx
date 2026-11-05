@@ -34,6 +34,7 @@ import {
   type SignInValues,
 } from "./schemas";
 import { DEMO_HINTS, register, requestPasswordReset, resetPassword, signIn } from "./service";
+import { isStaff } from "./roles";
 import { useSession } from "./session";
 
 /* The four auth forms. Each sends the API's request shape and branches on its error codes. */
@@ -58,8 +59,10 @@ export function SignInForm() {
   const onSubmit = async (values: SignInValues) => {
     setFailure(null);
     try {
-      setUser(await signIn(values.email, values.password));
-      router.replace(safeNext(next));
+      const user = await signIn(values.email, values.password);
+      setUser(user);
+      // Staff without somewhere to return to go to their console
+      router.replace(safeNext(next, isStaff(user.role) ? "/admin" : undefined));
     } catch (error) {
       const apiError = toApiError(error);
       setFailure(
@@ -88,7 +91,7 @@ export function SignInForm() {
           className="flex items-center gap-2 rounded-xl border border-lobby/30 bg-lobby/8 p-4 text-sm"
         >
           <Check className="size-4 shrink-0 text-lobby" />
-          Password updated. Sign in with your new password.
+          Password saved. Sign in to continue.
         </p>
       )}
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-6">
@@ -329,9 +332,15 @@ export function ForgotPasswordForm() {
   );
 }
 
+/**
+ * Sets a password from an emailed link: a reset, or a staff invite (the same link, with
+ * `purpose=invite` added, which only changes the welcome and where staff sign in afterwards).
+ */
 export function ResetPasswordForm() {
   const router = useRouter();
-  const token = useSearchParams().get("token");
+  const searchParams = useSearchParams();
+  const token = searchParams.get("token");
+  const invite = searchParams.get("purpose") === "invite";
   const setUser = useSession((state) => state.setUser);
   const [expired, setExpired] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
@@ -350,7 +359,7 @@ export function ResetPasswordForm() {
       await resetPassword(token, values.newPassword);
       // The reset ended every session, this one included
       setUser(null);
-      router.replace("/sign-in?reset=1");
+      router.replace(invite ? "/admin/login?reset=1" : "/sign-in?reset=1");
     } catch (error) {
       const apiError = toApiError(error);
       // A truncated or malformed link fails validation on the token: treat it as expired. The
@@ -368,11 +377,17 @@ export function ResetPasswordForm() {
       <div className="space-y-6">
         <AuthHeading
           title="This link has expired or is incomplete"
-          description="Reset links work once, for 30 minutes. Request a new one and open it straight from the email."
+          description={
+            invite
+              ? "Invite links work once, for 7 days. Ask the super admin to invite you again."
+              : "Reset links work once, for 30 minutes. Request a new one and open it straight from the email."
+          }
         />
-        <Button asChild size="xl" className="w-full">
-          <Link href="/forgot-password">Request a new link</Link>
-        </Button>
+        {!invite && (
+          <Button asChild size="xl" className="w-full">
+            <Link href="/forgot-password">Request a new link</Link>
+          </Button>
+        )}
       </div>
     );
   }
@@ -380,8 +395,8 @@ export function ResetPasswordForm() {
   return (
     <div className="space-y-8">
       <AuthHeading
-        title="Choose a new password"
-        description="Make it one you don't use anywhere else."
+        title={invite ? "Welcome to the Koncave team" : "Set your password"}
+        description="Choose a password for your Koncave account. This link works once."
       />
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-6">
         <div>
@@ -411,7 +426,7 @@ export function ResetPasswordForm() {
         </div>
         {failure && <FormAlert>{failure}</FormAlert>}
         <Button type="submit" size="xl" disabled={isSubmitting} className="w-full">
-          {isSubmitting ? "Saving…" : "Save new password"}
+          {isSubmitting ? "Saving…" : "Save password"}
         </Button>
         <DemoHint>{DEMO_HINTS.reset}</DemoHint>
       </form>

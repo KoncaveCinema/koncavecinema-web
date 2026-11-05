@@ -18,7 +18,7 @@ export function FilmTile({ film, className }: { film: CatalogFilm; className?: s
   const next = sortedShowtimes(film)[0];
   return (
     <article className={cn("group relative", className)}>
-      <div className="relative aspect-video overflow-hidden rounded-xl bg-surface-2 ring-1 ring-white/8 transition-[box-shadow] duration-300 group-hover:ring-white/25">
+      <div className="relative aspect-video overflow-hidden rounded-xl bg-surface-2 ring-1 ring-white/8 transition-shadow duration-300 group-hover:ring-white/25">
         <ViewTransition name={filmArtTransition(film.slug)}>
           <Image
             src={film.posterLandscape}
@@ -48,11 +48,13 @@ export function FilmTile({ film, className }: { film: CatalogFilm; className?: s
       </h3>
       <p className="mt-0.5 text-sm text-white/50">
         {formatRuntime(film.durationMinutes)}
-        {next && (
+        {film.nextShowtimeAt ? (
           <>
             {" · "}
-            <LocalTime iso={next.startTime} />
+            <LocalTime iso={film.nextShowtimeAt} />
           </>
+        ) : (
+          film.status === "COMING_SOON" && " · Date to be announced"
         )}
       </p>
     </article>

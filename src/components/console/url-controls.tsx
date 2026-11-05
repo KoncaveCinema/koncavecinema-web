@@ -2,23 +2,22 @@
 // its function props never cross from the server).
 
 import { cn } from "cn";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { parseAsInteger, parseAsStringLiteral, useQueryState, useQueryStates } from "nuqs";
+import { Search } from "lucide-react";
+import {
+  debounce,
+  parseAsInteger,
+  parseAsString,
+  parseAsStringLiteral,
+  useQueryState,
+  useQueryStates,
+} from "nuqs";
 
-import { Button } from "@/components/ui/button";
-import type { PaginationMeta } from "@/lib/api";
+import { usePagination } from "@/hooks/use-pagination";
 
 /*
  * Tabs and pages live in the address, so a list survives a reload, the back button and a
- * shared link. Changing tab returns to page 1.
+ * shared link. Changing tab or search returns to page 1; the page itself is `usePagination`'s.
  */
-
-const pageParser = parseAsInteger.withDefault(1);
-
-/** The current page of a paginated list (`?page=`, 1 when absent). */
-export function usePageParam() {
-  return useQueryState("page", pageParser);
-}
 
 /** A tab in the address, e.g. `?when=past`, limited to the tabs that exist. */
 export function useTabParam<T extends string>(param: string, values: readonly T[], fallback: T) {
@@ -94,41 +93,45 @@ export function UrlTabs<T extends string>({
   );
 }
 
-/** Previous / next through a paginated list, with where you are. */
-export function Pager({ meta, className }: { meta: PaginationMeta; className?: string }) {
-  const [, setPage] = usePageParam();
-  if (meta.totalPages <= 1) return null;
+const searchParser = parseAsString.withDefault("");
+
+/** A list's search text in the address (`?q=`). Typing waits a moment before the list asks. */
+export function useSearchParam(param = "q") {
+  return useQueryState(param, searchParser);
+}
+
+/** A search box bound to the address; a new search returns to page 1. */
+export function UrlSearch({
+  param = "q",
+  label,
+  placeholder,
+  className,
+}: {
+  param?: string;
+  label: string;
+  placeholder?: string;
+  className?: string;
+}) {
+  const [value, setValue] = useSearchParam(param);
+  const { resetPage } = usePagination();
   return (
-    <nav
-      aria-label="Pages"
-      className={cn(
-        "flex items-center justify-between gap-4 border-t border-white/8 px-5 py-3 text-xs text-white/50",
-        className,
-      )}
-    >
-      <p className="tabular-nums">
-        Page {meta.page} of {meta.totalPages} · {meta.total} in all
-      </p>
-      <div className="flex gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={!meta.hasPreviousPage}
-          onClick={() => void setPage(meta.previousPage === 1 ? null : meta.previousPage)}
-        >
-          <ChevronLeft data-icon="inline-start" />
-          Previous
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={!meta.hasNextPage}
-          onClick={() => void setPage(meta.nextPage)}
-        >
-          Next
-          <ChevronRight data-icon="inline-end" />
-        </Button>
-      </div>
-    </nav>
+    <label className={cn("relative block", className)}>
+      <span className="sr-only">{label}</span>
+      <Search
+        aria-hidden="true"
+        className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-white/40"
+      />
+      <input
+        type="search"
+        value={value}
+        placeholder={placeholder}
+        onChange={(event) => {
+          const next = event.target.value;
+          void setValue(next || null, { limitUrlUpdates: next ? debounce(350) : undefined });
+          resetPage();
+        }}
+        className="h-10 w-full rounded-full border border-white/10 bg-white/4 pr-4 pl-10 text-sm outline-none placeholder:text-white/35 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40"
+      />
+    </label>
   );
 }

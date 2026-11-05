@@ -96,12 +96,22 @@ function TeaserVideo({ src, title }: { src: string; title: string }) {
   return <NativeTeaserVideo src={src} title={title} />;
 }
 
-export function TrailerButton({ src, title }: { src: string; title: string }) {
+export function TrailerButton({
+  src,
+  title,
+  size = "xl",
+  className,
+}: {
+  src: string;
+  title: string;
+  size?: "xl" | "sm";
+  className?: string;
+}) {
   const [open, setOpen] = useState(false);
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="glass" size="xl">
+        <Button variant="glass" size={size} className={className}>
           <Play data-icon="inline-start" className="fill-current" />
           Watch teaser
         </Button>

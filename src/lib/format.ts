@@ -205,6 +205,31 @@ export function formatLagosDate(iso: string): string {
   }).format(new Date(iso));
 }
 
+/** A moment as a date and a time input show it in Lagos: { date: "2026-11-07", time: "19:00" } */
+export function lagosInputs(iso: string): { date: string; time: string } {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+    timeZone: HOME_TIME_ZONE,
+  }).formatToParts(new Date(iso));
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((item) => item.type === type)?.value ?? "";
+  return {
+    date: `${part("year")}-${part("month")}-${part("day")}`,
+    time: `${part("hour")}:${part("minute")}`,
+  };
+}
+
+/** A Lagos date and time, as typed by staff, as the ISO moment the API takes */
+export function fromLagosInputs(date: string, time: string): string {
+  // Lagos is UTC+1 all year
+  return new Date(`${date}T${time}:00+01:00`).toISOString();
+}
+
 /** "1h 58m" for runtimes */
 export function formatRuntime(minutes: number): string {
   const hours = Math.floor(minutes / 60);
