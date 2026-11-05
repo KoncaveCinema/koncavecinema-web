@@ -181,7 +181,7 @@ function PassRow({
 }
 
 /** /admin/members/[id]: one member's account, passes and payments, and fixing a booking. */
-export function MemberPage({ params }: { params: Promise<{ id: string }> }) {
+export function MemberDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const member = useMember(id);
   return (

@@ -128,7 +128,7 @@ function PaymentSheet({ payment, onClose }: { payment: AdminPayment | null; onCl
 }
 
 /** /admin/payments: every payment, found by status, Paystack reference or member email. */
-export function PaymentsList() {
+export function PaymentsPage() {
   const [status, setStatus] = useQueryState("status", parseAsStringLiteral(STATUSES));
   const [reference, setReference] = useSearchParam("reference");
   const [email, setEmail] = useSearchParam("email");

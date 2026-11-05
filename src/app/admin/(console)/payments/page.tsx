@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
-import { PaymentsList } from "@/features/admin/money/payments-list";
+import { PaymentsPage } from "@/features/admin/money/payments-page";
 
 export const metadata: Metadata = { title: "Payments" };
 
-export default function AdminPaymentsPage() {
-  return <PaymentsList />;
+export default function Page() {
+  return <PaymentsPage />;
 }

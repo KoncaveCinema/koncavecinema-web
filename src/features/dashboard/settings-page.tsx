@@ -315,7 +315,7 @@ function DeleteAccount() {
 /* ------------------------------------------------------------------------------------------ */
 
 /** /dashboard/settings: who you are here, how you sign in, and leaving. */
-export function Settings() {
+export function SettingsPage() {
   const user = useSession((state) => state.user);
   if (!user) return <PageSkeleton />;
   const member = user.role === "VIEWER" || user.role === "HOST";

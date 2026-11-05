@@ -77,7 +77,7 @@ const COLUMNS: Column<AdminMemberListItem>[] = [
 ];
 
 /** /admin/members: find a member by email or screen alias, to help with a booking. */
-export function MembersList() {
+export function MembersPage() {
   const [q, setQ] = useSearchParam();
   const [role, setRole] = useQueryState("role", parseAsStringLiteral(ROLES));
   const pagination = usePagination();

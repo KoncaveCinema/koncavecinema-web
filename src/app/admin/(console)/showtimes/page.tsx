@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
-import { ShowtimesList } from "@/features/admin/showtimes/showtimes-list";
+import { ShowtimesPage } from "@/features/admin/showtimes/showtimes-page";
 
 export const metadata: Metadata = { title: "Showtimes" };
 
-export default function AdminShowtimesPage() {
-  return <ShowtimesList />;
+export default function Page() {
+  return <ShowtimesPage />;
 }

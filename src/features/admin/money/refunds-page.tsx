@@ -27,7 +27,7 @@ const TABS = [
 ] as const;
 
 /** /admin/refunds: payments owed back, oldest first, and the ones already returned. */
-export function RefundsQueue() {
+export function RefundsPage() {
   const [state] = useTabParam("state", ["pending", "done"] as const, "pending");
   const pagination = usePagination();
   const refunds = useRefunds(state, pagination.query);

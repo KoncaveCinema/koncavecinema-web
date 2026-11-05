@@ -382,7 +382,7 @@ function FilmSkeleton() {
 }
 
 /** /admin/films/[id]: one film, from readiness to revenue, edited where it's shown. */
-export function FilmPage({ params }: { params: Promise<{ id: string }> }) {
+export function FilmDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const film = useFilm(id);
   return (

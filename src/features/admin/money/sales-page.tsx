@@ -164,7 +164,7 @@ function ByFilm({ report }: { report: Report }) {
 }
 
 /** /admin/sales: kept revenue between two Lagos days, by room and by film, with a CSV export. */
-export function SalesReport() {
+export function SalesPage() {
   const now = useServerNow();
   const [range, setRange] = useQueryStates({
     from: parseAsString.withDefault(""),

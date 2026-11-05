@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { fieldClass } from "@/features/auth/form-parts";
 import { formatLagosDateTime, formatMoneyExact } from "@/lib/format";
 
-import { PosterThumb } from "../films/films-list";
+import { PosterThumb } from "../films/poster-thumb";
 import { useFilms } from "../films/queries";
 import type { AdminShowtimeListItem, ShowtimeFilter } from "./api-types";
 import { useShowtimes } from "./queries";
@@ -72,7 +72,7 @@ const COLUMNS: Column<AdminShowtimeListItem>[] = [
 ];
 
 /** /admin/showtimes: every screening, filtered by film, Lagos days and state, all in the URL. */
-export function ShowtimesList() {
+export function ShowtimesPage() {
   const [status] = useTabParam("status", STATES, "upcoming");
   const pagination = usePagination();
   const [filters, setFilters] = useQueryStates({

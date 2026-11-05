@@ -4,7 +4,7 @@ import type { TicketDetail } from "@/features/booking/api-types";
 
 import { buildIcs, googleCalendarUrl } from "@/lib/ics";
 
-import { passEvent } from "./pass-view";
+import { passEvent } from "./pass-details-page";
 import { ticketView } from "./ticket-state";
 
 const MINUTE = 60_000;

@@ -23,7 +23,7 @@ import { ShowtimeDialog } from "./showtime-dialog";
 const CRUMBS = [{ href: "/admin/showtimes", label: "Showtimes" }];
 
 /** /admin/showtimes/[id]: one screening's rooms, suites and money; change or cancel it. */
-export function ShowtimePage({ params }: { params: Promise<{ id: string }> }) {
+export function ShowtimeDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const showtime = useShowtime(id);
   return (

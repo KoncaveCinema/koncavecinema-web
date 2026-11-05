@@ -1,7 +1,6 @@
 "use client";
 
 import { Check, Clapperboard, FilePlus2, Minus } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 
 import { DataTable, type Column } from "@/components/data-table/data-table";
@@ -14,6 +13,7 @@ import { usePagination } from "@/hooks/use-pagination";
 import { formatLagosDateTime } from "@/lib/format";
 
 import type { AdminFilmListItem } from "./api-types";
+import { PosterThumb } from "./poster-thumb";
 import { useFilms } from "./queries";
 
 const STATUS_TABS = [
@@ -21,28 +21,6 @@ const STATUS_TABS = [
   { value: "draft", label: "Drafts" },
   { value: "published", label: "Published" },
 ] as const;
-
-/** A small poster beside the title: the list is scanned by eye as much as by name */
-export function PosterThumb({ src, className }: { src: string | null; className?: string }) {
-  return (
-    <span
-      className={`relative grid aspect-2/3 w-9 shrink-0 place-items-center overflow-hidden rounded-md bg-white/5 ring-1 ring-white/10 ${className ?? ""}`}
-    >
-      {src ? (
-        <Image
-          src={src}
-          alt=""
-          fill
-          sizes="36px"
-          className="object-cover"
-          unoptimized={src.startsWith("data:")}
-        />
-      ) : (
-        <Clapperboard aria-hidden="true" className="size-3.5 text-white/30" />
-      )}
-    </span>
-  );
-}
 
 const COLUMNS: Column<AdminFilmListItem>[] = [
   {
@@ -123,7 +101,7 @@ const COLUMNS: Column<AdminFilmListItem>[] = [
 ];
 
 /** /admin/films: every film, drafts included, with what each still needs. */
-export function FilmsList() {
+export function FilmsPage() {
   const [status] = useTabParam("status", ["all", "draft", "published"] as const, "all");
   const [q, setQ] = useSearchParam();
   const pagination = usePagination();

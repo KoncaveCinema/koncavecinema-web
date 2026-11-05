@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
-import { SalesReport } from "@/features/admin/money/sales-report";
+import { SalesPage } from "@/features/admin/money/sales-page";
 
 export const metadata: Metadata = { title: "Sales" };
 
-export default function AdminSalesPage() {
-  return <SalesReport />;
+export default function Page() {
+  return <SalesPage />;
 }

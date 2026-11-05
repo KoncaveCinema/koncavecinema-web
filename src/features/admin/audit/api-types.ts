@@ -14,7 +14,7 @@ export interface AuditEntry {
 }
 
 /** GET /admin/audit-logs: newest first; pass `nextCursor` back for the next page */
-export interface AuditPage {
+export interface AuditEntriesPage {
   items: AuditEntry[];
   nextCursor: string | null;
 }

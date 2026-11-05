@@ -85,7 +85,7 @@ function metadataOf(entry: AuditEntry) {
 }
 
 /** /admin/audit: everything that happened, newest first, by member and by kind of action. */
-export function AuditLog() {
+export function AuditPage() {
   const [filters, setFilters] = useQueryStates({
     userId: parseAsString.withDefault(""),
     action: parseAsString.withDefault(""),

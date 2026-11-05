@@ -102,7 +102,7 @@ function OverviewSkeleton() {
  * /admin: the day at a glance. What's screening, what's owed back and what's still processing
  * first; then how sales are going; then the drafts that can't be published yet.
  */
-export function Overview() {
+export function OverviewPage() {
   const overview = useOverview();
   const data = overview.data;
 

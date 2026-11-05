@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
-import { Overview } from "@/features/admin/overview/overview";
+import { OverviewPage } from "@/features/admin/overview/overview-page";
 
 export const metadata: Metadata = { title: { absolute: "Admin · Koncave Cinema" } };
 
-export default function AdminOverviewPage() {
-  return <Overview />;
+export default function Page() {
+  return <OverviewPage />;
 }

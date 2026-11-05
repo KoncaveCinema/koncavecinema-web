@@ -9,7 +9,7 @@ import { StaffSignInForm } from "@/features/admin/staff-sign-in";
 export const metadata: Metadata = { title: "Staff sign-in" };
 
 /** The staff door: the logo, an Admin label and the form, on a plain dark page. */
-export default function AdminLoginPage() {
+export default function Page() {
   return (
     <main id="main" className="relative isolate flex min-h-svh flex-col bg-background px-5">
       <ScreenGlow className="-z-10 h-96" />

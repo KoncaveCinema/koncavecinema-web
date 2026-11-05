@@ -42,7 +42,7 @@ function lastSuperAdmin(error: ApiError) {
 type Change = { member: StaffMember; role: StaffRole | "VIEWER" };
 
 /** /admin/staff: who runs Koncave, inviting more, and changing or removing their access. */
-export function StaffList() {
+export function StaffPage() {
   const staff = useStaff();
   const invite = useInviteStaff();
   const change = useChangeStaffRole();

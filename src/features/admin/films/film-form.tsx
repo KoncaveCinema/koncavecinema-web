@@ -2,19 +2,15 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { cn } from "cn";
-import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { useForm } from "react-hook-form";
 
-import { PageHeader } from "@/components/console/page-header";
-import { Panel } from "@/components/console/panel";
 import { Button } from "@/components/ui/button";
 import { FieldError, FormAlert, fieldClass } from "@/features/auth/form-parts";
 import { ErrorCode, toApiError } from "@/lib/api";
 import { ratingDescription, ratingLabel } from "@/lib/format";
 
 import type { FilmInput } from "./api-types";
-import { useCreateFilm } from "./queries";
 import {
   AGE_RATINGS,
   WATERMARK_MODES,
@@ -212,31 +208,5 @@ export function FilmForm({
         </Button>
       </div>
     </form>
-  );
-}
-
-/** /admin/films/new: start a draft, then add its posters, videos and certificate on its page. */
-export function NewFilm() {
-  const router = useRouter();
-  const create = useCreateFilm();
-  return (
-    <>
-      <PageHeader
-        title="New film"
-        crumbs={[{ href: "/admin/films", label: "Films" }]}
-        description="Start with the details. Posters, the master, the trailer and the certificate are added on the film's page next."
-      />
-      <Panel title="Details" className="max-w-3xl">
-        <FilmForm
-          submitLabel="Create draft"
-          pendingLabel="Creating…"
-          onCancel={() => router.push("/admin/films")}
-          onSubmit={async (input) => {
-            const { id } = await create.mutateAsync(input);
-            router.push(`/admin/films/${id}`);
-          }}
-        />
-      </Panel>
-    </>
   );
 }

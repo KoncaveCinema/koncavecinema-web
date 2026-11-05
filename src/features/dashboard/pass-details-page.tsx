@@ -292,7 +292,7 @@ export function PassSkeleton() {
  * /dashboard/tickets/[ticketId]: one pass, in full. Booking emails link here. The ticket comes
  * from GET /tickets/:id, so the page is right after a reload, a payment or a cancellation.
  */
-export function PassView({ params }: { params: Promise<{ ticketId: string }> }) {
+export function PassDetailsPage({ params }: { params: Promise<{ ticketId: string }> }) {
   const { ticketId } = use(params);
   const ticket = useTicket(ticketId);
   return (

@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
-import { RefundsQueue } from "@/features/admin/money/refunds-queue";
+import { RefundsPage } from "@/features/admin/money/refunds-page";
 
 export const metadata: Metadata = { title: "Refunds" };
 
-export default function AdminRefundsPage() {
-  return <RefundsQueue />;
+export default function Page() {
+  return <RefundsPage />;
 }

@@ -29,7 +29,7 @@ const EMPTY = {
 };
 
 /** /dashboard/tickets: every pass, Upcoming (soonest first) and Past (newest first). */
-export function TicketsList() {
+export function TicketsPage() {
   const [when] = useTabParam("when", WHEN, "upcoming");
   const pagination = usePagination();
   const tickets = useMyTickets(when, pagination.page, pagination.pageSize);

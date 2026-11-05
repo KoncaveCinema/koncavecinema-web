@@ -209,7 +209,7 @@ function NextScreening({ ticket, now }: { ticket: TicketDetail; now: number | nu
  * /dashboard: what's next. A hold to finish comes first, then the next screening on the stage,
  * the numbers at a glance, the rest of the week as tickets, and the doors to everything else.
  */
-export function DashboardHome() {
+export function DashboardPage() {
   const alias = useSession((state) => state.user?.publicScreenAlias);
   const now = useServerNow();
   const upcoming = useMyTickets("upcoming");

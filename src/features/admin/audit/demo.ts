@@ -2,7 +2,7 @@ import { ErrorCode } from "@/lib/api";
 import { demoDelay, demoError } from "@/lib/demo";
 
 import { currentActor, readStore } from "../demo-store";
-import type { AuditPage } from "./api-types";
+import type { AuditEntriesPage } from "./api-types";
 
 /* The audit log demo (NEXT_PUBLIC_DATA_SOURCE=fixtures): the admin demo store's entries, newest
    first, with the API's cursor paging (the cursor names the last entry shown). */
@@ -12,7 +12,7 @@ export async function listAudit(query: {
   limit?: number;
   userId?: string;
   action?: string;
-}): Promise<AuditPage> {
+}): Promise<AuditEntriesPage> {
   await demoDelay(300);
   const store = readStore();
   const actor = currentActor();
