@@ -2,7 +2,6 @@ import { Sprockets } from "@/components/brand/atmosphere";
 import { Ticker } from "@/components/brand/ticker";
 import { LocalTime } from "@/components/cinema/live-time";
 import { getCatalog } from "@/features/catalog/get-catalog";
-import { sortedShowtimes } from "@/features/catalog/screening";
 
 /* The home page's scrolling bands: the tape under the hero and the film strip above the footer. */
 
@@ -68,7 +67,7 @@ export function PremiereTape() {
 /** A film strip of what is showing and when, running above the footer. */
 export async function ShowingStrip() {
   const { films } = await getCatalog();
-  const billed = films.filter((film) => film.showtimes.length > 0);
+  const billed = films.filter((film) => film.nextShowtimeAt !== null);
   if (billed.length === 0) return null;
 
   return (
@@ -85,7 +84,7 @@ export async function ShowingStrip() {
               {film.title}
             </span>
             <span className="text-sm font-medium text-white/50">
-              <LocalTime iso={sortedShowtimes(film)[0]!.startTime} />
+              <LocalTime iso={film.nextShowtimeAt!} />
             </span>
           </span>
         ))}

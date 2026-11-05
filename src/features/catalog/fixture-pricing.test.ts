@@ -41,21 +41,15 @@ describe("groupNowShowing", () => {
     durationMinutes: 100,
     ageRating: "PG",
     producerName: "",
-    nfvcbCertNumber: null,
-    nfvcbCertUrl: null,
+    status: "PUBLISHED",
     trailerUrl: null,
     posterLandscape: "",
     posterPortrait: "",
-    showtimes: [
-      {
-        id: `${id}-1`,
-        startTime: start,
-        endTime: start,
-        currency: "NGN",
-        basePrice: 1,
-        tierPrices: {},
-      },
-    ],
+    priceFrom: null,
+    nextShowtimeAt: start,
+    showtimeCount: 1,
+    // Outside the schedule window: the grouping goes by nextShowtimeAt alone
+    showtimes: [],
   });
 
   it("splits films a week after the earliest showtime, soonest first", () => {

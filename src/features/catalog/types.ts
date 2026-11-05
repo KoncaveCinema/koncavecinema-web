@@ -1,19 +1,22 @@
-import type { AgeRating, TicketTier } from "@/types/domain";
+import type { AgeRating } from "@/types/domain";
 
-/** A showtime as the API returns it (GET /movies/:slug), with tier prices from its capacity endpoint. */
+import type { ApiTierPrices, PublicFilmStatus } from "./api-types";
+
+/** A screening as the API lists it (GET /showtimes or GET /movies/:slug), with what each room costs. */
 export interface CatalogShowtime {
   id: string;
   startTime: string;
   endTime: string;
   currency: string;
-  basePrice: number;
-  /** What one booking of each tier costs the buyer (the API's totalPayable) */
-  tierPrices: Partial<Record<TicketTier, number>>;
+  /** What one Individual seat costs the buyer, fee included */
+  priceFrom: number;
+  /** What one booking of each room costs the buyer (the API's totalPayable) */
+  tierPrices: ApiTierPrices;
 }
 
 /**
- * A published film. Only fields the API provides; anything the design wants beyond these (cast,
- * director, genres, teasers) is a request for the API first (implementation_plan.md section 8).
+ * A public film: published, or announced as coming soon. Only fields the API provides; anything
+ * the design wants beyond these (cast, director, genres) is a request for the API first.
  */
 export interface CatalogFilm {
   id: string;
@@ -23,9 +26,7 @@ export interface CatalogFilm {
   durationMinutes: number;
   ageRating: AgeRating;
   producerName: string;
-  /** NFVCB classification certificate, once the film has been bound to one */
-  nfvcbCertNumber: string | null;
-  nfvcbCertUrl: string | null;
+  status: PublicFilmStatus;
   trailerUrl: string | null;
   posterLandscape: string;
   posterPortrait: string;
@@ -34,11 +35,31 @@ export interface CatalogFilm {
    * tall cards. Not from the API: art direction, kept with the sample data for now.
    */
   posterFocus?: string;
+  /** The lowest a buyer pays for a seat (fee included); null when no screening is open */
+  priceFrom: { amount: number; currency: string } | null;
+  /** Start of the next screening not yet over; it may lie beyond `showtimes` */
+  nextShowtimeAt: string | null;
+  /** Screenings not yet over, in all */
+  showtimeCount: number;
+  /**
+   * Its screenings, soonest first. In lists: those in the schedule window (GET /showtimes, the
+   * next 14 days). On the film page: every one not yet over (GET /movies/:slug).
+   */
   showtimes: CatalogShowtime[];
 }
 
+/** GET /movies/:slug: the film page's film, with its certificate */
+export interface FilmDetail extends CatalogFilm {
+  /** NFVCB classification certificate, once the film has been bound to one */
+  nfvcbCertNumber: string | null;
+  nfvcbCertUrl: string | null;
+}
+
 export interface Catalog {
+  /** Published films with a screening still to come, soonest first */
   films: CatalogFilm[];
+  /** Films announced as coming soon, most recently announced first; no screenings */
+  announced: CatalogFilm[];
   source: "api" | "fixtures";
   /** True when the API could not be reached; sections render their empty states */
   unavailable: boolean;

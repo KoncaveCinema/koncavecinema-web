@@ -26,7 +26,9 @@ export function MovieCard({
 }) {
   const showtimes = sortedShowtimes(film);
   const next = showtimes[0];
-  const price = lowestPrice(film.showtimes);
+  const price = film.priceFrom;
+  // Chips cover the schedule window; the count is every screening not yet over
+  const more = film.showtimeCount - Math.min(showtimes.length, 3);
 
   return (
     <article className={cn("group flex reveal flex-col", className)}>
@@ -86,13 +88,13 @@ export function MovieCard({
               />
             </li>
           ))}
-          {showtimes.length > 3 && (
+          {more > 0 && (
             <li>
               <Link
                 href={`/movies/${film.slug}#tickets`}
                 className="flex min-h-11 items-center rounded-xl px-3 text-xs font-semibold text-white/55 transition-colors hover:text-foreground"
               >
-                +{showtimes.length - 3} more
+                +{more} more
               </Link>
             </li>
           )}

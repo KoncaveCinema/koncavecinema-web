@@ -1,4 +1,3 @@
-import { sortedShowtimes } from "@/features/catalog/screening";
 import type { CatalogFilm, Screening } from "@/features/catalog/types";
 
 /**
@@ -25,16 +24,15 @@ export function tonightWindow(screenings: Screening[]): Screening[] {
   });
 }
 
-/** Films whose first screening is after tonight's window: the premieres to look forward to. */
+/**
+ * Published films whose next screening is after tonight's window: the premieres to look forward
+ * to, soonest first. (Announced films, with no date yet, come from the catalogue separately.)
+ */
 export function comingSoonFilms(films: CatalogFilm[], screenings: Screening[]): CatalogFilm[] {
   const end = horizon(screenings);
   return films
-    .filter((film) => {
-      const first = sortedShowtimes(film)[0];
-      return first && (end === null || Date.parse(first.startTime) > end);
-    })
-    .sort(
-      (a, b) =>
-        Date.parse(sortedShowtimes(a)[0]!.startTime) - Date.parse(sortedShowtimes(b)[0]!.startTime),
-    );
+    .filter(
+      (film) => film.nextShowtimeAt && (end === null || Date.parse(film.nextShowtimeAt) > end),
+    )
+    .sort((a, b) => Date.parse(a.nextShowtimeAt!) - Date.parse(b.nextShowtimeAt!));
 }

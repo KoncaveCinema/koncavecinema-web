@@ -1,4 +1,4 @@
-import { ArrowDown, ShieldCheck, Users } from "lucide-react";
+import { ArrowDown, CalendarClock, ShieldCheck, Users } from "lucide-react";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -24,9 +24,10 @@ import { cn } from "@/lib/utils";
 export const instant = false;
 
 export async function generateStaticParams() {
-  const { films } = await getCatalog();
+  const { films, announced } = await getCatalog();
+  const slugs = [...films, ...announced].map((film) => ({ slug: film.slug }));
   // Cache Components needs at least one param; an empty catalog renders the not-found page
-  return films.length ? films.map((film) => ({ slug: film.slug })) : [{ slug: "none" }];
+  return slugs.length ? slugs : [{ slug: "none" }];
 }
 
 export async function generateMetadata({ params }: PageProps<"/movies/[slug]">): Promise<Metadata> {
@@ -53,8 +54,10 @@ export default async function FilmPage({ params }: PageProps<"/movies/[slug]">) 
   if (!film) notFound();
 
   const { films } = await getCatalog();
+  // Announced, not yet bookable: no screenings, no prices
+  const comingSoon = film.status === "COMING_SOON";
   const next = sortedShowtimes(film)[0];
-  const price = lowestPrice(film.showtimes);
+  const price = film.priceFrom;
   const short = logline(film.synopsis);
   // The story section only when the synopsis says more than the logline above
   const moreStory = film.synopsis.trim() !== short.trim();
@@ -70,7 +73,7 @@ export default async function FilmPage({ params }: PageProps<"/movies/[slug]">) 
     { term: "Produced by", detail: film.producerName },
     {
       term: "Showtimes",
-      detail: `${film.showtimes.length} scheduled`,
+      detail: comingSoon ? "To be announced" : `${film.showtimeCount} scheduled`,
     },
     { term: "Exhibition", detail: "Online premiere, at scheduled times" },
   ];
@@ -86,6 +89,11 @@ export default async function FilmPage({ params }: PageProps<"/movies/[slug]">) 
         <div className="max-w-2xl">
           <div className="flex animate-rise items-center gap-2.5">
             {next && <ScreeningStatus startTime={next.startTime} endTime={next.endTime} />}
+            {comingSoon && (
+              <span className="inline-flex h-7 items-center rounded-full border border-white/12 bg-black/55 px-3 text-xs font-semibold tracking-wide backdrop-blur-md">
+                Coming soon
+              </span>
+            )}
             <RatingBadge rating={film.ageRating} />
           </div>
           <h1
@@ -113,17 +121,19 @@ export default async function FilmPage({ params }: PageProps<"/movies/[slug]">) 
             {short}
           </p>
           <div className="mt-8 flex animate-rise flex-wrap items-center gap-3 [animation-delay:260ms]">
-            <Button asChild size="xl">
-              <a href="#tickets">
-                Get tickets
-                {price && (
-                  <span className="font-medium tabular-nums opacity-85">
-                    · from {formatMoney(price.amount, price.currency)}
-                  </span>
-                )}
-                <ArrowDown data-icon="inline-end" />
-              </a>
-            </Button>
+            {!comingSoon && (
+              <Button asChild size="xl">
+                <a href="#tickets">
+                  Get tickets
+                  {price && (
+                    <span className="font-medium tabular-nums opacity-85">
+                      · from {formatMoney(price.amount, price.currency)}
+                    </span>
+                  )}
+                  <ArrowDown data-icon="inline-end" />
+                </a>
+              </Button>
+            )}
             {film.trailerUrl && <TrailerButton src={film.trailerUrl} title={film.title} />}
             <ShareButton title={film.title} path={`/movies/${film.slug}`} />
           </div>
@@ -146,9 +156,16 @@ export default async function FilmPage({ params }: PageProps<"/movies/[slug]">) 
               id="tickets-title"
               className="mt-4 mb-8 font-display text-3xl leading-tight font-extrabold sm:text-4xl"
             >
-              Pick a showtime
+              {comingSoon ? "Coming soon" : "Pick a showtime"}
             </h2>
-            <FilmShowtimes slug={film.slug} showtimes={film.showtimes} />
+            {comingSoon ? (
+              <div className="flex items-center gap-4 rounded-2xl border border-dashed border-white/12 p-8 text-muted-foreground">
+                <CalendarClock className="size-6 shrink-0 text-white/40" aria-hidden="true" />
+                <p>Screenings will be announced soon.</p>
+              </div>
+            ) : (
+              <FilmShowtimes slug={film.slug} showtimes={film.showtimes} />
+            )}
           </div>
 
           <aside aria-labelledby="rooms-title" className="lg:pt-16">
@@ -160,7 +177,7 @@ export default async function FilmPage({ params }: PageProps<"/movies/[slug]">) 
             </h3>
             <ul className="mt-4 divide-y divide-white/8 border-y border-white/8">
               {AUDITORIUMS.map((hall) => {
-                const from = lowestPrice(film.showtimes, hall.tier);
+                const from = comingSoon ? null : lowestPrice(film.showtimes, hall.tier);
                 return (
                   <li key={hall.tier} className="flex items-center gap-4 py-3.5">
                     <div className="relative aspect-video w-20 shrink-0 overflow-hidden rounded-lg">
@@ -186,7 +203,9 @@ export default async function FilmPage({ params }: PageProps<"/movies/[slug]">) 
               })}
             </ul>
             <p className="mt-4 text-xs leading-relaxed text-white/45">
-              Choose your room after picking a time. Prices include all fees.
+              {comingSoon
+                ? "Choose your room once screenings are announced."
+                : "Choose your room after picking a time. Prices include all fees."}
             </p>
           </aside>
         </section>

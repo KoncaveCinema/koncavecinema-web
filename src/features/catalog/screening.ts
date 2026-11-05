@@ -1,7 +1,7 @@
 import type { TicketTier } from "@/types/domain";
 import type { CatalogFilm, CatalogShowtime, Screening } from "./types";
 
-/** Showtimes that have not finished, soonest first. No clock needed: compares to `endTime` later. */
+/** Showtimes that have not finished, soonest first (the API lists only those). */
 export function sortedShowtimes(film: CatalogFilm): CatalogShowtime[] {
   return [...film.showtimes].sort((a, b) => Date.parse(a.startTime) - Date.parse(b.startTime));
 }
@@ -13,25 +13,18 @@ export function allScreenings(films: CatalogFilm[]): Screening[] {
     .sort((a, b) => Date.parse(a.showtime.startTime) - Date.parse(b.showtime.startTime));
 }
 
-/** Lowest ticket price for a tier across showtimes, or across all tiers when none is given. */
+/**
+ * The lowest of the API's own figures across showtimes: a room's total when a tier is given,
+ * otherwise the Individual seat (`priceFrom`). Never a computed price.
+ */
 export function lowestPrice(
   showtimes: CatalogShowtime[],
   tier?: TicketTier,
 ): { amount: number; currency: string } | null {
   let best: { amount: number; currency: string } | null = null;
   for (const showtime of showtimes) {
-    const tierAmounts = Object.values(showtime.tierPrices);
-    // What a buyer pays (tier totals); the bare base price only when no tier prices are known
-    const amounts = tier
-      ? [showtime.tierPrices[tier]]
-      : tierAmounts.length
-        ? tierAmounts
-        : [showtime.basePrice];
-    for (const amount of amounts) {
-      if (typeof amount === "number" && (!best || amount < best.amount)) {
-        best = { amount, currency: showtime.currency };
-      }
-    }
+    const amount = tier ? showtime.tierPrices[tier] : showtime.priceFrom;
+    if (!best || amount < best.amount) best = { amount, currency: showtime.currency };
   }
   return best;
 }
@@ -60,19 +53,16 @@ export function groupNowShowing(films: CatalogFilm[]): {
   later: CatalogFilm[];
 } {
   const withNext = films
-    .map((film) => ({ film, next: sortedShowtimes(film)[0] }))
-    .filter((entry): entry is { film: CatalogFilm; next: CatalogShowtime } => Boolean(entry.next))
-    .sort((a, b) => Date.parse(a.next.startTime) - Date.parse(b.next.startTime));
+    .flatMap((film) =>
+      film.nextShowtimeAt ? [{ film, next: Date.parse(film.nextShowtimeAt) }] : [],
+    )
+    .sort((a, b) => a.next - b.next);
   const first = withNext[0];
   if (!first) return { thisWeek: [], later: [] };
-  const horizon = Date.parse(first.next.startTime) + WEEK_MS;
+  const horizon = first.next + WEEK_MS;
   return {
-    thisWeek: withNext
-      .filter((entry) => Date.parse(entry.next.startTime) <= horizon)
-      .map((e) => e.film),
-    later: withNext
-      .filter((entry) => Date.parse(entry.next.startTime) > horizon)
-      .map((e) => e.film),
+    thisWeek: withNext.filter((entry) => entry.next <= horizon).map((entry) => entry.film),
+    later: withNext.filter((entry) => entry.next > horizon).map((entry) => entry.film),
   };
 }
 
