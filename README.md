@@ -41,7 +41,6 @@ credentials (the refresh cookie).
 | `npm run format` / `:check` | Prettier (with Tailwind class sorting)                             |
 | `npm test`                  | Unit tests (Vitest)                                                |
 | `npm run test:e2e`          | End-to-end tests (Playwright; run `npm run test:e2e:install` once) |
-| `npm run api:types`         | Generate API types from the running API's OpenAPI document         |
 | `npm run audit`             | Audit production dependencies                                      |
 
 ## Git hooks and commits
