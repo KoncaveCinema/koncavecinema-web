@@ -1,5 +1,3 @@
-"use client";
-
 import { useQueryClient } from "@tanstack/react-query";
 import { Film, Pause, Play, Trash2, Upload, X } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
@@ -10,7 +8,7 @@ import { DataTable } from "@/components/data-table/data-table";
 import { Panel } from "@/components/console/panel";
 import { StatusBadge } from "@/components/console/status-badge";
 import { Button } from "@/components/ui/button";
-import { ErrorCode, toApiError } from "@/lib/api";
+import { ErrorCode, toApiError } from "@/api";
 import { isDemo } from "@/lib/demo";
 import { formatLagosDateTime } from "@/lib/format";
 

@@ -1,9 +1,8 @@
-"use client";
-
 import { cn } from "cn";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { ErrorCode, toApiError } from "@/api";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,7 +13,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { FormAlert, fieldClass } from "@/features/auth/form-parts";
-import { ErrorCode, toApiError } from "@/lib/api";
 import { formatLagosDateTime, fromLagosInputs, lagosInputs } from "@/lib/format";
 
 import { useFilm, useFilms } from "../films/queries";
@@ -174,7 +172,7 @@ function ShowtimeForm({
               type="date"
               value={date}
               onChange={(event) => setDate(event.target.value)}
-              className={cn(fieldClass, "mt-2 [color-scheme:dark]")}
+              className={cn(fieldClass, "mt-2 scheme-dark")}
             />
           </div>
           <div>
@@ -186,7 +184,7 @@ function ShowtimeForm({
               type="time"
               value={time}
               onChange={(event) => setTime(event.target.value)}
-              className={cn(fieldClass, "mt-2 [color-scheme:dark]")}
+              className={cn(fieldClass, "mt-2 scheme-dark")}
             />
           </div>
         </div>

@@ -1,5 +1,3 @@
-"use client";
-
 import { zodResolver } from "@hookform/resolvers/zod";
 import { cn } from "cn";
 import { useState, type ReactNode } from "react";
@@ -7,7 +5,7 @@ import { useForm } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
 import { FieldError, FormAlert, fieldClass } from "@/features/auth/form-parts";
-import { ErrorCode, toApiError } from "@/lib/api";
+import { ErrorCode, toApiError } from "@/api";
 import { ratingDescription, ratingLabel } from "@/lib/format";
 
 import type { FilmInput } from "./api-types";
