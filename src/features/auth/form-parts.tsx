@@ -1,9 +1,8 @@
 "use client";
 
-import { Check, Eye, EyeOff, FlaskConical } from "lucide-react";
+import { Check, Eye, EyeOff } from "lucide-react";
 import { forwardRef, useState, type ComponentProps, type ReactNode } from "react";
 
-import { isDemo } from "@/lib/demo";
 import { cn } from "@/lib/utils";
 
 import { PASSWORD_RULES } from "./schemas";
@@ -82,17 +81,6 @@ export function PasswordChecklist({ id, password }: { id: string; password: stri
         );
       })}
     </ul>
-  );
-}
-
-/** Sample-data mode only: how to reach each state without the API */
-export function DemoHint({ children }: { children: ReactNode }) {
-  if (!isDemo) return null;
-  return (
-    <p className="flex items-start gap-2 rounded-xl border border-dashed border-sky-400/30 bg-sky-400/5 px-3.5 py-2.5 text-xs text-sky-200/80">
-      <FlaskConical className="mt-0.5 size-3.5 shrink-0 text-sky-400" />
-      {children}
-    </p>
   );
 }
 

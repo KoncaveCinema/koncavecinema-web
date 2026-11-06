@@ -1,4 +1,4 @@
-import type { UserRole } from "@/features/auth/api-types";
+import type { UserRole } from "@/api/auth/auth-schemas";
 import { api, type Paginated } from "@/api";
 import { isDemo } from "@/lib/demo";
 

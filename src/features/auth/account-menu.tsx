@@ -5,6 +5,8 @@ import { ChevronDown, LayoutDashboard, LogOut, Settings, ShieldCheck, Ticket } f
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+import { signOut } from "@/api/auth/auth-api";
+import type { UserProfile, UserRole } from "@/api/auth/auth-schemas";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -15,9 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-import type { UserProfile, UserRole } from "./api-types";
 import { isStaff } from "./roles";
-import { signOut } from "./service";
 import { useSession } from "./session";
 
 /*

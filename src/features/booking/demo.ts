@@ -1,4 +1,4 @@
-import { demoUserIsVerified } from "@/features/auth/service";
+import { useSession } from "@/features/auth/session";
 import type { ApiShowtimeCapacity } from "@/features/catalog/api-types";
 import { buildFixtureCatalog } from "@/features/catalog/fixture-films";
 import { fixturePricing } from "@/features/catalog/fixture-pricing";
@@ -348,7 +348,7 @@ export async function reserveTicket(
   if (Date.parse(capacity.endTime) < Date.now()) {
     throw demoError(ErrorCode.SCREENING_CONCLUDED, "This screening has ended.", 409);
   }
-  if (tier === "PUBLIC" && !demoUserIsVerified()) {
+  if (tier === "PUBLIC" && !useSession.getState().user?.isPhoneVerified) {
     throw demoError(ErrorCode.KYC_REQUIRED, "Identity verification required.", 403);
   }
 

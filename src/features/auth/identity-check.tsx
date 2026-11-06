@@ -8,11 +8,11 @@ import { Controller, useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { ErrorCode, toApiError } from "@/api";
+import { sendIdentityCode, verifyIdentity } from "@/api/auth/auth-api";
 import { cn } from "@/lib/utils";
 
-import { DemoHint, FieldError, FieldLabel, FormAlert, fieldClass } from "./form-parts";
+import { FieldError, FieldLabel, FormAlert, fieldClass } from "./form-parts";
 import { phoneSchema, verifyIdentitySchema, type VerifyIdentityValues } from "./schemas";
-import { DEMO_HINTS, sendIdentityCode, verifyIdentity } from "./service";
 import { useSession } from "./session";
 
 function codeError(code: string): string {
@@ -255,9 +255,6 @@ export function IdentityCheck({ onVerified }: { onVerified: () => void }) {
           {isSubmitting ? "Verifying…" : "Verify and continue"}
           {!isSubmitting && <ArrowRight data-icon="inline-end" />}
         </Button>
-        <DemoHint>
-          {DEMO_HINTS.otp} {DEMO_HINTS.alias}
-        </DemoHint>
       </form>
     </div>
   );

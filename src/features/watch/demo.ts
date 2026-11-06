@@ -1,4 +1,4 @@
-import type { UserProfile } from "@/features/auth/api-types";
+import type { UserProfile } from "@/api/auth/auth-schemas";
 import { getTicket } from "@/features/booking/demo";
 import { ErrorCode } from "@/api";
 import { demoDelay, demoError, readDemoStore, writeDemoStore } from "@/lib/demo";

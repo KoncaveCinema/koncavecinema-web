@@ -1,4 +1,4 @@
-import type { UserProfile, UserRole } from "@/features/auth/api-types";
+import type { UserProfile, UserRole } from "@/api/auth/auth-schemas";
 import type { PaymentStatus, TicketCancellation, TicketStatus } from "@/features/booking/api-types";
 import { buildFixtureCatalog } from "@/features/catalog/fixture-films";
 import { fixturePricing } from "@/features/catalog/fixture-pricing";

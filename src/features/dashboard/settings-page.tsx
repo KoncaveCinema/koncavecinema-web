@@ -10,12 +10,12 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { ErrorCode, toApiError, type ApiError } from "@/api";
+import { changePassword, deleteAccount, updateScreenAlias } from "@/api/auth/auth-api";
 import { ConfirmDialog } from "@/components/console/confirm-dialog";
 import { PageHeader } from "@/components/console/page-header";
 import { Panel } from "@/components/console/panel";
 import { Button } from "@/components/ui/button";
 import {
-  DemoHint,
   FieldError,
   FieldLabel,
   FormAlert,
@@ -25,14 +25,9 @@ import {
 } from "@/features/auth/form-parts";
 import { PageSkeleton } from "@/features/auth/require-session";
 import { newPasswordSchema, verifyIdentitySchema } from "@/features/auth/schemas";
-import {
-  DEMO_HINTS,
-  changePassword,
-  deleteAccount,
-  updateScreenAlias,
-} from "@/features/auth/service";
 import { useSession } from "@/features/auth/session";
 import { SUPPORT_EMAIL } from "@/features/support/content";
+import { useServerNow } from "@/hooks/use-now";
 import { formatLagosDate } from "@/lib/format";
 
 /* ------------------------------------------------------------------------------------------ */
@@ -55,6 +50,7 @@ function AliasForm() {
     resolver: zodResolver(aliasSchema),
     values: { publicScreenAlias: user?.publicScreenAlias ?? "" },
   });
+  const now = useServerNow();
 
   if (!user?.isPhoneVerified) {
     return (
@@ -67,6 +63,10 @@ function AliasForm() {
       </p>
     );
   }
+
+  // Once every 30 days, by the API's date; until the clock starts, treated as not yet
+  const changeableAt = user.aliasChangeableAt;
+  const locked = changeableAt !== null && (now === null || Date.parse(changeableAt) > now);
 
   async function onSubmit(values: z.infer<typeof aliasSchema>) {
     setProblem(null);
@@ -105,20 +105,27 @@ function AliasForm() {
             aria-invalid={errors.publicScreenAlias ? true : undefined}
             aria-describedby="alias-help"
             className={fieldClass}
+            disabled={locked}
             {...register("publicScreenAlias")}
           />
-          <Button type="submit" size="lg" className="h-12" disabled={isSubmitting || !isDirty}>
+          <Button
+            type="submit"
+            size="lg"
+            className="h-12"
+            disabled={locked || isSubmitting || !isDirty}
+          >
             {isSubmitting ? "Saving…" : "Save alias"}
           </Button>
         </div>
         <FieldError message={errors.publicScreenAlias?.message} />
         <p id="alias-help" className="mt-2 text-xs text-white/45">
-          Shown in Public Hall chat. 3 to 25 letters, numbers, underscores or hyphens. You can
-          change it once every 30 days.
+          Shown in Public Hall chat. 3 to 25 letters, numbers, underscores or hyphens.{" "}
+          {locked && changeableAt
+            ? `You can change it again on ${formatLagosDate(changeableAt)}.`
+            : "You can change it once every 30 days."}
         </p>
       </div>
       {problem && <FormAlert>{problem}</FormAlert>}
-      <DemoHint>{DEMO_HINTS.aliasChange}</DemoHint>
     </form>
   );
 }
@@ -224,7 +231,6 @@ function PasswordForm() {
         </Button>
         <p className="text-xs text-white/45">Your other devices will be signed out.</p>
       </div>
-      <DemoHint>{DEMO_HINTS.password}</DemoHint>
     </form>
   );
 }
@@ -304,7 +310,6 @@ function DeleteAccount() {
             className="h-10 rounded-lg"
           />
         </div>
-        <DemoHint>{DEMO_HINTS.deleteAccount}</DemoHint>
       </ConfirmDialog>
     </>
   );

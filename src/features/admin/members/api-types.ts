@@ -1,4 +1,4 @@
-import type { UserRole } from "@/features/auth/api-types";
+import type { UserRole } from "@/api/auth/auth-schemas";
 import type { PaymentStatus, TicketStatus } from "@/features/booking/api-types";
 import type { TicketTier } from "@/types/domain";
 

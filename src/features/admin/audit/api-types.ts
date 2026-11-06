@@ -1,4 +1,4 @@
-import type { UserRole } from "@/features/auth/api-types";
+import type { UserRole } from "@/api/auth/auth-schemas";
 
 /** koncavecinema-api audit log shapes, field for field (src/admin/audit-log.service.ts). */
 

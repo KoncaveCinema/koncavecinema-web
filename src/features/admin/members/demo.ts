@@ -1,4 +1,4 @@
-import type { UserRole } from "@/features/auth/api-types";
+import type { UserRole } from "@/api/auth/auth-schemas";
 import { isSuperAdmin } from "@/features/auth/roles";
 import { ErrorCode, type Paginated } from "@/api";
 import { demoDelay, demoError } from "@/lib/demo";

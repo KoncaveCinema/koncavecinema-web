@@ -3,8 +3,9 @@
 import { useEffect } from "react";
 import { create } from "zustand";
 
-import type { UserProfile } from "./api-types";
-import { restoreSession } from "./service";
+import { restoreSession } from "@/api/auth/auth-api";
+import type { UserProfile } from "@/api/auth/auth-schemas";
+import { getQueryClient } from "@/api/query-client";
 
 /*
  * Who is signed in, for the header's account menu and the private pages. Holds the profile
@@ -20,10 +21,16 @@ interface SessionState {
   setUser: (user: UserProfile | null) => void;
 }
 
-export const useSession = create<SessionState>((set) => ({
+export const useSession = create<SessionState>((set, get) => ({
   status: "loading",
   user: null,
-  setUser: (user) => set({ user, status: user ? "signed-in" : "signed-out" }),
+  setUser: (user) => {
+    // Signing out, or another person signing in on this device: nothing cached for the previous
+    // person (their passes, their admin lists) may outlive their session
+    const previous = get().user;
+    if (previous && previous.id !== user?.id) getQueryClient().clear();
+    set({ user, status: user ? "signed-in" : "signed-out" });
+  },
 }));
 
 let restoring = false;

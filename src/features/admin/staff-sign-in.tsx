@@ -8,9 +8,9 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 
 import { ErrorCode, toApiError } from "@/api";
+import { signIn } from "@/api/auth/auth-api";
 import { Button } from "@/components/ui/button";
 import {
-  DemoHint,
   FieldError,
   FieldLabel,
   FormAlert,
@@ -20,7 +20,6 @@ import {
 } from "@/features/auth/form-parts";
 import { isStaff } from "@/features/auth/roles";
 import { signInSchema, type SignInValues } from "@/features/auth/schemas";
-import { DEMO_HINTS, signIn } from "@/features/auth/service";
 import { useSession } from "@/features/auth/session";
 import { cn } from "@/lib/utils";
 
@@ -149,7 +148,6 @@ export function StaffSignInForm() {
           {isSubmitting || staff ? "Signing in…" : "Sign in"}
           {!isSubmitting && !staff && <ArrowRight data-icon="inline-end" />}
         </Button>
-        <DemoHint>{DEMO_HINTS.staffSignIn}</DemoHint>
       </form>
     </div>
   );

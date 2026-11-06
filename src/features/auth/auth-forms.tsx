@@ -10,11 +10,11 @@ import { useForm, useWatch } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { TERMS_VERSION } from "@/features/legal/documents";
 import { ErrorCode, toApiError } from "@/api";
+import { register, requestPasswordReset, resetPassword, signIn } from "@/api/auth/auth-api";
 import { cn } from "@/lib/utils";
 
 import {
   AuthHeading,
-  DemoHint,
   FieldError,
   FieldLabel,
   FormAlert,
@@ -33,7 +33,6 @@ import {
   type ResetPasswordValues,
   type SignInValues,
 } from "./schemas";
-import { DEMO_HINTS, register, requestPasswordReset, resetPassword, signIn } from "./service";
 import { isStaff } from "./roles";
 import { useSession } from "./session";
 
@@ -132,7 +131,6 @@ export function SignInForm() {
           {isSubmitting ? "Signing in…" : "Sign in"}
           {!isSubmitting && <ArrowRight data-icon="inline-end" />}
         </Button>
-        <DemoHint>{DEMO_HINTS.signIn}</DemoHint>
       </form>
       <p className="text-center text-sm text-muted-foreground">
         New to Koncave?{" "}
@@ -428,7 +426,6 @@ export function ResetPasswordForm() {
         <Button type="submit" size="xl" disabled={isSubmitting} className="w-full">
           {isSubmitting ? "Saving…" : "Save password"}
         </Button>
-        <DemoHint>{DEMO_HINTS.reset}</DemoHint>
       </form>
     </div>
   );
