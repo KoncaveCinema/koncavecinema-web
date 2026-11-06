@@ -21,6 +21,7 @@ export const ErrorCode = {
 
   EMAIL_ALREADY_REGISTERED: "EMAIL_ALREADY_REGISTERED",
   INVALID_CREDENTIALS: "INVALID_CREDENTIALS",
+  LOGIN_TEMPORARILY_LOCKED: "LOGIN_TEMPORARILY_LOCKED", // 429, details.retryAfterSeconds
   REFRESH_TOKEN_MISSING: "REFRESH_TOKEN_MISSING",
   REFRESH_TOKEN_INVALID: "REFRESH_TOKEN_INVALID",
   ACCOUNT_NOT_FOUND: "ACCOUNT_NOT_FOUND",
@@ -156,7 +157,7 @@ export function toApiError(error: unknown): ApiError {
         code: body.code,
         messages: Array.isArray(body.message) ? body.message : [body.message],
         requestId,
-        details: body as unknown as Record<string, unknown>,
+        details: body.details,
       });
     }
 

@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 // Validates the environment at startup and build time
-import "./src/env";
+import { env } from "./src/env";
 
 // Applied to every route. The Content Security Policy is added with the player (Phase F5),
 // once the Mux stream, licence and image hosts are known.
@@ -66,6 +66,12 @@ const nextConfig: NextConfig = {
 
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
+  },
+
+  // Local development against a remote API (see API_DEV_PROXY_URL in src/env.ts)
+  async rewrites() {
+    if (!env.API_DEV_PROXY_URL) return [];
+    return [{ source: "/api/:path*", destination: `${env.API_DEV_PROXY_URL}/:path*` }];
   },
 };
 

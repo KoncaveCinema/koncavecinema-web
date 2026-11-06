@@ -1,5 +1,3 @@
-"use client";
-
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowRight, Check, MailCheck, ShieldCheck } from "lucide-react";
 import { useState } from "react";
@@ -20,9 +18,12 @@ function codeError(code: string): string {
     case ErrorCode.OTP_INVALID:
       return "That code isn't right. Check the email and try again.";
     case ErrorCode.OTP_EXPIRED:
-      return "That code has expired. Send a new one.";
+      // Also after five wrong codes: the API cancels the code, so even the right one fails now
+      return "That code has expired or was cancelled after too many wrong tries. Send a new one.";
     case ErrorCode.OTP_RATE_LIMITED:
       return "Too many codes requested. Please wait 15 minutes and try again.";
+    case ErrorCode.RATE_LIMITED:
+      return "Too many tries. Please wait a minute and try again.";
     case ErrorCode.ALIAS_TAKEN:
       return "Someone already uses that screen alias. Try another.";
     case ErrorCode.PHONE_ALREADY_LINKED:
@@ -51,6 +52,7 @@ export function IdentityCheck({ onVerified }: { onVerified: () => void }) {
     register,
     control,
     handleSubmit,
+    resetField,
     formState: { errors, isSubmitting },
   } = useForm<VerifyIdentityValues>({
     resolver: zodResolver(verifyIdentitySchema),
@@ -84,8 +86,9 @@ export function IdentityCheck({ onVerified }: { onVerified: () => void }) {
       onVerified();
     } catch (error) {
       const apiError = toApiError(error);
-      if (apiError.is(ErrorCode.KYC_ALREADY_VERIFIED)) onVerified();
-      else setFailure(codeError(apiError.code));
+      if (apiError.is(ErrorCode.KYC_ALREADY_VERIFIED)) return onVerified();
+      if (apiError.is(ErrorCode.OTP_EXPIRED)) resetField("otp");
+      setFailure(codeError(apiError.code));
     }
   };
 

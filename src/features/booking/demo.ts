@@ -248,7 +248,7 @@ function nextPassNumber(tickets: Record<string, DemoTicket>): string {
 }
 
 function inviteCode(): string {
-  const hex = Array.from(crypto.getRandomValues(new Uint8Array(3)), (byte) =>
+  const hex = Array.from(crypto.getRandomValues(new Uint8Array(5)), (byte) =>
     byte.toString(16).padStart(2, "0"),
   );
   return `VIP-${hex.join("").toUpperCase()}`;

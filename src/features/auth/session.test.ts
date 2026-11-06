@@ -1,9 +1,18 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { act, render } from "@testing-library/react";
+// eslint-disable-next-line no-restricted-imports -- stubs the network beneath the API client
+import axios, { AxiosError } from "axios";
+import { createElement } from "react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { setAccessToken } from "@/api/access-token";
 import type { UserProfile } from "@/api/auth/auth-schemas";
+import { refreshAccessToken } from "@/api/client";
 import { getQueryClient } from "@/api/query-client";
 
-import { useSession } from "./session";
+import { SessionRestorer, useSession } from "./session";
+
+// The page-load restore stays pending, so only the refusal below changes the session
+vi.mock("@/api/auth/auth-api", () => ({ restoreSession: () => new Promise(() => {}) }));
 
 const person = (id: string): UserProfile => ({
   id,
@@ -49,5 +58,34 @@ describe("the session", () => {
     useSession.getState().setUser(person("bola"));
 
     expect(cached()).toBeUndefined();
+  });
+
+  describe("when the API refuses the refresh", () => {
+    const originalAdapter = axios.defaults.adapter;
+    afterEach(() => {
+      axios.defaults.adapter = originalAdapter;
+    });
+
+    it("ends the session here, so the person is sent to sign in", async () => {
+      render(createElement(SessionRestorer));
+      useSession.getState().setUser(person("ada"));
+      setAccessToken("expired");
+      getQueryClient().setQueryData(["/tickets/my-tickets"], ["pass"]);
+      // A replaced refresh token came back: the API ended every session of the account
+      axios.defaults.adapter = async (config) => {
+        throw new AxiosError("Unauthorized", "ERR_BAD_REQUEST", config, undefined, {
+          status: 401,
+          statusText: "",
+          headers: {},
+          config,
+          data: { statusCode: 401, code: "REFRESH_TOKEN_INVALID", message: "x" },
+        });
+      };
+
+      await act(() => refreshAccessToken());
+
+      expect(useSession.getState()).toMatchObject({ status: "signed-out", user: null });
+      expect(cached()).toBeUndefined();
+    });
   });
 });

@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowRight, Check, MailCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useForm, useWatch } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ import {
   PasswordInput,
   fieldClass,
   safeNext,
+  signInFailure,
 } from "./form-parts";
 import {
   forgotPasswordSchema,
@@ -48,7 +49,7 @@ export function SignInForm() {
   const next = searchParams.get("next");
   const afterReset = searchParams.get("reset") === "1";
   const setUser = useSession((state) => state.setUser);
-  const [failure, setFailure] = useState<string | null>(null);
+  const [failure, setFailure] = useState<ReactNode>(null);
   const {
     register: field,
     handleSubmit,
@@ -63,14 +64,7 @@ export function SignInForm() {
       // Staff without somewhere to return to go to their console
       router.replace(safeNext(next, isStaff(user.role) ? "/admin" : undefined));
     } catch (error) {
-      const apiError = toApiError(error);
-      setFailure(
-        apiError.is(ErrorCode.INVALID_CREDENTIALS)
-          ? "That email and password don't match an account."
-          : apiError.is(ErrorCode.RATE_LIMITED)
-            ? "Too many attempts. Please wait a few minutes and try again."
-            : "We couldn't sign you in just now. Please try again.",
-      );
+      setFailure(signInFailure(error));
     }
   };
 

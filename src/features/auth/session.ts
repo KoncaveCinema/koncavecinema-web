@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { create } from "zustand";
 
+import { onAccessTokenChange } from "@/api/access-token";
 import { restoreSession } from "@/api/auth/auth-api";
 import type { UserProfile } from "@/api/auth/auth-schemas";
 import { getQueryClient } from "@/api/query-client";
@@ -35,8 +36,20 @@ export const useSession = create<SessionState>((set, get) => ({
 
 let restoring = false;
 
-/** Restores the session once per page load. Mounted once, in the app providers. */
+/**
+ * Restores the session once per page load, and ends it here when the API ends it (the refresh
+ * is refused: signed out elsewhere, password changed or reset). The sign-in redirect takes over
+ * from there. Mounted once, in the app providers.
+ */
 export function SessionRestorer() {
+  useEffect(
+    () =>
+      onAccessTokenChange((token) => {
+        if (!token && useSession.getState().user) useSession.getState().setUser(null);
+      }),
+    [],
+  );
+
   useEffect(() => {
     if (restoring) return;
     restoring = true;

@@ -12,8 +12,8 @@ import type { ApiEnvelope, Paginated } from "./types";
  *
  * - Sends credentials so the API's HttpOnly refresh cookie travels with /auth requests.
  * - Attaches the in-memory access token and a fresh X-Request-Id to every request.
- * - On a 401, refreshes the access token once (concurrent requests share the same refresh)
- *   and retries the original request a single time.
+ * - On a 401, refreshes the access token once (concurrent requests and open tabs share the
+ *   same refresh) and retries the original request a single time.
  * - Rejects with ApiError; branch on `error.code`.
  */
 
@@ -70,31 +70,51 @@ apiClient.interceptors.response.use(undefined, async (error: unknown) => {
 let refreshInFlight: Promise<string | null> | null = null;
 
 /**
- * Exchanges the refresh cookie for a new access token. Concurrent callers share one request,
- * because the API rotates the refresh token and a second parallel refresh would be rejected.
- * Resolves to null (and clears the session) when there is no valid refresh cookie.
+ * Exchanges the refresh cookie for a new access token. The API rotates the refresh token on every
+ * use and ends every session of the account when a replaced one comes back, so none may be sent
+ * twice: requests in this tab share one refresh, and tabs take turns (see oneTabAtATime), each
+ * sending the cookie the previous refresh set.
+ *
+ * Resolves to null when there is no new token. A 401 (no cookie, expired, already used) ends the
+ * session; a network or server failure keeps it, and only the request that needed it fails. It
+ * never retries: one refresh per 401, and the caller decides what happens next.
  */
 export function refreshAccessToken(): Promise<string | null> {
-  refreshInFlight ??= axios
-    .post<ApiEnvelope<{ accessToken: string; expiresIn: number }>>("/auth/refresh", undefined, {
-      baseURL: env.NEXT_PUBLIC_API_URL,
-      withCredentials: true,
-      timeout: 15_000,
-      headers: { "X-Request-Id": newRequestId() },
-    })
-    .then((response) => {
-      setAccessToken(response.data.data.accessToken);
-      return response.data.data.accessToken;
-    })
-    .catch(() => {
-      setAccessToken(null);
-      return null;
-    })
-    .finally(() => {
-      refreshInFlight = null;
-    });
-
+  refreshInFlight ??= oneTabAtATime(requestRefresh).finally(() => {
+    refreshInFlight = null;
+  });
   return refreshInFlight;
+}
+
+async function requestRefresh(): Promise<string | null> {
+  try {
+    const response = await axios.post<ApiEnvelope<{ accessToken: string; expiresIn: number }>>(
+      "/auth/refresh",
+      undefined,
+      {
+        baseURL: env.NEXT_PUBLIC_API_URL,
+        withCredentials: true,
+        timeout: 15_000,
+        headers: { "X-Request-Id": newRequestId() },
+      },
+    );
+    setAccessToken(response.data.data.accessToken);
+    return response.data.data.accessToken;
+  } catch (error) {
+    const ended = axios.isAxiosError(error) && error.response?.status === 401;
+    // Without a token yet (the start-up restore) this also releases the requests waiting on it
+    if (ended || getAccessToken() === null) setAccessToken(null);
+    return null;
+  }
+}
+
+/**
+ * Runs the refresh under a lock shared by every tab of this site (Web Locks API), so two tabs
+ * never send the same refresh cookie. Browsers without it run the refresh straight away.
+ */
+async function oneTabAtATime<T>(task: () => Promise<T>): Promise<T> {
+  if (typeof navigator === "undefined" || !("locks" in navigator)) return task();
+  return navigator.locks.request("koncave-refresh", task);
 }
 
 /** Calls an endpoint and returns the envelope's `data`. */

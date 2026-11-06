@@ -4,10 +4,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowRight, Check, LayoutDashboard, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useForm } from "react-hook-form";
 
-import { ErrorCode, toApiError } from "@/api";
 import { signIn } from "@/api/auth/auth-api";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +16,7 @@ import {
   PasswordInput,
   fieldClass,
   safeNext,
+  signInFailure,
 } from "@/features/auth/form-parts";
 import { isStaff } from "@/features/auth/roles";
 import { signInSchema, type SignInValues } from "@/features/auth/schemas";
@@ -34,7 +34,7 @@ export function StaffSignInForm() {
   const next = safeNext(searchParams.get("next"), "/admin");
   const afterReset = searchParams.get("reset") === "1";
   const { status, user, setUser } = useSession();
-  const [failure, setFailure] = useState<string | null>(null);
+  const [failure, setFailure] = useState<ReactNode>(null);
   const {
     register: field,
     handleSubmit,
@@ -51,14 +51,7 @@ export function StaffSignInForm() {
     try {
       setUser(await signIn(values.email, values.password));
     } catch (error) {
-      const apiError = toApiError(error);
-      setFailure(
-        apiError.is(ErrorCode.INVALID_CREDENTIALS)
-          ? "That email and password don't match an account."
-          : apiError.is(ErrorCode.RATE_LIMITED)
-            ? "Too many attempts. Please wait a few minutes and try again."
-            : "We couldn't sign you in just now. Please try again.",
-      );
+      setFailure(signInFailure(error));
     }
   };
 

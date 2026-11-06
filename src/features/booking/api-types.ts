@@ -17,7 +17,7 @@ export interface ReservationReceipt {
   /** When the hold ends (ISO). The hold timer counts down to this, never from page load. */
   lockExpiresAt: string;
   pricing: ApiPricingBreakdown;
-  /** Private suites only, e.g. VIP-AB12CD; guests claim seats with it */
+  /** Private suites only, e.g. VIP-3F9A0C71BE (older ones have 6 characters); guests claim seats with it */
   roomInviteCode?: string | null;
 }
 

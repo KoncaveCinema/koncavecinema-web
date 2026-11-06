@@ -24,6 +24,8 @@ function claimError(code: string): string {
       return "This invite isn't active. The suite may not be paid for yet, or the screening has ended.";
     case ErrorCode.SUITE_CLAIM_IN_PROGRESS:
       return "We're already adding you to this suite. One moment, then try again.";
+    case ErrorCode.RATE_LIMITED:
+      return "Too many tries. Please wait a minute and try again.";
     default:
       return "We couldn't add you to the suite. Please try again.";
   }
@@ -105,7 +107,7 @@ export function InvitePage({ params }: { params: Promise<{ code: string }> }) {
         <p className="mt-3 text-white/60">
           {error.is(ErrorCode.RATE_LIMITED)
             ? "Please wait a minute and open the link again."
-            : "Check the link with your host. Invite links look like koncavecinema.com/invite/VIP-AB12CD."}
+            : "Check the link with your host. Invite links look like koncavecinema.com/invite/VIP-3F9A0C71BE."}
         </p>
         <Button asChild size="xl" className="mt-8">
           <Link href="/showtimes">See showtimes</Link>
