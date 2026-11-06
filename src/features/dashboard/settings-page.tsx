@@ -9,6 +9,7 @@ import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
+import { ErrorCode, toApiError, type ApiError } from "@/api";
 import { ConfirmDialog } from "@/components/console/confirm-dialog";
 import { PageHeader } from "@/components/console/page-header";
 import { Panel } from "@/components/console/panel";
@@ -32,7 +33,6 @@ import {
 } from "@/features/auth/service";
 import { useSession } from "@/features/auth/session";
 import { SUPPORT_EMAIL } from "@/features/support/content";
-import { ErrorCode, toApiError, type ApiError } from "@/lib/api";
 import { formatLagosDate } from "@/lib/format";
 
 /* ------------------------------------------------------------------------------------------ */

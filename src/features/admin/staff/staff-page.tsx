@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { fieldClass } from "@/features/auth/form-parts";
 import { useSession } from "@/features/auth/session";
-import { ErrorCode, type ApiError } from "@/lib/api";
+import { ErrorCode, type ApiError } from "@/api";
 import { formatLagosDate, formatLagosDateTime } from "@/lib/format";
 
 import type { StaffMember, StaffRole } from "./api-types";

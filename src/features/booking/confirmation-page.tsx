@@ -15,7 +15,7 @@ import { lobbyOpensAt } from "@/lib/screening-window";
 import { AUDITORIUMS } from "@/features/home/auditoriums/halls";
 import { SUPPORT_EMAIL } from "@/features/support/content";
 import { useNow } from "@/hooks/use-now";
-import { ErrorCode, serverOffset, toApiError } from "@/lib/api";
+import { ErrorCode, serverOffset, toApiError } from "@/api";
 import { formatMoney } from "@/lib/format";
 
 import { InviteLinks } from "./invite-links";

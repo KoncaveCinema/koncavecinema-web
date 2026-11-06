@@ -15,7 +15,7 @@ import type { ApiShowtimeCapacity, ApiTierCapacity } from "@/features/catalog/ap
 import { lobbyOpensAt, screeningPhase } from "@/lib/screening-window";
 import { AUDITORIUMS } from "@/features/home/auditoriums/halls";
 import { useNow } from "@/hooks/use-now";
-import { ErrorCode, newIdempotencyKey, toApiError } from "@/lib/api";
+import { ErrorCode, newIdempotencyKey, toApiError } from "@/api";
 import { formatMoney, formatRuntime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { TicketTier } from "@/types/domain";

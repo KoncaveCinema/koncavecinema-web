@@ -11,11 +11,15 @@
 - **Backend**: `koncavecinema-api` (NestJS v11 on Fastify). Its `docs/` folder is the source of
   truth for API contracts, error codes and business rules. Read the relevant API doc before
   building a screen that uses it.
-- **HTTP**: one axios instance in `src/lib/api/client.ts`. It unwraps the API's response envelope
-  (`{ statusCode, success, data, meta?, timestamp }`), attaches the in-memory access token,
-  refreshes once on `401` through the HttpOnly refresh cookie, and turns error bodies into
-  `ApiError` (branch on `code`, never on `message`). Types for the API come from its OpenAPI
-  document: `npm run api:types` writes `src/lib/api/schema.d.ts`.
+- **HTTP**: every call goes through `src/api/http.ts` on the one axios instance
+  (`src/api/client.ts`). It attaches the in-memory access token, refreshes once on `401`
+  through the HttpOnly refresh cookie, unwraps the envelope (`data`, or `{ items, meta }` for a
+  list) and rejects with `ApiError` (branch on `code`, never on `message`). Server Components
+  use `src/api/http-server.ts` (anonymous, public reads only). Each module parses every response
+  with its Zod schema (`schemas.ts`, only the fields its screens use, types from `z.infer`) and
+  has hand-written TanStack Query hooks: query keys start with the API path, mutation keys are
+  the API's operation name, and `src/api/refetch.ts` lists what each write refetches. The API's
+  `openapi.json` and Swagger are the reference to read; nothing is generated from them.
 - **State**: TanStack Query for server state; Zustand for client state (player, room); nuqs for
   URL state (filters, tabs). Forms use React Hook Form with Zod schemas.
 - **Performance**: read `docs/architecture/performance.md` before adding a dependency, a provider,

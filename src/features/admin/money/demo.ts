@@ -1,5 +1,5 @@
 import { isSuperAdmin } from "@/features/auth/roles";
-import { ErrorCode, type Paginated } from "@/lib/api";
+import { ErrorCode, type Paginated } from "@/api";
 import { demoDelay, demoError } from "@/lib/demo";
 import { dayKey } from "@/lib/format";
 import type { TicketTier } from "@/types/domain";

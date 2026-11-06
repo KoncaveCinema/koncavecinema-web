@@ -6,7 +6,7 @@ import {
   newIdempotencyKey,
   withIdempotencyKey,
   type Paginated,
-} from "@/lib/api";
+} from "@/api";
 import { isDemo } from "@/lib/demo";
 import type { TicketTier } from "@/types/domain";
 

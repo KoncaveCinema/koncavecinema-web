@@ -3,8 +3,8 @@ import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
 
 import { env } from "@/env";
-import { ApiError } from "@/lib/api/errors";
-import { serverApi } from "@/lib/api/server";
+import { ApiError } from "@/api/errors";
+import { serverApi } from "@/api/http-server";
 import { dayKey, HOME_TIME_ZONE } from "@/lib/format";
 
 import type {

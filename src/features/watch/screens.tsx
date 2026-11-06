@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { FormAlert } from "@/features/auth/form-parts";
 import { useServerNow } from "@/hooks/use-now";
-import { ErrorCode, toApiError } from "@/lib/api";
+import { ErrorCode, toApiError } from "@/api";
 import { formatCountdown } from "@/lib/format";
 
 import { confirmLocation, sendLocationCode } from "./service";

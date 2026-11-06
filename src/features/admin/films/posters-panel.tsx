@@ -7,7 +7,7 @@ import Image from "next/image";
 import { useId, useState } from "react";
 
 import { Panel } from "@/components/console/panel";
-import { ErrorCode, toApiError } from "@/lib/api";
+import { ErrorCode, toApiError } from "@/api";
 
 import type { AdminFilm, PosterKind } from "./api-types";
 import { filmKeys } from "./queries";

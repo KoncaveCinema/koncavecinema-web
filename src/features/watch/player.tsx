@@ -9,7 +9,7 @@ import { useEffect, useEffectEvent, useRef, useState, type ComponentRef } from "
 import { LogoMark } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
 import { useServerNow } from "@/hooks/use-now";
-import { ErrorCode, serverOffset, toApiError } from "@/lib/api";
+import { ErrorCode, serverOffset, toApiError } from "@/api";
 import { isDemo } from "@/lib/demo";
 import { formatClock, formatCountdown } from "@/lib/format";
 

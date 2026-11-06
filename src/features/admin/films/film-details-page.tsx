@@ -32,7 +32,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FieldError, FormAlert, fieldClass } from "@/features/auth/form-parts";
-import { ErrorCode, toApiError } from "@/lib/api";
+import { ErrorCode, toApiError } from "@/api";
 import {
   formatLagosDateTime,
   formatMoneyExact,

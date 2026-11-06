@@ -8,7 +8,7 @@ import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
-import { api, ErrorCode, toApiError } from "@/lib/api";
+import { api, ErrorCode, toApiError } from "@/api";
 import { cn } from "@/lib/utils";
 
 import { CONTACT_TOPICS, SUPPORT_EMAIL, type ContactTopic } from "./content";

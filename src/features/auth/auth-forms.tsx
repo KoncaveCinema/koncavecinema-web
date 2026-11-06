@@ -9,7 +9,7 @@ import { useForm, useWatch } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
 import { TERMS_VERSION } from "@/features/legal/documents";
-import { ErrorCode, toApiError } from "@/lib/api";
+import { ErrorCode, toApiError } from "@/api";
 import { cn } from "@/lib/utils";
 
 import {

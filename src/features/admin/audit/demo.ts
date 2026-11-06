@@ -1,4 +1,4 @@
-import { ErrorCode } from "@/lib/api";
+import { ErrorCode } from "@/api";
 import { demoDelay, demoError } from "@/lib/demo";
 
 import { currentActor, readStore } from "../demo-store";

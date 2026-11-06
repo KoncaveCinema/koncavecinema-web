@@ -2,7 +2,7 @@ import { demoUserIsVerified } from "@/features/auth/service";
 import type { ApiShowtimeCapacity } from "@/features/catalog/api-types";
 import { buildFixtureCatalog } from "@/features/catalog/fixture-films";
 import { fixturePricing } from "@/features/catalog/fixture-pricing";
-import { ApiError, ErrorCode, type Paginated } from "@/lib/api";
+import { ApiError, ErrorCode, type Paginated } from "@/api";
 import { demoDelay, demoError, readDemoStore, writeDemoStore } from "@/lib/demo";
 import { lobbyOpensAt, watchableUntil } from "@/lib/screening-window";
 import type { TicketTier } from "@/types/domain";

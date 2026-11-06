@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 
-import { serverOffset } from "@/lib/api";
+import { serverOffset } from "@/api";
 
 /**
  * One clock for the whole page. Every countdown subscribes to the same one-second tick, so

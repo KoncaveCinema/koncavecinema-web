@@ -1,4 +1,4 @@
-import { api } from "@/lib/api";
+import { api } from "@/api";
 import { isDemo } from "@/lib/demo";
 
 import type { AdminOverview } from "./api-types";

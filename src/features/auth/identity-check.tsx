@@ -7,7 +7,7 @@ import { Controller, useForm } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-import { ErrorCode, toApiError } from "@/lib/api";
+import { ErrorCode, toApiError } from "@/api";
 import { cn } from "@/lib/utils";
 
 import { DemoHint, FieldError, FieldLabel, FormAlert, fieldClass } from "./form-parts";

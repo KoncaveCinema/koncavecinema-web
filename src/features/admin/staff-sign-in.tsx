@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 
+import { ErrorCode, toApiError } from "@/api";
 import { Button } from "@/components/ui/button";
 import {
   DemoHint,
@@ -21,7 +22,6 @@ import { isStaff } from "@/features/auth/roles";
 import { signInSchema, type SignInValues } from "@/features/auth/schemas";
 import { DEMO_HINTS, signIn } from "@/features/auth/service";
 import { useSession } from "@/features/auth/session";
-import { ErrorCode, toApiError } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 /**

@@ -16,7 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { roomLabel } from "@/features/admin/rooms";
 import { isSuperAdmin } from "@/features/auth/roles";
 import { useSession } from "@/features/auth/session";
-import { ErrorCode, toApiError } from "@/lib/api";
+import { ErrorCode, toApiError } from "@/api";
 import { formatLagosDate, formatLagosDateTime, formatMoneyExact } from "@/lib/format";
 import { browserSummary } from "@/lib/user-agent";
 

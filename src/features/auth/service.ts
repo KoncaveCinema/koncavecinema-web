@@ -1,4 +1,4 @@
-import { api, ApiError, ErrorCode, refreshAccessToken, setAccessToken } from "@/lib/api";
+import { api, ApiError, ErrorCode, refreshAccessToken, setAccessToken } from "@/api";
 import { demoDelay, demoError, isDemo, readDemoStore, writeDemoStore } from "@/lib/demo";
 
 import type {

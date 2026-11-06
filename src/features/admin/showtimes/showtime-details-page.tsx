@@ -13,7 +13,7 @@ import { StatusBadge } from "@/components/console/status-badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { roomLabel } from "@/features/admin/rooms";
-import { ErrorCode } from "@/lib/api";
+import { ErrorCode } from "@/api";
 import { formatLagosDateTime, formatMoneyExact } from "@/lib/format";
 
 import type { AdminShowtime, ShowtimeCancellation } from "./api-types";

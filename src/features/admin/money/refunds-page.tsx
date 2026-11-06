@@ -14,7 +14,7 @@ import { usePagination } from "@/hooks/use-pagination";
 import { Button } from "@/components/ui/button";
 import { isSuperAdmin } from "@/features/auth/roles";
 import { useSession } from "@/features/auth/session";
-import { ErrorCode } from "@/lib/api";
+import { ErrorCode } from "@/api";
 import { formatLagosDate, formatLagosDateTime, formatMoneyExact } from "@/lib/format";
 
 import type { AdminPayment } from "./api-types";

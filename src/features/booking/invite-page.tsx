@@ -11,7 +11,7 @@ import { LocalTime } from "@/components/cinema/live-time";
 import { Button } from "@/components/ui/button";
 import { PageSkeleton } from "@/features/auth/require-session";
 import { useSession } from "@/features/auth/session";
-import { ErrorCode, toApiError } from "@/lib/api";
+import { ErrorCode, toApiError } from "@/api";
 
 import type { InvitePreview } from "./api-types";
 import { claimInvite, getInvitePreview } from "./service";

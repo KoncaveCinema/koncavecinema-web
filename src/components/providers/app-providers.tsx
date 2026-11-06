@@ -7,7 +7,7 @@ import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { lazy, Suspense, type ReactNode } from "react";
 
 import { SessionRestorer } from "@/features/auth/session";
-import { getQueryClient } from "@/lib/query-client";
+import { getQueryClient } from "@/api/query-client";
 
 // Fetched after hydration so the animation engine never delays the first paint or interaction
 const loadMotionFeatures = () => import("@/lib/motion/features").then((mod) => mod.default);

@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery } from "@tanstack/react-query";
 
-import type { PaginationQuery } from "@/lib/api";
+import type { PaginationQuery } from "@/api";
 
 import { useStaffSignedIn } from "../require-staff";
 import { useRefreshAdmin } from "../use-refresh-admin";

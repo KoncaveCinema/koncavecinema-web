@@ -4,6 +4,7 @@ import axios, { type AxiosRequestConfig } from "axios";
 
 import { env } from "@/env";
 
+import { unwrapEnvelope } from "./envelope";
 import { toApiError } from "./errors";
 import type { ApiEnvelope, Paginated } from "./types";
 
@@ -26,6 +27,16 @@ serverClient.interceptors.request.use((config) => {
 serverClient.interceptors.response.use(undefined, (error: unknown) => {
   throw toApiError(error);
 });
+
+/**
+ * The request function for the public reads (films and showtimes) that Server Components cache.
+ * It never sends credentials, so nothing a member alone may see can reach the shared server
+ * cache. Resolves like http.ts: `data`, or `{ items, meta }` for a list.
+ */
+export async function httpServer(config: AxiosRequestConfig): Promise<unknown> {
+  const response = await serverClient.request<unknown>({ ...config, withCredentials: false });
+  return unwrapEnvelope(response.data);
+}
 
 export const serverApi = {
   get: async <T>(url: string, config?: AxiosRequestConfig): Promise<T> => {
