@@ -53,16 +53,22 @@ export function SignInForm() {
   const {
     register: field,
     handleSubmit,
+    reset,
     formState: { errors, isSubmitting },
-  } = useForm<SignInValues>({ resolver: zodResolver(signInSchema) });
+  } = useForm<SignInValues>({
+    resolver: zodResolver(signInSchema),
+    defaultValues: { email: "", password: "" },
+  });
 
   const onSubmit = async (values: SignInValues) => {
     setFailure(null);
     try {
       const user = await signIn(values.email, values.password);
+      // Next keeps this page alive after leaving it: nothing typed may wait here for the next visit
+      reset();
       setUser(user);
-      // Staff without somewhere to return to go to their console
-      router.replace(safeNext(next, isStaff(user.role) ? "/admin" : undefined));
+      // Without somewhere to return to: staff go to their console, members to their dashboard
+      router.replace(safeNext(next, isStaff(user.role) ? "/admin" : "/dashboard"));
     } catch (error) {
       setFailure(signInFailure(error));
     }

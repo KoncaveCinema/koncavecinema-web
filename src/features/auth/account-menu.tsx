@@ -3,7 +3,6 @@
 import { cn } from "cn";
 import { ChevronDown, LayoutDashboard, LogOut, Settings, ShieldCheck, Ticket } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 import { signOut } from "@/api/auth/auth-api";
 import type { UserProfile, UserRole } from "@/api/auth/auth-schemas";
@@ -73,14 +72,15 @@ export function accountLinks(role: UserRole, area: AccountArea = "site") {
   ];
 }
 
-/** Signs out (a failed call still clears this device) and goes home. */
+/**
+ * Signs out (a failed call still clears this device). A public page stays where it is; a private
+ * area's sign-in redirect sends the person to its own sign-in (members' or staff's).
+ */
 export function useSignOut() {
-  const router = useRouter();
   const setUser = useSession((state) => state.setUser);
   return async () => {
     await signOut().catch(() => undefined);
     setUser(null);
-    router.push("/");
   };
 }
 

@@ -38,8 +38,12 @@ export function StaffSignInForm() {
   const {
     register: field,
     handleSubmit,
+    reset,
     formState: { errors, isSubmitting },
-  } = useForm<SignInValues>({ resolver: zodResolver(signInSchema) });
+  } = useForm<SignInValues>({
+    resolver: zodResolver(signInSchema),
+    defaultValues: { email: "", password: "" },
+  });
 
   const staff = status === "signed-in" && isStaff(user?.role);
   useEffect(() => {
@@ -49,7 +53,10 @@ export function StaffSignInForm() {
   const onSubmit = async (values: SignInValues) => {
     setFailure(null);
     try {
-      setUser(await signIn(values.email, values.password));
+      const user = await signIn(values.email, values.password);
+      // Next keeps this page alive after leaving it: nothing typed may wait here for the next visit
+      reset();
+      setUser(user);
     } catch (error) {
       setFailure(signInFailure(error));
     }
