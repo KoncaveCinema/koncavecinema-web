@@ -10,7 +10,7 @@ import { useNow, useViewerTimeZone } from "@/hooks/use-now";
 import { dayKey, formatMoney, formatRuntime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-import type { ApiScheduleShowtime } from "./api-types";
+import type { ScheduleShowtime } from "@/api/showtimes/showtimes-schemas";
 import { DateStrip, type StripDay } from "./date-strip";
 import { screeningPhase } from "@/lib/screening-window";
 import { ShowtimeChip } from "./showtime-chip";
@@ -40,8 +40,8 @@ function hourIn(iso: string, timeZone?: string): number {
 }
 
 interface FilmGroup {
-  movie: ApiScheduleShowtime["movie"];
-  showtimes: ApiScheduleShowtime[];
+  movie: ScheduleShowtime["movie"];
+  showtimes: ScheduleShowtime[];
 }
 
 function FilmRow({ group }: { group: FilmGroup }) {
@@ -95,7 +95,7 @@ function FilmRow({ group }: { group: FilmGroup }) {
 }
 
 /** Screenings playing or in their lobby right now, across every film */
-function LiveNow({ showtimes, now }: { showtimes: ApiScheduleShowtime[]; now: number }) {
+function LiveNow({ showtimes, now }: { showtimes: ScheduleShowtime[]; now: number }) {
   const live = showtimes.filter((showtime) => {
     const phase = screeningPhase(showtime, now);
     return phase === "live" || phase === "lobby";
@@ -126,14 +126,14 @@ function LiveNow({ showtimes, now }: { showtimes: ApiScheduleShowtime[]; now: nu
   );
 }
 
-export function ScheduleBrowser({ showtimes }: { showtimes: ApiScheduleShowtime[] }) {
+export function ScheduleBrowser({ showtimes }: { showtimes: ScheduleShowtime[] }) {
   const now = useNow();
   const timeZone = useViewerTimeZone();
   const [date, setDate] = useQueryState("date", dateParser);
   const [period, setPeriod] = useQueryState("time", periodParser);
 
   const upcoming = now === null ? showtimes : showtimes.filter((s) => Date.parse(s.endTime) > now);
-  const byDay = new Map<string, ApiScheduleShowtime[]>();
+  const byDay = new Map<string, ScheduleShowtime[]>();
   for (const showtime of upcoming) {
     const key = dayKey(Date.parse(showtime.startTime), timeZone);
     byDay.set(key, [...(byDay.get(key) ?? []), showtime]);

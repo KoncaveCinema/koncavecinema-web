@@ -15,6 +15,9 @@ export const env = createEnv({
     // refresh cookie is SameSite=Strict, so the browser sends it only to the same site; through
     // this proxy the API looks like part of this app. Leave unset when deployed
     API_DEV_PROXY_URL: z.url().optional(),
+    // Local development only: "true" prints every server-side API call (and the full error body
+    // on failure) in the terminal. Ignored in production
+    API_DEBUG: z.stringbool().default(false),
     // Set by Vercel on every deployment. Anything other than production (staging, previews)
     // is kept out of search engines
     VERCEL_ENV: z.enum(["production", "preview", "development"]).optional(),
@@ -36,6 +39,7 @@ export const env = createEnv({
     NODE_ENV: process.env.NODE_ENV,
     API_INTERNAL_URL: process.env.API_INTERNAL_URL,
     API_DEV_PROXY_URL: process.env.API_DEV_PROXY_URL,
+    API_DEBUG: process.env.API_DEBUG,
     VERCEL_ENV: process.env.VERCEL_ENV,
     STAGING_PASSWORD: process.env.STAGING_PASSWORD,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,

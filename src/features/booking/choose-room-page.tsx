@@ -11,7 +11,7 @@ import { LocalTime } from "@/components/cinema/live-time";
 import { Button } from "@/components/ui/button";
 import { IdentityCheck } from "@/features/auth/identity-check";
 import { useSession } from "@/features/auth/session";
-import type { ApiShowtimeCapacity, ApiTierCapacity } from "@/features/catalog/api-types";
+import type { ShowtimeCapacity, TierCapacity } from "@/api/showtimes/showtimes-schemas";
 import { lobbyOpensAt, screeningPhase } from "@/lib/screening-window";
 import { AUDITORIUMS } from "@/features/home/auditoriums/halls";
 import { useNow } from "@/hooks/use-now";
@@ -57,7 +57,7 @@ function RoomCard({
   selected,
   onSelect,
 }: {
-  tier: ApiTierCapacity;
+  tier: TierCapacity;
   selected: boolean;
   onSelect: () => void;
 }) {
@@ -152,7 +152,7 @@ export function ChooseRoomPage({
   capacity,
   film,
 }: {
-  capacity: ApiShowtimeCapacity;
+  capacity: ShowtimeCapacity;
   film: RoomStepFilm;
 }) {
   const router = useRouter();

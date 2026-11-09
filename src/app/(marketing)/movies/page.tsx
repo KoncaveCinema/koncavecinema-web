@@ -7,8 +7,8 @@ import { ViewTransition } from "react";
 import { FilmGrain, ScreenGlow } from "@/components/brand/atmosphere";
 import { RatingBadge } from "@/components/cinema/badges";
 import { FeaturedFilm } from "@/features/catalog/featured-film";
-import { getCatalog } from "@/features/catalog/get-catalog";
 import { MovieCard } from "@/features/catalog/movie-card";
+import { getAllFilms } from "@/features/catalog/queries";
 import { filmArtTransition, groupNowShowing } from "@/features/catalog/screening";
 import type { CatalogFilm } from "@/features/catalog/types";
 import { formatRuntime, formatShortDate } from "@/lib/format";
@@ -66,7 +66,7 @@ function LaterCard({ film }: { film: CatalogFilm }) {
 }
 
 export default async function NowShowingPage() {
-  const { films, announced, unavailable } = await getCatalog();
+  const { films, announced, unavailable } = await getAllFilms();
   const { thisWeek, later: dated } = groupNowShowing(films);
   // Dated premieres first, then the films announced without a date
   const later = [...dated, ...announced];

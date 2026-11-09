@@ -3,7 +3,6 @@ import { Suspense } from "react";
 
 import { Auditoriums } from "@/features/home/auditoriums";
 import { ComingSoon } from "@/features/home/coming-soon";
-import { Concessions } from "@/features/home/concessions";
 import { Hero, HeroSkeleton } from "@/features/home/hero";
 import { HowItWorks } from "@/features/home/how-it-works";
 import { KoncaveStandard } from "@/features/home/koncave-standard";
@@ -33,7 +32,8 @@ export default function HomePage() {
       <Suspense fallback={<div className="h-160" />}>
         <Auditoriums />
       </Suspense>
-      <Concessions />
+      {/* The snack menu returns once the API serves it (API Phase 7) */}
+      {/* <Concessions /> */}
       <Suspense>
         <ComingSoon />
       </Suspense>

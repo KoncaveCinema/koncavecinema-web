@@ -1,6 +1,6 @@
+import type { PublicFilmStatus } from "@/api/movies/movies-schemas";
+import type { TierPrices } from "@/api/showtimes/showtimes-schemas";
 import type { AgeRating } from "@/types/domain";
-
-import type { ApiTierPrices, PublicFilmStatus } from "./api-types";
 
 /** A screening as the API lists it (GET /showtimes or GET /movies/:slug), with what each room costs. */
 export interface CatalogShowtime {
@@ -11,7 +11,7 @@ export interface CatalogShowtime {
   /** What one Individual seat costs the buyer, fee included */
   priceFrom: number;
   /** What one booking of each room costs the buyer (the API's totalPayable) */
-  tierPrices: ApiTierPrices;
+  tierPrices: TierPrices;
 }
 
 /**
@@ -53,16 +53,6 @@ export interface FilmDetail extends CatalogFilm {
   /** NFVCB classification certificate, once the film has been bound to one */
   nfvcbCertNumber: string | null;
   nfvcbCertUrl: string | null;
-}
-
-export interface Catalog {
-  /** Published films with a screening still to come, soonest first */
-  films: CatalogFilm[];
-  /** Films announced as coming soon, most recently announced first; no screenings */
-  announced: CatalogFilm[];
-  source: "api" | "fixtures";
-  /** True when the API could not be reached; sections render their empty states */
-  unavailable: boolean;
 }
 
 /** A showtime together with its film, the unit most home sections render */

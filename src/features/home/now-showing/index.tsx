@@ -1,13 +1,13 @@
 import { ScreenGlow } from "@/components/brand/atmosphere";
 import { SectionHeading } from "@/components/cinema/section-heading";
-import { getCatalog } from "@/features/catalog/get-catalog";
+import { getNowShowing } from "@/features/catalog/queries";
 import { allScreenings } from "@/features/catalog/screening";
 
 import { tonightWindow } from "../schedule";
 import { FilmCard } from "./film-card";
 
 export async function NowShowing() {
-  const { films, unavailable } = await getCatalog();
+  const { films, unavailable } = await getNowShowing();
   const screenings = tonightWindow(allScreenings(films)).slice(0, 6);
 
   return (

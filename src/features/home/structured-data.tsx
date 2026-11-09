@@ -1,4 +1,4 @@
-import { getCatalog } from "@/features/catalog/get-catalog";
+import { getNowShowing } from "@/features/catalog/queries";
 import { lowestPrice, sortedShowtimes } from "@/features/catalog/screening";
 import { ratingLabel } from "@/lib/format";
 import { absoluteUrl, jsonLd, SITE_DESCRIPTION, SITE_NAME } from "@/lib/seo";
@@ -8,7 +8,7 @@ import { absoluteUrl, jsonLd, SITE_DESCRIPTION, SITE_NAME } from "@/lib/seo";
  * screening (ScreeningEvent with its Movie and starting price), all from catalog data.
  */
 export async function HomeStructuredData() {
-  const { films } = await getCatalog();
+  const { films } = await getNowShowing();
   const organization = {
     "@type": "Organization",
     "@id": absoluteUrl("/#organization"),

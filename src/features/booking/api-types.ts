@@ -1,5 +1,5 @@
 /** koncavecinema-api ticketing and payment shapes, field for field. */
-import type { ApiPricingBreakdown } from "@/features/catalog/api-types";
+import type { PricingBreakdown } from "@/api/showtimes/showtimes-schemas";
 import type { TicketTier } from "@/types/domain";
 
 export type TicketStatus = "RESERVED" | "CONFIRMED" | "CHECKED_IN" | "EXPIRED" | "CANCELLED";
@@ -16,7 +16,7 @@ export interface ReservationReceipt {
   expiresInSeconds: number;
   /** When the hold ends (ISO). The hold timer counts down to this, never from page load. */
   lockExpiresAt: string;
-  pricing: ApiPricingBreakdown;
+  pricing: PricingBreakdown;
   /** Private suites only, e.g. VIP-3F9A0C71BE (older ones have 6 characters); guests claim seats with it */
   roomInviteCode?: string | null;
 }
@@ -41,7 +41,7 @@ export interface TicketDetail {
   qrAdmissionPayload: string;
   createdAt: string;
   /** The stored quote; all zero for a suite guest's free pass */
-  pricing: ApiPricingBreakdown;
+  pricing: PricingBreakdown;
   /** Pending holds only. Past this moment the hold is expired, whatever `status` still says */
   lockExpiresAt: string | null;
   movieSlug: string;

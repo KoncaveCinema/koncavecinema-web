@@ -40,7 +40,8 @@ const nextConfig: NextConfig = {
     formats: ["image/avif", "image/webp"],
     minimumCacheTTL: 2_678_400, // 31 days; artwork URLs change when the image changes
     remotePatterns: [
-      // Mux thumbnails and storyboards; add the API's artwork host when it is known
+      // Film artwork from the API, then Mux thumbnails and storyboards
+      { protocol: "https", hostname: "res.cloudinary.com" },
       { protocol: "https", hostname: "image.mux.com" },
       { protocol: "https", hostname: "*.streamable.com" },
       { protocol: "https", hostname: "streamable.com" },

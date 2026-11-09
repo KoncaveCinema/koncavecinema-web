@@ -23,24 +23,26 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug, showtimeId } = await params;
   const match = await getShowtime(slug, showtimeId);
-  return { title: match ? `Book ${match.film.title}` : "Showtime not found" };
+  if (match === "unavailable") return {};
+  return { title: match === "missing" ? "Showtime not found" : `Book ${match.film.title}` };
 }
 
 /** Booking step 1: choose a room for this showtime. */
 export default async function Page({ params }: Props) {
   const { slug, showtimeId } = await params;
   const match = await getShowtime(slug, showtimeId);
-  if (!match) notFound();
-  const capacity = await getShowtimeCapacity(match);
-  const { film } = match;
+  if (match === "missing") notFound();
+  const capacity = match === "unavailable" ? null : await getShowtimeCapacity(match);
 
-  if (!capacity) {
+  // The API couldn't be read: the film, or its rooms
+  if (match === "unavailable" || !capacity) {
     return (
       <p className="mx-auto max-w-lg rounded-2xl border border-dashed border-white/12 p-8 text-center text-muted-foreground">
         Rooms for this showtime couldn&rsquo;t be loaded. Please refresh in a moment.
       </p>
     );
   }
+  const { film } = match;
 
   return (
     // The chosen room lives in the link (?room=), so it survives signing in

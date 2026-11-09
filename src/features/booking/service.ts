@@ -1,4 +1,4 @@
-import type { ApiShowtimeCapacity } from "@/features/catalog/api-types";
+import type { ShowtimeCapacity } from "@/api/showtimes/showtimes-schemas";
 import {
   api,
   ApiError,
@@ -77,7 +77,7 @@ export function heldTicketFrom(error: ApiError): HeldTicketDetails | null {
  * database. With the API connected this does nothing; nothing is stored in the browser.
  */
 export function rememberShowtime(
-  capacity: ApiShowtimeCapacity,
+  capacity: ShowtimeCapacity,
   posters: { posterPortrait: string; posterLandscape: string },
 ) {
   if (isDemo) demo.rememberShowtime(capacity, posters);

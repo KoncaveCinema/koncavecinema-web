@@ -1,5 +1,5 @@
 import { useSession } from "@/features/auth/session";
-import type { ApiShowtimeCapacity } from "@/features/catalog/api-types";
+import type { ShowtimeCapacity } from "@/api/showtimes/showtimes-schemas";
 import { buildFixtureCatalog } from "@/features/catalog/fixture-films";
 import { fixturePricing } from "@/features/catalog/fixture-pricing";
 import { ApiError, ErrorCode, type Paginated } from "@/api";
@@ -36,7 +36,7 @@ const SHOWTIMES_KEY = "kc-demo-showtimes";
 const DEMO_KEY = "kc-demo-bookings";
 
 interface DemoShowtime {
-  capacity: ApiShowtimeCapacity;
+  capacity: ShowtimeCapacity;
   posterPortrait: string;
   posterLandscape: string;
 }
@@ -46,7 +46,7 @@ interface DemoShowtime {
  * database. With the API connected this does nothing; nothing is stored in the browser.
  */
 export function rememberShowtime(
-  capacity: ApiShowtimeCapacity,
+  capacity: ShowtimeCapacity,
   posters: { posterPortrait: string; posterLandscape: string },
 ) {
   const store = readDemoStore<Record<string, DemoShowtime>>(SHOWTIMES_KEY, {});
