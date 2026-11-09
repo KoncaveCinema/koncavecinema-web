@@ -96,7 +96,10 @@ export const ErrorCode = {
   IDEMPOTENCY_KEY_REUSED: "IDEMPOTENCY_KEY_REUSED",
   IDEMPOTENCY_REQUEST_IN_PROGRESS: "IDEMPOTENCY_REQUEST_IN_PROGRESS",
 
-  /** Client side only: the request never reached the API (offline, DNS, CORS, timeout). */
+  /**
+   * Client side only: the request never reached the API (offline, DNS, CORS, timeout, or a
+   * proxy or gateway answering 5xx in its place).
+   */
   NETWORK_ERROR: "NETWORK_ERROR",
 } as const;
 
@@ -161,7 +164,9 @@ export function toApiError(error: unknown): ApiError {
       });
     }
 
-    if (error.response) {
+    // A 5xx page that isn't the API's (the dev proxy offline, or a gateway in front of the
+    // API): the request never reached it
+    if (error.response && error.response.status < 500) {
       return new ApiError({
         status: error.response.status,
         code: ErrorCode.INTERNAL_ERROR,
@@ -171,7 +176,7 @@ export function toApiError(error: unknown): ApiError {
     }
 
     return new ApiError({
-      status: 0,
+      status: error.response?.status ?? 0,
       code: ErrorCode.NETWORK_ERROR,
       messages: ["We could not reach Koncave Cinema. Check your connection and try again."],
       requestId,

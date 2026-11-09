@@ -63,6 +63,9 @@ export function signInFailure(error: unknown): ReactNode {
   if (apiError.is(ErrorCode.RATE_LIMITED)) {
     return "Too many attempts. Please wait a few minutes and try again.";
   }
+  if (apiError.is(ErrorCode.NETWORK_ERROR)) {
+    return "We couldn't reach Koncave Cinema. Check your connection and try again.";
+  }
   return "We couldn't sign you in just now. Please try again.";
 }
 

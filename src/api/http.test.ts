@@ -131,4 +131,38 @@ describe("http (every module's request function)", () => {
       status: 400,
     });
   });
+
+  it("treats a proxy's or gateway's own error page as the API being unreachable", async () => {
+    const { http, apiClient, setAccessToken } = await load();
+    setAccessToken(null);
+    apiClient.defaults.adapter = stubAdapter(() => ({
+      status: 500,
+      data: "Internal Server Error",
+    }));
+
+    await expect(http({ url: "/auth/login", method: "POST" })).rejects.toMatchObject({
+      code: "NETWORK_ERROR",
+      status: 500,
+    });
+  });
+
+  it("keeps the API's own 5xx errors as they are", async () => {
+    const { http, apiClient, setAccessToken } = await load();
+    setAccessToken(null);
+    apiClient.defaults.adapter = stubAdapter(() => ({
+      status: 503,
+      data: {
+        statusCode: 503,
+        code: "SERVICE_UNAVAILABLE",
+        message: "Payments are paused.",
+        timestamp: "2026-11-06T12:00:00.000Z",
+        path: "/api/payments",
+      },
+    }));
+
+    await expect(http({ url: "/payments", method: "POST" })).rejects.toMatchObject({
+      code: "SERVICE_UNAVAILABLE",
+      status: 503,
+    });
+  });
 });
