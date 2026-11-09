@@ -3,6 +3,14 @@ import type { NextConfig } from "next";
 // Validates the environment at startup and build time
 import { env } from "./src/env";
 
+// The /api proxy is for local development only: a deployment calls the API directly. Vercel sets
+// VERCEL_ENV on every build, so a stray proxy setting fails the build instead of going live
+if (env.API_DEV_PROXY_URL && env.VERCEL_ENV) {
+  throw new Error(
+    "API_DEV_PROXY_URL is for local development only; remove it from this Vercel environment.",
+  );
+}
+
 // Applied to every route. The Content Security Policy is added with the player (Phase F5),
 // once the Mux stream, licence and image hosts are known.
 const securityHeaders = [
