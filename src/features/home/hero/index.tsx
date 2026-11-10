@@ -1,4 +1,4 @@
-import { getNowShowing } from "@/features/catalog/queries";
+import { getFeatured } from "@/features/catalog/queries";
 import { HeroStage } from "@/components/cinema/hero-stage";
 
 import { HeroCarousel } from "./carousel";
@@ -7,9 +7,8 @@ import { EmptyHero, FeaturedSlide } from "./slides";
 const FEATURED_COUNT = 3;
 
 export async function Hero() {
-  const { films } = await getNowShowing();
-  // The API lists them soonest screening first: films playing or about to play lead the billboard
-  const featured = films.slice(0, FEATURED_COUNT);
+  // The API's order: films admins placed, then those showing soonest
+  const featured = await getFeatured(FEATURED_COUNT);
 
   if (featured.length === 0) return <EmptyHero />;
 

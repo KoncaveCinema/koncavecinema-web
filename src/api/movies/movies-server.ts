@@ -1,14 +1,17 @@
 import "server-only";
 
 import { cacheTag } from "next/cache";
+import { z } from "zod";
 
 import { cachedRead } from "../cached-read";
 import { isApiError } from "../errors";
 import { httpServer } from "../http-server";
 import { pageSchema } from "../page-schema";
 import {
+  featuredFilmSchema,
   movieDetailSchema,
   movieListItemSchema,
+  type FeaturedFilm,
   type MovieDetail,
   type MovieListItem,
 } from "./movies-schemas";
@@ -49,6 +52,17 @@ export async function readComingSoon(): Promise<MovieListItem[] | null> {
     );
     return page.items;
   });
+}
+
+const featuredList = z.array(featuredFilmSchema);
+
+/** GET /movies/featured?limit=: the films leading the home page, in the API's order (not paged) */
+export async function readFeatured(limit: number): Promise<FeaturedFilm[] | null> {
+  "use cache";
+  cacheTag("catalog");
+  return cachedRead("Featured films", async () =>
+    featuredList.parse(await httpServer({ url: "/movies/featured", params: { limit } })),
+  );
 }
 
 /**

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { pageSchema } from "../page-schema";
-import { movieDetailSchema, movieListItemSchema } from "./movies-schemas";
+import { featuredFilmSchema, movieDetailSchema, movieListItemSchema } from "./movies-schemas";
 
 // Shapes from openapi.json on dev (310291c), envelope removed
 const film = {
@@ -60,6 +60,24 @@ describe("movies schemas", () => {
     };
     const page = pageSchema(movieListItemSchema).parse({ items: [listItem, announced], meta });
     expect(page.items.map((item) => item.status)).toEqual(["PUBLISHED", "COMING_SOON"]);
+  });
+
+  it("accept the featured films: placed, filling in from the schedule, and coming soon", () => {
+    const placed = { ...listItem, featured: true, featuredUntil: "2026-12-07T23:00:00.000Z" };
+    const filler = { ...listItem, slug: "red-soil", featured: false, featuredUntil: null };
+    const announced = {
+      ...listItem,
+      slug: "harmattan-wedding",
+      status: "COMING_SOON",
+      nextShowtimeAt: null,
+      _count: { showtimes: 0 },
+      priceFrom: null,
+      featured: true,
+      featuredUntil: null,
+    };
+    const films = [placed, filler, announced].map((film) => featuredFilmSchema.parse(film));
+    expect(films.map((film) => film.featured)).toEqual([true, false, true]);
+    expect(featuredFilmSchema.safeParse({ ...listItem, featuredUntil: null }).success).toBe(false);
   });
 
   it("accept a film page, and a coming-soon film not yet certified", () => {

@@ -41,6 +41,19 @@ export const movieListItemSchema = z.object({
 });
 export type MovieListItem = z.infer<typeof movieListItemSchema>;
 
+/**
+ * GET /movies/featured (feat/featured-films, 9b49e73): the films that lead the home page, in their
+ * final order. Admin-placed films first, then films showing soonest to fill the list; coming-soon
+ * films can appear, with no price and no next screening.
+ */
+export const featuredFilmSchema = movieListItemSchema.extend({
+  /** true: placed by an admin; false: added from the schedule to fill the list */
+  featured: z.boolean(),
+  /** When a dated placement ends; null for the everyday lineup and schedule films */
+  featuredUntil: z.iso.datetime().nullable(),
+});
+export type FeaturedFilm = z.infer<typeof featuredFilmSchema>;
+
 /** A screening on the film page: every one not yet over, soonest first */
 export const movieShowtimeSchema = z.object({
   id: z.string(),

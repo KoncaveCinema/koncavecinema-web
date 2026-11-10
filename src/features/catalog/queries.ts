@@ -1,6 +1,11 @@
 import "server-only";
 
-import { readComingSoon, readMovie, readNowShowing } from "@/api/movies/movies-server";
+import {
+  readComingSoon,
+  readFeatured,
+  readMovie,
+  readNowShowing,
+} from "@/api/movies/movies-server";
 import type { ScheduleShowtime, ShowtimeCapacity } from "@/api/showtimes/showtimes-schemas";
 import { readCapacity, readSchedule } from "@/api/showtimes/showtimes-server";
 
@@ -41,6 +46,17 @@ export async function getAllFilms(): Promise<AllFilms> {
     ...nowShowing,
     announced: (announced ?? []).map((movie) => toCatalogFilm(movie, [])),
   };
+}
+
+/**
+ * GET /movies/featured: the films leading the home page, in the API's order, each with its
+ * screenings so a slide can book the next one. Falls back to the first now-showing films when
+ * the read fails (or the API doesn't serve it yet).
+ */
+export async function getFeatured(count: number): Promise<CatalogFilm[]> {
+  const [featured, schedule] = await Promise.all([readFeatured(count), readSchedule()]);
+  if (featured === null) return (await getNowShowing()).films.slice(0, count);
+  return featured.map((movie) => toCatalogFilm(movie, schedule ?? []));
 }
 
 /** Why a film or showtime page has nothing to show: it doesn't exist, or the API is down */
