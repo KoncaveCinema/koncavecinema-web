@@ -10,7 +10,8 @@ import {
 } from "@/components/console/console-nav";
 import { SidebarNav } from "@/components/console/sidebar";
 
-import { useMyTickets } from "./queries";
+import { useGetMyTickets } from "@/api/tickets/tickets-api";
+import { useSignedIn } from "@/features/auth/require-session";
 
 /* The member dashboard's navigation, for the shared console shell. */
 
@@ -24,7 +25,7 @@ const settings: NavItem = { href: "/dashboard/settings", label: "Settings", icon
 
 /** The main section, with the count of passes and holds still to come on My tickets */
 function useSections(): NavSection[] {
-  const upcoming = useMyTickets("upcoming");
+  const upcoming = useGetMyTickets({ when: "upcoming" }, useSignedIn());
   return [
     { title: "Dashboard", items: [home, { ...tickets, badge: upcoming.data?.meta.total }] },
     { title: "Koncave Cinema", items: [films] },

@@ -26,9 +26,10 @@ import { useSession } from "@/features/auth/session";
 import type { TicketDetail } from "@/api/tickets/tickets-schemas";
 import { formatCountdown, formatElapsed } from "@/lib/format";
 
-import { useMyTickets } from "./queries";
+import { useGetMyTickets } from "@/api/tickets/tickets-api";
+import { useSignedIn } from "@/features/auth/require-session";
 import { roomName, TicketCard, TicketCardSkeleton } from "./ticket-card";
-import { ticketView } from "./ticket-state";
+import { ticketView } from "./pass-state";
 import { useServerNow } from "@/hooks/use-now";
 
 const SHORTCUTS = [
@@ -212,8 +213,9 @@ function NextScreening({ ticket, now }: { ticket: TicketDetail; now: number | nu
 export function DashboardPage() {
   const alias = useSession((state) => state.user?.publicScreenAlias);
   const now = useServerNow();
-  const upcoming = useMyTickets("upcoming");
-  const past = useMyTickets("past");
+  const signedIn = useSignedIn();
+  const upcoming = useGetMyTickets({ when: "upcoming" }, signedIn);
+  const past = useGetMyTickets({ when: "past" }, signedIn);
 
   const items = upcoming.data?.items ?? [];
   // The clock starts before the passes arrive; until then everything counts as ahead

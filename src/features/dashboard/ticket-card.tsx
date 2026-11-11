@@ -13,7 +13,7 @@ import type { TicketDetail } from "@/api/tickets/tickets-schemas";
 import { AUDITORIUMS } from "@/features/home/auditoriums/halls";
 import { formatCountdown } from "@/lib/format";
 
-import { ticketView } from "./ticket-state";
+import { ticketView } from "./pass-state";
 import { useServerNow } from "@/hooks/use-now";
 
 export function roomName(tier: TicketDetail["tier"]): string {
@@ -38,7 +38,7 @@ export function TicketCard({ ticket }: { ticket: TicketDetail }) {
   const label = holdLeft !== null ? `On hold · ${formatCountdown(holdLeft)}` : view.badge.label;
   const passHref = `/dashboard/tickets/${ticket.id}`;
   const primary = view.action && view.action.href !== passHref;
-  const faded = view.phase === "cancelled" || view.phase === "hold-expired";
+  const faded = ["cancelled", "released", "hold-expired"].includes(view.phase);
 
   const action = view.action && (
     <Button
