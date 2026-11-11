@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { TicketDetail } from "@/features/booking/api-types";
+import type { TicketDetail } from "@/api/tickets/tickets-schemas";
 
 import { buildIcs, googleCalendarUrl } from "@/lib/ics";
 

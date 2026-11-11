@@ -1,6 +1,5 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import { CheckCircle2, DoorOpen, LoaderCircle, Mail, Popcorn, Ticket } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -16,14 +15,11 @@ import { AUDITORIUMS } from "@/features/home/auditoriums/halls";
 import { SUPPORT_EMAIL } from "@/features/support/content";
 import { useNow } from "@/hooks/use-now";
 import { ErrorCode, serverOffset, toApiError } from "@/api";
+import { useVerifyPayment, VERIFY_WAIT_MS } from "@/api/payments/payments-api";
+import { useGetTicket } from "@/api/tickets/tickets-api";
 import { formatMoney } from "@/lib/format";
 
 import { InviteLinks } from "./invite-links";
-import { getTicket, verifyPayment } from "./service";
-
-// Paystack's webhook can lag the redirect: check every 3 seconds for up to 30 seconds
-const POLL_MS = 3000;
-const POLL_LIMIT = 10;
 
 function StatePanel({
   title,
@@ -55,19 +51,10 @@ function SupportLine({ reference }: { reference: string }) {
 function ConfirmationBody({ ticketId, reference }: { ticketId: string; reference: string }) {
   const now = useNow();
   const [startedAt] = useState(() => Date.now());
-  const payment = useQuery({
-    queryKey: ["payment", reference, ticketId],
-    queryFn: () => verifyPayment(reference, ticketId),
-    // Paystack's webhook can lag the redirect: poll while pending; keep retrying network errors
-    refetchInterval: (query) =>
-      (query.state.data?.outcome === "PENDING" && query.state.dataUpdateCount < POLL_LIMIT) ||
-      (query.state.error && toApiError(query.state.error).is(ErrorCode.NETWORK_ERROR))
-        ? POLL_MS
-        : false,
-    retry: false,
-  });
+  // Paystack's webhook can lag the redirect: polled while the outcome is pending
+  const payment = useVerifyPayment(reference);
   // Read in every state: whether the hold is still live, and the pass itself after a success
-  const ticket = useQuery({ queryKey: ["ticket", ticketId], queryFn: () => getTicket(ticketId) });
+  const ticket = useGetTicket(ticketId);
   const detail = ticket.data;
   const lockExpiresAt = detail?.lockExpiresAt;
   const holdLive =
@@ -108,7 +95,7 @@ function ConfirmationBody({ ticketId, reference }: { ticketId: string; reference
   const outcome = payment.data?.outcome;
 
   if (payment.isPending || outcome === "PENDING") {
-    const waitingLong = now !== null && now - startedAt > POLL_MS * POLL_LIMIT;
+    const waitingLong = now !== null && now - startedAt > VERIFY_WAIT_MS;
     if (!waitingLong) {
       return (
         <div className="mx-auto max-w-lg py-16 text-center">

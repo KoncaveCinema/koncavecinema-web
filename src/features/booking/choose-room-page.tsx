@@ -5,13 +5,15 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 
 import { LocalTime } from "@/components/cinema/live-time";
 import { Button } from "@/components/ui/button";
 import { IdentityCheck } from "@/features/auth/identity-check";
 import { useSession } from "@/features/auth/session";
 import type { ShowtimeCapacity, TierCapacity } from "@/api/showtimes/showtimes-schemas";
+import { useReserveTicket } from "@/api/tickets/tickets-api";
+import { heldTicketSchema, type HeldTicket } from "@/api/tickets/tickets-schemas";
 import { lobbyOpensAt, screeningPhase } from "@/lib/screening-window";
 import { AUDITORIUMS } from "@/features/home/auditoriums/halls";
 import { useNow } from "@/hooks/use-now";
@@ -22,8 +24,6 @@ import type { TicketTier } from "@/types/domain";
 
 import { BookingSteps, type BookingStepId } from "./booking-steps";
 import { PriceBreakdown } from "./price-breakdown";
-import type { HeldTicketDetails } from "./api-types";
-import { heldTicketFrom, rememberShowtime, reserveTicket, snacksAvailable } from "./service";
 import { SummaryBar } from "./summary-bar";
 
 const TIERS = ["INDIVIDUAL", "PUBLIC", "PRIVATE_5", "PRIVATE_10"] as const;
@@ -46,7 +46,10 @@ function errorMessage(code: string): string {
     case ErrorCode.RESERVATION_ALREADY_HELD:
       return "You already have a seat on hold for this showtime.";
     case ErrorCode.RESERVATION_IN_PROGRESS:
+    case ErrorCode.IDEMPOTENCY_REQUEST_IN_PROGRESS:
       return "We're still holding your seat. Try again in a moment.";
+    case ErrorCode.NETWORK_ERROR:
+      return "We couldn't reach Koncave Cinema. Check your connection and try again.";
     default:
       return "We couldn't hold your seat. Please try again.";
   }
@@ -160,20 +163,16 @@ export function ChooseRoomPage({
   const now = useNow();
   const { status, user } = useSession();
   const [verifying, setVerifying] = useState(false);
-  const [held, setHeld] = useState<HeldTicketDetails | null>(null);
+  const [held, setHeld] = useState<HeldTicket | null>(null);
   const [room, setRoom] = useQueryState("room", roomParser);
   // A transition, not a flag: it ends by itself once the checkout page has loaded, so coming
   // back to this page (which keeps its state) never finds the button stuck on "Holding…"
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [attemptKey, setAttemptKey] = useState(newIdempotencyKey);
-
-  useEffect(() => {
-    rememberShowtime(capacity, {
-      posterPortrait: film.posterPortrait,
-      posterLandscape: film.posterLandscape,
-    });
-  }, [capacity, film.posterPortrait, film.posterLandscape]);
+  // The hold being attempted: its key is kept until the API answers, so trying again after a
+  // dropped connection repeats the same hold instead of asking for a second one
+  const [attempt, setAttempt] = useState<{ tier: TicketTier; key: string } | null>(null);
+  const reserveTicket = useReserveTicket();
 
   const ended = now !== null && screeningPhase(capacity, now) === "ended";
   const selected = capacity.tiers.find((tier) => tier.tier === room);
@@ -182,33 +181,41 @@ export function ChooseRoomPage({
   const steps: BookingStepId[] = [
     "room",
     ...(needsIdentity ? (["identity"] as const) : []),
-    ...(snacksAvailable ? (["snacks"] as const) : []),
     "review",
   ];
 
   /** Holds the seat (POST /tickets/reserve), then opens checkout */
   function reserve() {
     if (!selected) return;
+    const tier = selected.tier as TicketTier;
+    // Another room is another request body, so it needs its own key
+    const key = attempt?.tier === tier ? attempt.key : newIdempotencyKey();
+    setAttempt({ tier, key });
     setError(null);
     setHeld(null);
     startTransition(async () => {
       try {
-        const receipt = await reserveTicket(
-          capacity.showtimeId,
-          selected.tier as TicketTier,
-          attemptKey,
-        );
-        setAttemptKey(newIdempotencyKey());
+        const receipt = await reserveTicket.mutateAsync({
+          showtimeId: capacity.showtimeId,
+          tier,
+          idempotencyKey: key,
+        });
+        setAttempt(null);
         router.push(`/checkout/${receipt.ticketId}`);
       } catch (caught) {
         const apiError = toApiError(caught);
-        setAttemptKey(newIdempotencyKey());
+        const unanswered = apiError.is(
+          ErrorCode.NETWORK_ERROR,
+          ErrorCode.RESERVATION_IN_PROGRESS,
+          ErrorCode.IDEMPOTENCY_REQUEST_IN_PROGRESS,
+        );
+        if (!unanswered) setAttempt(null);
         if (apiError.is(ErrorCode.KYC_REQUIRED)) {
           setVerifying(true);
           return;
         }
         const existing = apiError.is(ErrorCode.RESERVATION_ALREADY_HELD)
-          ? heldTicketFrom(apiError)
+          ? (heldTicketSchema.safeParse(apiError.details).data ?? null)
           : null;
         setHeld(existing);
         setError(
@@ -244,9 +251,7 @@ export function ChooseRoomPage({
         ? "Sign in to continue"
         : needsIdentity && !verified
           ? "Verify identity to continue"
-          : snacksAvailable
-            ? "Continue to snacks"
-            : "Continue to review";
+          : "Continue to review";
 
   const cta = (compact: boolean) => (
     <Button

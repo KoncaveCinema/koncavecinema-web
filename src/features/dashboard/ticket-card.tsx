@@ -9,7 +9,7 @@ import { LocalTime } from "@/components/cinema/live-time";
 import { StatusBadge } from "@/components/console/status-badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { TicketDetail } from "@/features/booking/api-types";
+import type { TicketDetail } from "@/api/tickets/tickets-schemas";
 import { AUDITORIUMS } from "@/features/home/auditoriums/halls";
 import { formatCountdown } from "@/lib/format";
 

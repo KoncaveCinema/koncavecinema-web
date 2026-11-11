@@ -1,5 +1,5 @@
 import type { StatusKind } from "@/components/console/status-badge";
-import type { TicketDetail } from "@/features/booking/api-types";
+import type { TicketDetail } from "@/api/tickets/tickets-schemas";
 
 /* What a pass is right now, and the one thing to do next with it. One function, so the
    dashboard home, the tickets list and the pass page always agree. */

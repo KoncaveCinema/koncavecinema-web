@@ -2,12 +2,11 @@ import { Check } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
-export type BookingStepId = "room" | "identity" | "snacks" | "review";
+export type BookingStepId = "room" | "identity" | "review";
 
 export const STEP_LABELS: Record<BookingStepId, string> = {
   room: "Room",
   identity: "Verify identity",
-  snacks: "Snacks",
   review: "Review & pay",
 };
 

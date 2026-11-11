@@ -1,13 +1,12 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   ArrowRight,
   Check,
   CreditCard,
   Landmark,
   Lock,
-  Popcorn,
   ShieldCheck,
   Smartphone,
   Ticket,
@@ -15,35 +14,31 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
-import { use, useState } from "react";
+import { use, useEffect, useState } from "react";
 
+import { ErrorCode, newIdempotencyKey, toApiError } from "@/api";
+import { useInitializeCheckout } from "@/api/payments/payments-api";
+import { useGetTicket, useReleaseTicket } from "@/api/tickets/tickets-api";
+import type { TicketDetail } from "@/api/tickets/tickets-schemas";
 import { Button } from "@/components/ui/button";
 import { IdentityCheck } from "@/features/auth/identity-check";
 import { PageSkeleton, RequireSession } from "@/features/auth/require-session";
-import { isDemo } from "@/lib/demo";
 import { useSession } from "@/features/auth/session";
-import { useConcessionDraft } from "@/features/concessions/cart";
-import { SnackPicker } from "@/features/concessions/snack-picker";
-import { useConcessionQuote } from "@/features/concessions/use-quote";
 import { AUDITORIUMS } from "@/features/home/auditoriums/halls";
 import { formatMoney } from "@/lib/format";
 
 import { BookingSteps, STEP_LABELS, type BookingStepId } from "./booking-steps";
 import { useHoldExpired } from "./hold-timer";
-import { checkoutTotal, OrderSummaryContent } from "./order-summary";
-import { demoReference } from "./demo";
-import { getCheckout, releaseTicket, snacksAvailable } from "./service";
-import type { Checkout } from "./types";
+import { OrderSummaryContent } from "./order-summary";
 import { SummaryBar } from "./summary-bar";
 
-const FLOW_STEPS = ["identity", "snacks", "review"] as const;
+const FLOW_STEPS = ["identity", "review"] as const;
 type FlowStep = (typeof FLOW_STEPS)[number];
 const stepParser = parseAsStringLiteral(FLOW_STEPS);
 
 const INTRO: Record<FlowStep, string> = {
   identity:
     "Public halls are open chat rooms, so each attendee is verified once. It takes a minute.",
-  snacks: "Make it a proper night in: popcorn, food and drinks at your door before the film.",
   review: "Check everything, then pay to confirm your pass.",
 };
 
@@ -52,6 +47,22 @@ const PAYMENT_METHODS = [
   { icon: Landmark, label: "Bank transfer" },
   { icon: Smartphone, label: "USSD" },
 ];
+
+function payErrorMessage(code: string): string {
+  switch (code) {
+    case ErrorCode.TICKET_NOT_PAYABLE:
+      return "This hold can no longer be paid for: it has ended or is already paid.";
+    case ErrorCode.PAYMENT_GATEWAY_ERROR:
+    case ErrorCode.PAYMENT_GATEWAY_UNAVAILABLE:
+      return "Paystack isn't responding right now. Nothing was charged; please try again.";
+    case ErrorCode.IDEMPOTENCY_REQUEST_IN_PROGRESS:
+      return "We're still starting your payment. Try again in a moment.";
+    case ErrorCode.NETWORK_ERROR:
+      return "We couldn't reach Koncave Cinema. Check your connection and try again.";
+    default:
+      return "We couldn't start your payment. Please try again.";
+  }
+}
 
 function ReviewRow({
   icon: Icon,
@@ -79,38 +90,60 @@ function ReviewRow({
 }
 
 function ReviewStep({
-  checkout,
+  ticket,
   onEdit,
 }: {
-  checkout: Checkout;
+  ticket: TicketDetail;
   onEdit: (step: FlowStep) => void;
 }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const user = useSession((state) => state.user);
-  const { receipt, showtime } = checkout;
-  const { quote: snackQuote } = useConcessionQuote(receipt.ticketId, showtime.startTime);
-  const quote = snacksAvailable ? snackQuote : null;
-  const draft = useConcessionDraft(receipt.ticketId);
-  const total = checkoutTotal(checkout, quote);
-  const hall = AUDITORIUMS.find((item) => item.tier === receipt.tier);
+  const hall = AUDITORIUMS.find((item) => item.tier === ticket.tier);
+  const total = formatMoney(ticket.pricing.totalPayable, ticket.pricing.currency);
+  const initialize = useInitializeCheckout();
+  const release = useReleaseTicket();
   const [releasing, setReleasing] = useState(false);
-  const itemCount = quote?.items.reduce((count, item) => count + item.quantity, 0) ?? 0;
+  // This press of Pay: the key is kept until the API answers, so trying again after a dropped
+  // connection returns the same Paystack payment instead of starting a second one
+  const [payKey, setPayKey] = useState(newIdempotencyKey);
+  // Off to Paystack: the button stays busy until the browser leaves the page
+  const paying = initialize.isPending || initialize.isSuccess;
 
-  async function release() {
-    setReleasing(true);
-    await releaseTicket(receipt.ticketId).catch(() => undefined);
-    router.push(`/movies/${showtime.movieSlug}/showtimes/${showtime.showtimeId}`);
+  // Back from Paystack through the browser's back button: the page is restored as it was left
+  const { reset } = initialize;
+  useEffect(() => {
+    const restore = (event: PageTransitionEvent) => {
+      if (event.persisted) reset();
+    };
+    window.addEventListener("pageshow", restore);
+    return () => window.removeEventListener("pageshow", restore);
+  }, [reset]);
+
+  function pay() {
+    initialize.mutate(
+      { ticketId: ticket.id, idempotencyKey: payKey },
+      {
+        onSuccess: (session) => window.location.assign(session.authorizationUrl),
+        onError: (caught) => {
+          const error = toApiError(caught);
+          if (!error.is(ErrorCode.NETWORK_ERROR, ErrorCode.IDEMPOTENCY_REQUEST_IN_PROGRESS)) {
+            setPayKey(newIdempotencyKey());
+          }
+          // The hold ended or was paid elsewhere: read it again so the page shows which
+          if (error.is(ErrorCode.TICKET_NOT_PAYABLE)) {
+            void queryClient.invalidateQueries({ queryKey: [`/tickets/${ticket.id}`] });
+          }
+        },
+      },
+    );
   }
 
-  const change = (step: FlowStep) => (
-    <button
-      type="button"
-      onClick={() => onEdit(step)}
-      className="text-sm font-semibold text-white/70 underline decoration-white/25 underline-offset-4 hover:text-foreground"
-    >
-      Change
-    </button>
-  );
+  async function releaseSeat() {
+    setReleasing(true);
+    await release.mutateAsync(ticket.id).catch(() => undefined);
+    router.push(`/movies/${ticket.movieSlug}/showtimes/${ticket.showtimeId}`);
+  }
 
   return (
     <div className="space-y-6">
@@ -120,14 +153,14 @@ function ReviewStep({
           label="Screening"
           value={
             <>
-              {showtime.movieTitle} · {hall?.name ?? receipt.tier}
+              {ticket.movieTitle} · {hall?.name ?? ticket.tier}
               <span className="mt-0.5 block font-mono text-xs font-normal text-white/50">
-                {receipt.seatIdentifier}
+                {ticket.seatIdentifier}
               </span>
             </>
           }
         />
-        {receipt.tier === "PUBLIC" && (
+        {ticket.tier === "PUBLIC" && (
           <ReviewRow
             icon={ShieldCheck}
             label="Identity"
@@ -136,19 +169,17 @@ function ReviewStep({
                 ? `Verified · shown in hall chat as ${user.publicScreenAlias ?? "you"}`
                 : "Not verified yet"
             }
-            action={user?.isPhoneVerified ? undefined : change("identity")}
-          />
-        )}
-        {snacksAvailable && (
-          <ReviewRow
-            icon={Popcorn}
-            label="Snacks"
-            value={
-              itemCount > 0 && quote
-                ? `${itemCount} ${itemCount === 1 ? "item" : "items"} to ${draft.validation?.formattedAddress ?? "your address"} · ${formatMoney(quote.totalAmount, quote.currency)}`
-                : "No snacks"
+            action={
+              user?.isPhoneVerified ? undefined : (
+                <button
+                  type="button"
+                  onClick={() => onEdit("identity")}
+                  className="text-sm font-semibold text-white/70 underline decoration-white/25 underline-offset-4 hover:text-foreground"
+                >
+                  Change
+                </button>
+              )
             }
-            action={change("snacks")}
           />
         )}
       </dl>
@@ -156,18 +187,25 @@ function ReviewStep({
       <div className="rounded-2xl border border-white/10 bg-surface-1 p-6">
         <div className="flex items-baseline justify-between gap-4">
           <p className="font-semibold">Total to pay</p>
-          <p className="font-display text-3xl font-extrabold tabular-nums">
-            {formatMoney(total.totalPayable, total.currency)}
-          </p>
+          <p className="font-display text-3xl font-extrabold tabular-nums">{total}</p>
         </div>
         <p className="mt-1 text-right text-xs text-white/45">
           All fees included. Nothing added later.
         </p>
-        {/* Payments are not connected yet: shown as it will be, and does nothing */}
-        <Button size="xl" className="mt-6 h-14 w-full text-base">
+        <Button
+          size="xl"
+          className="mt-6 h-14 w-full text-base"
+          disabled={paying || releasing}
+          onClick={pay}
+        >
           <Lock data-icon="inline-start" />
-          Pay {formatMoney(total.totalPayable, total.currency)}
+          {paying ? "Opening Paystack…" : `Pay ${total}`}
         </Button>
+        {initialize.isError && (
+          <p role="alert" className="mt-4 text-center text-sm text-destructive">
+            {payErrorMessage(toApiError(initialize.error).code)}
+          </p>
+        )}
         <ul className="mt-5 flex flex-wrap justify-center gap-2" aria-label="Ways to pay">
           {PAYMENT_METHODS.map(({ icon: Icon, label }) => (
             <li
@@ -190,22 +228,12 @@ function ReviewStep({
           </Link>
           .
         </p>
-        {isDemo && (
-          <p className="mt-4 text-center text-xs">
-            <Link
-              href={`/checkout/${receipt.ticketId}/confirmation?reference=${demoReference(receipt.ticketId)}`}
-              className="text-sky-300 underline underline-offset-4"
-            >
-              Demo: preview the confirmation page
-            </Link>
-          </p>
-        )}
       </div>
 
       <button
         type="button"
-        disabled={releasing}
-        onClick={() => void release()}
+        disabled={releasing || paying}
+        onClick={() => void releaseSeat()}
         className="text-sm text-white/50 underline underline-offset-4 hover:text-foreground"
       >
         {releasing ? "Releasing your seat…" : "Cancel booking and release my seat"}
@@ -214,7 +242,7 @@ function ReviewStep({
   );
 }
 
-function ExpiredHold({ checkout }: { checkout: Checkout }) {
+function ExpiredHold({ ticket }: { ticket: TicketDetail }) {
   return (
     <div className="rounded-3xl border border-gold/30 bg-gold/5 p-8">
       <p className="font-display text-2xl font-extrabold">Your hold has expired</p>
@@ -223,9 +251,7 @@ function ExpiredHold({ checkout }: { checkout: Checkout }) {
         your room again to get a fresh hold.
       </p>
       <Button asChild size="xl" className="mt-6">
-        <Link
-          href={`/movies/${checkout.showtime.movieSlug}/showtimes/${checkout.showtime.showtimeId}`}
-        >
+        <Link href={`/movies/${ticket.movieSlug}/showtimes/${ticket.showtimeId}`}>
           Choose again
         </Link>
       </Button>
@@ -233,36 +259,26 @@ function ExpiredHold({ checkout }: { checkout: Checkout }) {
   );
 }
 
-function CheckoutSteps({ checkout }: { checkout: Checkout }) {
+function CheckoutSteps({ ticket }: { ticket: TicketDetail }) {
   const user = useSession((state) => state.user);
   const [stepParam, setStep] = useQueryState("step", stepParser);
-  const { receipt, showtime } = checkout;
-  const { quote: snackQuote } = useConcessionQuote(receipt.ticketId, showtime.startTime);
-  // Never show snacks in a total that can't include them (API mode, until concessions ship)
-  const quote = snacksAvailable ? snackQuote : null;
-  const draft = useConcessionDraft(receipt.ticketId);
-  const expired = useHoldExpired(receipt.lockExpiresAt) || receipt.status === "EXPIRED";
+  const timeUp = useHoldExpired(ticket.lockExpiresAt ?? undefined);
+  // Anything but a live hold (ended, released, cancelled) can't be paid for any more
+  const expired = ticket.status !== "RESERVED" || ticket.lockExpiresAt === null || timeUp;
 
-  const publicHall = receipt.tier === "PUBLIC";
+  const publicHall = ticket.tier === "PUBLIC";
   const verified = Boolean(user?.isPhoneVerified);
   // Public halls are verified before the hold (on the room page), so the identity step normally
   // shows as done; it stays in the list so the steps match the whole booking
-  const flow: FlowStep[] = [
-    ...(publicHall ? (["identity"] as const) : []),
-    ...(snacksAvailable ? (["snacks"] as const) : []),
-    "review",
-  ];
-  const firstStep: FlowStep =
-    publicHall && !verified ? "identity" : snacksAvailable ? "snacks" : "review";
+  const flow: FlowStep[] = [...(publicHall ? (["identity"] as const) : []), "review"];
+  const firstStep: FlowStep = publicHall && !verified ? "identity" : "review";
   const step = stepParam && flow.includes(stepParam) ? stepParam : firstStep;
   const allSteps: BookingStepId[] = ["room", ...flow];
-  const snacksDecided = draft.skipped || draft.lines.length > 0;
 
   const goTo = (next: FlowStep) => {
     void setStep(next);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
-  const total = checkoutTotal(checkout, quote);
 
   return (
     <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_23rem] lg:gap-14">
@@ -270,13 +286,9 @@ function CheckoutSteps({ checkout }: { checkout: Checkout }) {
         <BookingSteps
           steps={allSteps}
           current={step}
-          done={(item) =>
-            item === "room" ||
-            (item === "identity" && verified) ||
-            (item === "snacks" && step === "review" && snacksDecided)
-          }
+          done={(item) => item === "room" || (item === "identity" && verified)}
           onSelect={(item) => {
-            if (item === "identity" || item === "snacks") goTo(item);
+            if (item === "identity") goTo(item);
           }}
         />
         <h1 className="mt-8 font-display text-3xl leading-tight font-black sm:text-4xl">
@@ -286,7 +298,7 @@ function CheckoutSteps({ checkout }: { checkout: Checkout }) {
 
         <div key={step} className="mt-8 animate-rise">
           {expired ? (
-            <ExpiredHold checkout={checkout} />
+            <ExpiredHold ticket={ticket} />
           ) : step === "identity" && verified ? (
             <div className="space-y-6">
               <p className="flex items-center gap-3 rounded-2xl border border-lobby/30 bg-lobby/5 p-5 text-sm">
@@ -294,21 +306,15 @@ function CheckoutSteps({ checkout }: { checkout: Checkout }) {
                 Your identity is verified. You appear in hall chat as{" "}
                 <span className="font-semibold">{user?.publicScreenAlias}</span>.
               </p>
-              <Button size="xl" onClick={() => goTo(snacksAvailable ? "snacks" : "review")}>
-                {snacksAvailable ? "Continue to snacks" : "Continue to review"}
+              <Button size="xl" onClick={() => goTo("review")}>
+                Continue to review
                 <ArrowRight data-icon="inline-end" />
               </Button>
             </div>
           ) : step === "identity" ? (
-            <IdentityCheck onVerified={() => goTo(snacksAvailable ? "snacks" : "review")} />
-          ) : step === "snacks" ? (
-            <SnackPicker
-              ticketId={receipt.ticketId}
-              showtimeStartTime={showtime.startTime}
-              onDone={() => goTo("review")}
-            />
+            <IdentityCheck onVerified={() => goTo("review")} />
           ) : (
-            <ReviewStep checkout={checkout} onEdit={goTo} />
+            <ReviewStep ticket={ticket} onEdit={goTo} />
           )}
         </div>
       </div>
@@ -318,12 +324,15 @@ function CheckoutSteps({ checkout }: { checkout: Checkout }) {
           <p className="mb-5 text-[0.7rem] font-bold tracking-[0.28em] text-white/45 uppercase">
             Your booking
           </p>
-          <OrderSummaryContent checkout={checkout} concessions={quote} />
+          <OrderSummaryContent ticket={ticket} />
         </div>
       </aside>
 
-      <SummaryBar label="Total to pay" total={formatMoney(total.totalPayable, total.currency)}>
-        <OrderSummaryContent checkout={checkout} concessions={quote} />
+      <SummaryBar
+        label="Total to pay"
+        total={formatMoney(ticket.pricing.totalPayable, ticket.pricing.currency)}
+      >
+        <OrderSummaryContent ticket={ticket} />
       </SummaryBar>
     </div>
   );
@@ -331,18 +340,19 @@ function CheckoutSteps({ checkout }: { checkout: Checkout }) {
 
 function CheckoutLoader({ ticketId }: { ticketId: string }) {
   // Rebuilt from GET /tickets/:id on every visit, so a reload or the Paystack redirect keeps it
-  const { data, isPending, isError } = useQuery({
-    queryKey: ["checkout", ticketId],
-    queryFn: () => getCheckout(ticketId),
-  });
+  const { data: ticket, isPending, isError, error } = useGetTicket(ticketId);
   if (isPending) return <PageSkeleton />;
-  if (isError || !data) {
+  if (isError) {
+    const offline = toApiError(error).is(ErrorCode.NETWORK_ERROR);
     return (
       <div className="mx-auto max-w-lg py-16 text-center">
-        <p className="font-display text-3xl font-black">We can&rsquo;t find that booking</p>
+        <p className="font-display text-3xl font-black">
+          {offline ? "We couldn’t load your booking" : "We can’t find that booking"}
+        </p>
         <p className="mt-3 text-white/60">
-          The hold may have ended, or it belongs to another session. Pick your showtime again to
-          start a new one.
+          {offline
+            ? "Check your connection and reload the page. Your hold is kept while it lasts."
+            : "The hold may have ended, or it belongs to another account. Pick your showtime again to start a new one."}
         </p>
         <Button asChild size="xl" className="mt-8">
           <Link href="/showtimes">See showtimes</Link>
@@ -350,21 +360,21 @@ function CheckoutLoader({ ticketId }: { ticketId: string }) {
       </div>
     );
   }
-  if (data.receipt.status === "CONFIRMED" || data.receipt.status === "CHECKED_IN") {
+  if (ticket.status === "CONFIRMED" || ticket.status === "CHECKED_IN") {
     return (
       <div className="mx-auto max-w-lg py-16 text-center">
         <p className="font-display text-3xl font-black">This booking is already paid</p>
-        <p className="mt-3 text-white/60">Your pass for {data.showtime.movieTitle} is ready.</p>
+        <p className="mt-3 text-white/60">Your pass for {ticket.movieTitle} is ready.</p>
         <Button asChild size="xl" className="mt-8">
-          <Link href={`/dashboard/tickets/${data.receipt.ticketId}`}>View your pass</Link>
+          <Link href={`/dashboard/tickets/${ticket.id}`}>View your pass</Link>
         </Button>
       </div>
     );
   }
-  return <CheckoutSteps checkout={data} />;
+  return <CheckoutSteps ticket={ticket} />;
 }
 
-/** /checkout/[ticketId]: identity (Public halls), snacks and review, around a held seat. */
+/** /checkout/[ticketId]: identity (Public halls) and review, around a held seat. */
 export function CheckoutPage({ params }: { params: Promise<{ ticketId: string }> }) {
   const { ticketId } = use(params);
   return (

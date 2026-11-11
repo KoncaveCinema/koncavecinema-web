@@ -16,7 +16,7 @@ import { StatusBadge } from "@/components/console/status-badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { env } from "@/env";
-import type { TicketDetail } from "@/features/booking/api-types";
+import type { TicketDetail } from "@/api/tickets/tickets-schemas";
 import { InviteLinks } from "@/features/booking/invite-links";
 import { PriceBreakdown } from "@/features/booking/price-breakdown";
 import { AUDITORIUMS } from "@/features/home/auditoriums/halls";

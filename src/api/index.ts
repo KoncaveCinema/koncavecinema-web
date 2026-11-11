@@ -1,11 +1,5 @@
 export { getAccessToken, onAccessTokenChange, setAccessToken } from "./access-token";
-export {
-  api,
-  apiClient,
-  newIdempotencyKey,
-  refreshAccessToken,
-  withIdempotencyKey,
-} from "./client";
+export { api, apiClient, newIdempotencyKey, refreshAccessToken } from "./client";
 export { recordServerTime, serverOffset } from "./server-clock";
 export { ApiError, ErrorCode, isApiError, toApiError } from "./errors";
 export type { ApiErrorCode, KnownErrorCode } from "./errors";

@@ -1,6 +1,5 @@
 "use client";
 
-import { useMutation, useQuery } from "@tanstack/react-query";
 import { ArrowRight, CheckCircle2, Users } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -12,9 +11,8 @@ import { Button } from "@/components/ui/button";
 import { PageSkeleton } from "@/features/auth/require-session";
 import { useSession } from "@/features/auth/session";
 import { ErrorCode, toApiError } from "@/api";
-
-import type { InvitePreview } from "./api-types";
-import { claimInvite, getInvitePreview } from "./service";
+import { useClaimInvite, useGetInvitePreview } from "@/api/tickets/tickets-api";
+import type { InvitePreview } from "@/api/tickets/tickets-schemas";
 
 function claimError(code: string): string {
   switch (code) {
@@ -87,12 +85,8 @@ export function InvitePage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = use(params);
   const pathname = usePathname();
   const status = useSession((state) => state.status);
-  const preview = useQuery({
-    queryKey: ["invite", code],
-    queryFn: () => getInvitePreview(code),
-    retry: false,
-  });
-  const claim = useMutation({ mutationFn: () => claimInvite(code) });
+  const preview = useGetInvitePreview(code);
+  const claim = useClaimInvite(code);
   const next = encodeURIComponent(pathname);
 
   if (preview.isPending || status === "loading") return <PageSkeleton />;

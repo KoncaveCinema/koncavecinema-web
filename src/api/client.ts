@@ -153,10 +153,6 @@ export function newIdempotencyKey(): string {
   return crypto.randomUUID();
 }
 
-export function withIdempotencyKey(key: string): AxiosRequestConfig {
-  return { headers: { "Idempotency-Key": key } };
-}
-
 function newRequestId(): string {
   return `web-${crypto.randomUUID()}`;
 }

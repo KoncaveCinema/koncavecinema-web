@@ -23,7 +23,7 @@ import { EmptyState, ErrorState } from "@/components/states/states";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSession } from "@/features/auth/session";
-import type { TicketDetail } from "@/features/booking/api-types";
+import type { TicketDetail } from "@/api/tickets/tickets-schemas";
 import { formatCountdown, formatElapsed } from "@/lib/format";
 
 import { useMyTickets } from "./queries";

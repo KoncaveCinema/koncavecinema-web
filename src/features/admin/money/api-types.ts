@@ -1,4 +1,5 @@
-import type { PaymentStatus, TicketStatus } from "@/features/booking/api-types";
+import type { PaymentStatus } from "@/api/payments/payments-schemas";
+import type { TicketStatus } from "@/api/tickets/tickets-schemas";
 import type { TicketTier } from "@/types/domain";
 
 /** koncavecinema-api admin money shapes, field for field (src/admin/money.service.ts). */
