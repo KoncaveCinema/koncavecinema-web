@@ -1,9 +1,10 @@
 "use client";
 
-import { ArrowRight, CheckCircle2, Users } from "lucide-react";
+import { ArrowRight, Users } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { use } from "react";
 
 import { LocalTime } from "@/components/cinema/live-time";
@@ -85,11 +86,24 @@ function PreviewCard({ preview, code }: { preview: InvitePreview; code: string }
 export function InvitePage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = use(params);
   const pathname = usePathname();
+  const router = useRouter();
   const status = useSession((state) => state.status);
   const needsAlias = useSession((state) => !state.user?.publicScreenAlias);
   const preview = useGetInvitePreview(code);
   const claim = useClaimInvite(code);
   const next = encodeURIComponent(pathname);
+
+  /** Takes the seat, then opens the new pass: everything the guest needs next is there */
+  function takeSeat() {
+    claim.mutate(undefined, {
+      onSuccess: (ticket) => {
+        toast.success("You're on the list", {
+          description: `Your pass is ${ticket.seatIdentifier}.`,
+        });
+        router.replace(`/dashboard/tickets/${ticket.id}`);
+      },
+    });
+  }
 
   if (preview.isPending || status === "loading") return <PageSkeleton />;
 
@@ -112,22 +126,8 @@ export function InvitePage({ params }: { params: Promise<{ code: string }> }) {
     );
   }
 
-  if (claim.isSuccess) {
-    const ticket = claim.data;
-    return (
-      <div className="mx-auto max-w-lg py-10 text-center">
-        <CheckCircle2 className="mx-auto size-12 text-lobby" />
-        <h1 className="mt-6 font-display text-4xl font-black">You&rsquo;re on the list</h1>
-        <p className="mt-3 text-white/60">
-          {ticket.movieTitle} · <LocalTime iso={ticket.startTime} />
-        </p>
-        <p className="mt-1 font-mono text-sm">{ticket.seatIdentifier}</p>
-        <Button asChild size="xl" className="mt-8">
-          <Link href={`/dashboard/tickets/${ticket.id}`}>View your pass</Link>
-        </Button>
-      </div>
-    );
-  }
+  // The seat is taken: on the way to the pass
+  if (claim.isSuccess) return <PageSkeleton />;
 
   const invite = preview.data;
   const closed = !invite.isActive;
@@ -168,12 +168,12 @@ export function InvitePage({ params }: { params: Promise<{ code: string }> }) {
                       submitLabel="Take my seat"
                       pendingLabel="Taking your seat…"
                       help="Shown to your host and the others in this suite."
-                      onSaved={() => claim.mutate()}
+                      onSaved={takeSeat}
                     />
                   </div>
                 </div>
               ) : (
-                <Button size="xl" disabled={claim.isPending} onClick={() => claim.mutate()}>
+                <Button size="xl" disabled={claim.isPending} onClick={takeSeat}>
                   {claim.isPending ? "Taking your seat…" : "Take my seat"}
                   {!claim.isPending && <ArrowRight data-icon="inline-end" />}
                 </Button>
