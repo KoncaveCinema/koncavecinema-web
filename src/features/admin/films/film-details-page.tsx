@@ -35,7 +35,7 @@ import { FieldError, FormAlert, fieldClass } from "@/features/auth/form-parts";
 import { ErrorCode, toApiError } from "@/api";
 import {
   formatLagosDateTime,
-  formatMoneyExact,
+  formatMoney,
   formatRuntime,
   ratingDescription,
   ratingLabel,
@@ -333,7 +333,7 @@ function Showtimes({ film }: { film: AdminFilm }) {
             id: "price",
             header: "Base price",
             align: "end",
-            cell: (showtime) => formatMoneyExact(showtime.basePrice, showtime.currency),
+            cell: (showtime) => formatMoney(showtime.basePrice, showtime.currency),
           },
           { id: "sold", header: "Sold", align: "end", cell: (showtime) => showtime.ticketsSold },
         ]}
@@ -361,7 +361,7 @@ function Revenue({ film }: { film: AdminFilm }) {
           <div key={figure.label}>
             <dt className="text-xs text-white/45">{figure.label}</dt>
             <dd className="mt-1.5 font-display text-xl font-black tabular-nums">
-              {formatMoneyExact(figure.value)}
+              {formatMoney(figure.value)}
             </dd>
           </div>
         ))}

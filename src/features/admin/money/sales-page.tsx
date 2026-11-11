@@ -13,7 +13,7 @@ import { roomLabel } from "@/features/admin/rooms";
 import { fieldClass } from "@/features/auth/form-parts";
 import { useServerNow } from "@/hooks/use-now";
 import { downloadFile } from "@/lib/download";
-import { formatLagosDateTime, formatMoneyExact } from "@/lib/format";
+import { formatLagosDateTime, formatMoney } from "@/lib/format";
 
 import { useFilms } from "../films/queries";
 import type { SalesReport as Report, SalesTotals } from "./api-types";
@@ -34,7 +34,7 @@ function Figures({ totals, currency }: { totals: SalesTotals; currency: string }
           Gross collected
         </p>
         <p className="mt-3 font-display text-4xl leading-none font-black tracking-tight tabular-nums">
-          {formatMoneyExact(totals.gross, currency)}
+          {formatMoney(totals.gross, currency)}
         </p>
         <p className="mt-2 text-xs text-white/45">
           {totals.payments.toLocaleString("en-NG")} {totals.payments === 1 ? "payment" : "payments"}
@@ -45,7 +45,7 @@ function Figures({ totals, currency }: { totals: SalesTotals; currency: string }
           <div key={row.label}>
             <dt className="text-xs text-white/45">{row.label}</dt>
             <dd className="mt-1 text-lg font-semibold tabular-nums">
-              {formatMoneyExact(row.value, currency)}
+              {formatMoney(row.value, currency)}
             </dd>
           </div>
         ))}
@@ -84,7 +84,7 @@ const ROW =
   "grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-1 sm:grid-cols-[minmax(0,1fr)_5rem_8rem_8rem_8rem]";
 
 function ByFilm({ report }: { report: Report }) {
-  const money = (value: number) => formatMoneyExact(value, report.currency);
+  const money = (value: number) => formatMoney(value, report.currency);
   return (
     <div className="text-sm">
       <div
@@ -307,7 +307,7 @@ export function SalesPage() {
                     <>
                       Owed back, not counted: {data.refunds.count}{" "}
                       {data.refunds.count === 1 ? "payment" : "payments"},{" "}
-                      {formatMoneyExact(data.refunds.amount, data.currency)}
+                      {formatMoney(data.refunds.amount, data.currency)}
                     </>
                   )
                 }

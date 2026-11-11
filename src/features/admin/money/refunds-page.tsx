@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { isSuperAdmin } from "@/features/auth/roles";
 import { useSession } from "@/features/auth/session";
 import { ErrorCode } from "@/api";
-import { formatLagosDate, formatLagosDateTime, formatMoneyExact } from "@/lib/format";
+import { formatLagosDate, formatLagosDateTime, formatMoney } from "@/lib/format";
 
 import type { AdminPayment } from "./api-types";
 import { useMarkRefunded, useRefunds } from "./queries";
@@ -70,7 +70,7 @@ export function RefundsPage() {
       id: "amount",
       header: "Amount",
       align: "end",
-      cell: (payment) => formatMoneyExact(payment.amount, payment.currency),
+      cell: (payment) => formatMoney(payment.amount, payment.currency),
     },
     {
       id: "reason",
@@ -159,7 +159,7 @@ export function RefundsPage() {
         onOpenChange={(open) => !open && setRecording(null)}
         title={
           recording
-            ? `Record a refund of ${formatMoneyExact(recording.amount, recording.currency)}?`
+            ? `Record a refund of ${formatMoney(recording.amount, recording.currency)}?`
             : ""
         }
         description="Refund in the Paystack dashboard first. This only records it and emails the member."
