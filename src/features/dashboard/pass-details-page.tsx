@@ -123,14 +123,20 @@ function PassCard({ ticket }: { ticket: TicketDetail }) {
               <dt className="text-xs text-white/45">Room</dt>
               <dd className="mt-1 font-medium">{hall?.name ?? ticket.tier}</dd>
             </div>
-            <div>
-              <dt className="text-xs text-white/45">Paid</dt>
-              <dd className="mt-1 font-medium tabular-nums">
-                {ticket.pricing.totalPayable === 0
-                  ? "Guest of the host"
-                  : formatMoney(ticket.pricing.totalPayable, ticket.currency)}
-              </dd>
-            </div>
+            {/* A suite guest's pass is free: the host paid for the suite */}
+            {ticket.pricing.totalPayable === 0 ? (
+              <div>
+                <dt className="text-xs text-white/45">Admission</dt>
+                <dd className="mt-1 font-medium">Guest pass</dd>
+              </div>
+            ) : (
+              <div>
+                <dt className="text-xs text-white/45">Paid</dt>
+                <dd className="mt-1 font-medium tabular-nums">
+                  {formatMoney(ticket.pricing.totalPayable, ticket.currency)}
+                </dd>
+              </div>
+            )}
           </dl>
         </div>
       </div>
