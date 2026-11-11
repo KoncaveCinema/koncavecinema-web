@@ -30,7 +30,7 @@ import { downloadIcs, googleCalendarUrl, type CalendarEvent } from "@/lib/ics";
 
 import { useGetSuiteGuests, useGetTicket, useReleaseTicket } from "@/api/tickets/tickets-api";
 import { useSignedIn } from "@/features/auth/require-session";
-import { cancellationText, ticketView } from "./pass-state";
+import { cancellationText, paidFor, ticketView } from "./pass-state";
 
 /* "Add to calendar" for a pass, built in the browser: an .ics file every calendar app opens,
    and a Google Calendar link. No third party sees the booking until the member chooses. */
@@ -83,6 +83,7 @@ const CRUMBS = [{ href: "/dashboard/tickets", label: "My tickets" }];
 function PassCard({ ticket }: { ticket: TicketDetail }) {
   const hall = AUDITORIUMS.find((item) => item.tier === ticket.tier);
   const cancelled = ticket.status === "CANCELLED";
+  const admits = ticket.status === "CONFIRMED" || ticket.status === "CHECKED_IN";
   return (
     <article className="overflow-hidden rounded-3xl border border-white/10 bg-surface-1 sm:grid sm:grid-cols-[1fr_13rem]">
       <div>
@@ -133,7 +134,8 @@ function PassCard({ ticket }: { ticket: TicketDetail }) {
               </div>
             ) : (
               <div>
-                <dt className="text-xs text-white/45">Paid</dt>
+                {/* A hold was never paid for: it shows what the seat costs */}
+                <dt className="text-xs text-white/45">{paidFor(ticket) ? "Paid" : "Price"}</dt>
                 <dd className="mt-1 font-medium tabular-nums">
                   {formatMoney(ticket.pricing.totalPayable, ticket.currency)}
                 </dd>
@@ -143,12 +145,15 @@ function PassCard({ ticket }: { ticket: TicketDetail }) {
         </div>
       </div>
       <div className="flex flex-col items-center justify-center gap-3 border-t-2 border-dashed border-white/12 px-6 py-6 text-center sm:border-t-0 sm:border-l-2">
-        <div className="size-28">
-          <PassQr
-            payload={ticket.qrAdmissionPayload}
-            label={`Admission code for pass ${ticket.seatIdentifier}`}
-          />
-        </div>
+        {/* The admission code only on a pass that admits someone */}
+        {admits && (
+          <div className="size-28">
+            <PassQr
+              payload={ticket.qrAdmissionPayload}
+              label={`Admission code for pass ${ticket.seatIdentifier}`}
+            />
+          </div>
+        )}
         <p className="text-[0.65rem] font-bold tracking-[0.24em] text-white/45 uppercase">
           Pass number
         </p>
@@ -478,8 +483,9 @@ function PassDetail({ detail }: { detail: TicketDetail }) {
             </Panel>
           )}
 
-          {detail.pricing.totalPayable > 0 && (
-            <Panel title="Payment">
+          {/* What was paid, or what a live hold will cost; nothing for a hold that has ended */}
+          {detail.pricing.totalPayable > 0 && (paidFor(detail) || view.phase === "hold") && (
+            <Panel title={paidFor(detail) ? "Payment" : "Price"}>
               <PriceBreakdown pricing={detail.pricing} />
             </Panel>
           )}

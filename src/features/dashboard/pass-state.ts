@@ -26,6 +26,15 @@ function refundNote(ticket: TicketDetail): string | undefined {
 }
 
 /**
+ * True when money was paid for the pass: a valid pass, or a cancelled one with money owed back.
+ * A hold (live, released or run out) was never paid for.
+ */
+export function paidFor(ticket: TicketDetail): boolean {
+  if (ticket.status === "CONFIRMED" || ticket.status === "CHECKED_IN") return true;
+  return ticket.status === "CANCELLED" && ticket.refund !== null;
+}
+
+/**
  * Why a pass was cancelled, in one sentence, from the API's reason. Staff's own words, when they
  * gave any, are shown beside it (`cancellation.message`).
  */

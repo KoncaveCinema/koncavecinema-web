@@ -5,7 +5,7 @@ import type { CancellationReason, TicketDetail } from "@/api/tickets/tickets-sch
 import { buildIcs, googleCalendarUrl } from "@/lib/ics";
 
 import { passEvent } from "./pass-details-page";
-import { cancellationText, ticketView } from "./pass-state";
+import { cancellationText, paidFor, ticketView } from "./pass-state";
 
 const MINUTE = 60_000;
 const start = Date.parse("2026-11-06T18:00:00.000Z");
@@ -199,5 +199,29 @@ describe("calendar", () => {
     const url = new URL(googleCalendarUrl(passEvent(ticket(), appUrl)));
     expect(url.searchParams.get("dates")).toBe("20261106T180000Z/20261106T195800Z");
     expect(url.searchParams.get("text")).toBe("Ember & Ash on Koncave Cinema");
+  });
+});
+
+describe("paidFor", () => {
+  it("counts a valid pass and a cancelled one with money owed back, never a hold", () => {
+    const cancelledAt = new Date(start).toISOString();
+    const refund = {
+      state: "PENDING" as const,
+      amount: 5177.67,
+      currency: "NGN",
+      refundedAt: null,
+    };
+    expect(paidFor(ticket())).toBe(true);
+    expect(paidFor(ticket({ status: "CHECKED_IN" }))).toBe(true);
+    expect(paidFor(ticket({ status: "CANCELLED", refund }))).toBe(true);
+    expect(paidFor(ticket({ status: "RESERVED" }))).toBe(false);
+    expect(
+      paidFor(
+        ticket({
+          status: "CANCELLED",
+          cancellation: { reason: "RELEASED_BY_MEMBER", message: null, cancelledAt },
+        }),
+      ),
+    ).toBe(false);
   });
 });
