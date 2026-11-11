@@ -50,16 +50,22 @@ export const phoneSchema = z
   .trim()
   .regex(/^(?:\+?234|0)[789][01]\d{8}$/, "Enter a Nigerian mobile number, like 0803 123 4567");
 
-/** VerifyKycDto */
+/** The screen alias other members see (UpdateProfileDto): unique, chosen by the member */
+export const screenAliasSchema = z
+  .string()
+  .trim()
+  .min(3, "Use at least 3 characters")
+  .max(25, "Use at most 25 characters")
+  .regex(/^[a-zA-Z0-9_-]+$/, "Letters, numbers, underscores and hyphens only");
+
+/**
+ * VerifyKycDto. The alias is left out by a member who already has one (it is kept), and chosen
+ * here by a member who has none: the form then starts it as "", which the rules refuse.
+ */
 export const verifyIdentitySchema = z.object({
   otp: z.string().regex(/^\d{6}$/, "Enter the 6-digit code"),
   legalFullName: z.string().trim().min(3, "Enter your full name as it appears on your ID").max(100),
-  publicScreenAlias: z
-    .string()
-    .trim()
-    .min(3, "Use at least 3 characters")
-    .max(25, "Use at most 25 characters")
-    .regex(/^[a-zA-Z0-9_-]+$/, "Letters, numbers, underscores and hyphens only"),
+  publicScreenAlias: screenAliasSchema.optional(),
 });
 
 export type SignInValues = z.infer<typeof signInSchema>;

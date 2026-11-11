@@ -9,6 +9,7 @@ import { use } from "react";
 import { LocalTime } from "@/components/cinema/live-time";
 import { Button } from "@/components/ui/button";
 import { PageSkeleton } from "@/features/auth/require-session";
+import { ScreenAliasForm } from "@/features/auth/screen-alias-form";
 import { useSession } from "@/features/auth/session";
 import { ErrorCode, toApiError } from "@/api";
 import { useClaimInvite, useGetInvitePreview } from "@/api/tickets/tickets-api";
@@ -85,6 +86,7 @@ export function InvitePage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = use(params);
   const pathname = usePathname();
   const status = useSession((state) => state.status);
+  const needsAlias = useSession((state) => !state.user?.publicScreenAlias);
   const preview = useGetInvitePreview(code);
   const claim = useClaimInvite(code);
   const next = encodeURIComponent(pathname);
@@ -156,10 +158,26 @@ export function InvitePage({ params }: { params: Promise<{ code: string }> }) {
         <div className="mt-8">
           {status === "signed-in" ? (
             <>
-              <Button size="xl" disabled={claim.isPending} onClick={() => claim.mutate()}>
-                {claim.isPending ? "Taking your seat…" : "Take my seat"}
-                {!claim.isPending && <ArrowRight data-icon="inline-end" />}
-              </Button>
+              {needsAlias ? (
+                // Named before the seat is taken, so the host sees who joined straight away
+                <div className="rounded-2xl border border-white/10 bg-surface-1 p-5 sm:p-6">
+                  <p className="text-left font-semibold">What should your host call you?</p>
+                  <div className="mt-4">
+                    <ScreenAliasForm
+                      id="invite-alias"
+                      submitLabel="Take my seat"
+                      pendingLabel="Taking your seat…"
+                      help="Shown to your host and the others in this suite."
+                      onSaved={() => claim.mutate()}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <Button size="xl" disabled={claim.isPending} onClick={() => claim.mutate()}>
+                  {claim.isPending ? "Taking your seat…" : "Take my seat"}
+                  {!claim.isPending && <ArrowRight data-icon="inline-end" />}
+                </Button>
+              )}
               {claim.isError && (
                 <p role="alert" className="mt-4 text-sm text-destructive">
                   {claimError(toApiError(claim.error).code)}

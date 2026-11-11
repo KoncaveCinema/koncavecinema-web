@@ -2,7 +2,6 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { BadgeCheck, ShieldAlert } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
@@ -10,7 +9,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { ErrorCode, toApiError, type ApiError } from "@/api";
-import { changePassword, deleteAccount, updateScreenAlias } from "@/api/auth/auth-api";
+import { changePassword, deleteAccount } from "@/api/auth/auth-api";
 import { ConfirmDialog } from "@/components/console/confirm-dialog";
 import { PageHeader } from "@/components/console/page-header";
 import { Panel } from "@/components/console/panel";
@@ -21,112 +20,32 @@ import {
   FormAlert,
   PasswordChecklist,
   PasswordInput,
-  fieldClass,
 } from "@/features/auth/form-parts";
 import { PageSkeleton } from "@/features/auth/require-session";
-import { newPasswordSchema, verifyIdentitySchema } from "@/features/auth/schemas";
+import { newPasswordSchema } from "@/features/auth/schemas";
+import { ScreenAliasForm } from "@/features/auth/screen-alias-form";
 import { useSession } from "@/features/auth/session";
 import { SUPPORT_EMAIL } from "@/features/support/content";
-import { useServerNow } from "@/hooks/use-now";
 import { formatLagosDate } from "@/lib/format";
 
 /* ------------------------------------------------------------------------------------------ */
 /* Screen alias                                                                               */
 /* ------------------------------------------------------------------------------------------ */
 
-const aliasSchema = z.object({ publicScreenAlias: verifyIdentitySchema.shape.publicScreenAlias });
-
 function AliasForm() {
-  const user = useSession((state) => state.user);
-  const setUser = useSession((state) => state.setUser);
-  const [problem, setProblem] = useState<string | null>(null);
-  const {
-    register,
-    handleSubmit,
-    setError,
-    reset,
-    formState: { errors, isSubmitting, isDirty },
-  } = useForm({
-    resolver: zodResolver(aliasSchema),
-    values: { publicScreenAlias: user?.publicScreenAlias ?? "" },
-  });
-  const now = useServerNow();
-
-  if (!user?.isPhoneVerified) {
-    return (
-      <p className="text-sm text-white/60">
-        Your screen alias is the name other viewers see in Public Hall chat. You choose it when you
-        verify your identity, the first time you book a Public Hall seat.{" "}
-        <Link href="/movies" className="text-foreground underline underline-offset-4">
-          Find a screening
-        </Link>
-      </p>
-    );
-  }
-
-  // Once every 30 days, by the API's date; until the clock starts, treated as not yet
-  const changeableAt = user.aliasChangeableAt;
-  const locked = changeableAt !== null && (now === null || Date.parse(changeableAt) > now);
-
-  async function onSubmit(values: z.infer<typeof aliasSchema>) {
-    setProblem(null);
-    try {
-      const updated = await updateScreenAlias(values.publicScreenAlias);
-      setUser(updated);
-      reset({ publicScreenAlias: updated.publicScreenAlias ?? "" });
-      toast.success("Screen alias changed", {
-        description: "You can change it again in 30 days.",
-      });
-    } catch (caught) {
-      const error = toApiError(caught);
-      if (error.is(ErrorCode.ALIAS_TAKEN)) {
-        setError("publicScreenAlias", { message: "Someone already uses that alias. Try another." });
-      } else if (error.is(ErrorCode.ALIAS_CHANGE_TOO_SOON)) {
-        const next = error.details.nextChangeAt;
-        setProblem(
-          typeof next === "string"
-            ? `Your alias can change once every 30 days. You can change it again on ${formatLagosDate(next)}.`
-            : "Your alias can change once every 30 days.",
-        );
-      } else {
-        setProblem("We couldn't change your alias just now. Please try again.");
-      }
-    }
-  }
-
   return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
-      <div>
-        <FieldLabel htmlFor="alias">Screen alias</FieldLabel>
-        <div className="mt-2 flex flex-col gap-3 sm:flex-row">
-          <input
-            id="alias"
-            autoComplete="nickname"
-            aria-invalid={errors.publicScreenAlias ? true : undefined}
-            aria-describedby="alias-help"
-            className={fieldClass}
-            disabled={locked}
-            {...register("publicScreenAlias")}
-          />
-          <Button
-            type="submit"
-            size="lg"
-            className="h-12"
-            disabled={locked || isSubmitting || !isDirty}
-          >
-            {isSubmitting ? "Saving…" : "Save alias"}
-          </Button>
-        </div>
-        <FieldError message={errors.publicScreenAlias?.message} />
-        <p id="alias-help" className="mt-2 text-xs text-white/45">
-          Shown in Public Hall chat. 3 to 25 letters, numbers, underscores or hyphens.{" "}
-          {locked && changeableAt
-            ? `You can change it again on ${formatLagosDate(changeableAt)}.`
-            : "You can change it once every 30 days."}
-        </p>
-      </div>
-      {problem && <FormAlert>{problem}</FormAlert>}
-    </form>
+    <ScreenAliasForm
+      id="alias"
+      submitLabel="Save alias"
+      help="Shown to the people in your private suites and in Public Hall chat."
+      onSaved={(profile) =>
+        toast.success("Screen alias saved", {
+          description: profile.aliasChangeableAt
+            ? `You can change it again on ${formatLagosDate(profile.aliasChangeableAt)}.`
+            : undefined,
+        })
+      }
+    />
   );
 }
 

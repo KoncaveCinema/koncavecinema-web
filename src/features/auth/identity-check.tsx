@@ -26,6 +26,8 @@ function codeError(code: string): string {
       return "Too many tries. Please wait a minute and try again.";
     case ErrorCode.ALIAS_TAKEN:
       return "Someone already uses that screen alias. Try another.";
+    case ErrorCode.ALIAS_REQUIRED:
+      return "Choose a screen alias to continue.";
     case ErrorCode.PHONE_ALREADY_LINKED:
       return "That phone number is already linked to another account.";
     case ErrorCode.KYC_ALREADY_VERIFIED:
@@ -37,10 +39,13 @@ function codeError(code: string): string {
 
 /**
  * The one-time check Public halls need: a phone number, then the code emailed to the account
- * with the legal name and the alias shown in hall chat. No NIN or BVN.
+ * with the legal name. No NIN or BVN. A member who already has a screen alias keeps it (it
+ * changes only in Settings, so the check never changes it by accident); one who has none
+ * chooses it here.
  */
 export function IdentityCheck({ onVerified }: { onVerified: () => void }) {
   const { user, setUser } = useSession();
+  const alias = user?.publicScreenAlias ?? null;
   const [phone, setPhone] = useState("");
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [sentTo, setSentTo] = useState<string | null>(null);
@@ -56,7 +61,7 @@ export function IdentityCheck({ onVerified }: { onVerified: () => void }) {
     formState: { errors, isSubmitting },
   } = useForm<VerifyIdentityValues>({
     resolver: zodResolver(verifyIdentitySchema),
-    defaultValues: { otp: "", legalFullName: "", publicScreenAlias: "" },
+    defaultValues: { otp: "", legalFullName: "", publicScreenAlias: alias ? undefined : "" },
   });
 
   async function sendCode() {
@@ -195,7 +200,7 @@ export function IdentityCheck({ onVerified }: { onVerified: () => void }) {
           >
             2
           </span>
-          Code, name and screen alias
+          {alias ? "Code and name" : "Code, name and screen alias"}
         </p>
         <div>
           <FieldLabel htmlFor="kyc-otp">6-digit code from your email</FieldLabel>
@@ -236,22 +241,32 @@ export function IdentityCheck({ onVerified }: { onVerified: () => void }) {
             />
             <FieldError message={errors.legalFullName?.message} />
           </div>
-          <div>
-            <FieldLabel htmlFor="kyc-alias">Screen alias</FieldLabel>
-            <input
-              id="kyc-alias"
-              autoComplete="nickname"
-              disabled={!sentTo}
-              placeholder="LagosLens"
-              aria-invalid={errors.publicScreenAlias ? true : undefined}
-              {...register("publicScreenAlias")}
-              className={cn(fieldClass, "mt-2")}
-            />
-            <FieldError message={errors.publicScreenAlias?.message} />
-            <p className="mt-1.5 text-xs text-muted-foreground">
-              Shown in hall chat. 3–25 characters.
-            </p>
-          </div>
+          {alias ? (
+            <div>
+              <p className="text-sm font-medium text-white/70">Screen alias</p>
+              <p className="mt-2 flex h-12 items-center font-semibold">{alias}</p>
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                You&rsquo;ll appear as {alias} in hall chat. Change it in Settings.
+              </p>
+            </div>
+          ) : (
+            <div>
+              <FieldLabel htmlFor="kyc-alias">Screen alias</FieldLabel>
+              <input
+                id="kyc-alias"
+                autoComplete="nickname"
+                disabled={!sentTo}
+                placeholder="LagosLens"
+                aria-invalid={errors.publicScreenAlias ? true : undefined}
+                {...register("publicScreenAlias")}
+                className={cn(fieldClass, "mt-2")}
+              />
+              <FieldError message={errors.publicScreenAlias?.message} />
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                Shown in hall chat and to your suite. 3–25 characters.
+              </p>
+            </div>
+          )}
         </div>
         {failure && <FormAlert>{failure}</FormAlert>}
         <Button type="submit" size="xl" disabled={!sentTo || isSubmitting}>

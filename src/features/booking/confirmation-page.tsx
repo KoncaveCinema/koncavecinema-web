@@ -19,6 +19,7 @@ import { useVerifyPayment, VERIFY_WAIT_MS } from "@/api/payments/payments-api";
 import { useGetTicket } from "@/api/tickets/tickets-api";
 import { formatMoney } from "@/lib/format";
 
+import { HostAliasPrompt } from "./host-alias-prompt";
 import { InviteLinks } from "./invite-links";
 
 function StatePanel({
@@ -249,6 +250,7 @@ function ConfirmationBody({ ticketId, reference }: { ticketId: string; reference
             </div>
           </article>
 
+          {detail.isSuiteHost && <HostAliasPrompt />}
           {detail.isSuiteHost && detail.roomInviteCode && (
             <InviteLinks
               code={detail.roomInviteCode}

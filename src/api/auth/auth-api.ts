@@ -78,26 +78,31 @@ export async function sendIdentityCode(phoneNumber: string): Promise<IdentityCod
 }
 
 /**
- * POST /auth/kyc/verify-otp: step 2. Its reply carries only part of the profile, so the full
- * profile is read again afterwards.
+ * POST /auth/kyc/verify-otp: step 2. The alias is sent only by a member who has none yet (else
+ * ALIAS_REQUIRED); one who has an alias keeps it. Its reply carries only part of the profile, so
+ * the full profile is read again afterwards.
  */
 export async function verifyIdentity(values: {
   otp: string;
   legalFullName: string;
-  publicScreenAlias: string;
+  publicScreenAlias?: string;
 }): Promise<UserProfile> {
   await http({ url: "/auth/kyc/verify-otp", method: "POST", data: values });
   return getProfile();
 }
 
 /**
- * PATCH /auth/me: change the screen alias, once per 30 days (`aliasChangeableAt`; a change too
- * soon is ALIAS_CHANGE_TOO_SOON with `details.nextChangeAt`).
+ * PATCH /auth/me: set or change the screen alias, for any member. The first one is free; then
+ * once per 30 days (`aliasChangeableAt`; a change too soon is ALIAS_CHANGE_TOO_SOON with
+ * `details.nextChangeAt`). The access token carries the alias, so it is refreshed afterwards and
+ * chat and voice show the new name at once.
  */
 export async function updateScreenAlias(publicScreenAlias: string): Promise<UserProfile> {
-  return userProfileSchema.parse(
+  const profile = userProfileSchema.parse(
     await http({ url: "/auth/me", method: "PATCH", data: { publicScreenAlias } }),
   );
+  await refreshAccessToken();
+  return profile;
 }
 
 /**

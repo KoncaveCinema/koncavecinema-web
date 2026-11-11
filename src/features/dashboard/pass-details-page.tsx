@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { env } from "@/env";
 import type { TicketDetail } from "@/api/tickets/tickets-schemas";
+import { HostAliasPrompt } from "@/features/booking/host-alias-prompt";
 import { InviteLinks } from "@/features/booking/invite-links";
 import { PriceBreakdown } from "@/features/booking/price-breakdown";
 import { AUDITORIUMS } from "@/features/home/auditoriums/halls";
@@ -353,6 +354,7 @@ function PassDetail({ detail }: { detail: TicketDetail }) {
         <div className="min-w-0 space-y-6">
           <PassCard ticket={detail} />
           {detail.status === "CANCELLED" && <CancelledNotice ticket={detail} />}
+          {detail.isSuiteHost && active && view.phase !== "ended" && <HostAliasPrompt />}
           {detail.isSuiteHost && active && view.phase !== "ended" && detail.roomInviteCode && (
             <InviteLinks code={detail.roomInviteCode} seatsLeft={seatsLeft} />
           )}
