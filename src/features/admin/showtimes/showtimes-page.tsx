@@ -13,7 +13,7 @@ import { UrlTabs, useTabParam } from "@/components/console/url-controls";
 import { usePagination } from "@/hooks/use-pagination";
 import { Button } from "@/components/ui/button";
 import { fieldClass } from "@/features/auth/form-parts";
-import { formatLagosDateTime, formatMoneyExact } from "@/lib/format";
+import { formatLagosDateTime, formatMoney } from "@/lib/format";
 
 import { PosterThumb } from "../films/poster-thumb";
 import { useFilms } from "../films/queries";
@@ -59,7 +59,7 @@ const COLUMNS: Column<AdminShowtimeListItem>[] = [
     id: "price",
     header: "Base price",
     align: "end",
-    cell: (showtime) => formatMoneyExact(showtime.basePrice, showtime.currency),
+    cell: (showtime) => formatMoney(showtime.basePrice, showtime.currency),
   },
   { id: "sold", header: "Sold", align: "end", cell: (showtime) => showtime.ticketsSold },
   {

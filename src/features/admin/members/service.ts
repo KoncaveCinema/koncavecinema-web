@@ -1,5 +1,5 @@
-import type { UserRole } from "@/features/auth/api-types";
-import { api, type Paginated } from "@/lib/api";
+import type { UserRole } from "@/api/auth/auth-schemas";
+import { api, type Paginated } from "@/api";
 import { isDemo } from "@/lib/demo";
 
 import type { AdminMember, AdminMemberListItem, PassCancellation } from "./api-types";

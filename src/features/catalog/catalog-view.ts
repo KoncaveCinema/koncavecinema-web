@@ -1,18 +1,15 @@
-import type {
-  ApiMovieDetail,
-  ApiMovieListItem,
-  ApiMovieShowtime,
-  ApiScheduleShowtime,
-} from "./api-types";
+import type { MovieDetail, MovieListItem, MovieShowtime } from "@/api/movies/movies-schemas";
+import type { ScheduleShowtime } from "@/api/showtimes/showtimes-schemas";
+
 import { fixturePosterFocus } from "./fixture-films";
 import type { CatalogFilm, CatalogShowtime, FilmDetail } from "./types";
 
 /*
- * API shapes to the shapes the pages render, the same for both data sources. Nothing is worked
- * out here: every price, time and status is copied from the API's answer.
+ * API shapes to the shapes the pages render. Nothing is worked out here: every price, time and
+ * status is copied from the API's answer.
  */
 
-export function toShowtime(showtime: ApiMovieShowtime | ApiScheduleShowtime): CatalogShowtime {
+export function toShowtime(showtime: MovieShowtime | ScheduleShowtime): CatalogShowtime {
   return {
     id: showtime.id,
     startTime: showtime.startTime,
@@ -25,7 +22,7 @@ export function toShowtime(showtime: ApiMovieShowtime | ApiScheduleShowtime): Ca
 
 type FilmFields = Omit<CatalogFilm, "priceFrom" | "nextShowtimeAt" | "showtimeCount" | "showtimes">;
 
-function filmFields(movie: ApiMovieListItem | ApiMovieDetail): FilmFields {
+function filmFields(movie: MovieListItem | MovieDetail): FilmFields {
   return {
     id: movie.id,
     slug: movie.slug,
@@ -44,10 +41,7 @@ function filmFields(movie: ApiMovieListItem | ApiMovieDetail): FilmFields {
 }
 
 /** A film from GET /movies, with its screenings from the schedule (GET /showtimes) */
-export function toCatalogFilm(
-  movie: ApiMovieListItem,
-  schedule: ApiScheduleShowtime[],
-): CatalogFilm {
+export function toCatalogFilm(movie: MovieListItem, schedule: ScheduleShowtime[]): CatalogFilm {
   return {
     ...filmFields(movie),
     priceFrom: movie.priceFrom,
@@ -58,7 +52,7 @@ export function toCatalogFilm(
 }
 
 /** GET /movies/:slug. Its from-price is its cheapest screening's, as GET /movies gives it. */
-export function toFilmDetail(movie: ApiMovieDetail): FilmDetail {
+export function toFilmDetail(movie: MovieDetail): FilmDetail {
   const showtimes = movie.showtimes.map(toShowtime);
   const cheapest = showtimes.reduce<CatalogShowtime | null>(
     (best, showtime) => (!best || showtime.priceFrom < best.priceFrom ? showtime : best),

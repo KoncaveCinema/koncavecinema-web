@@ -21,6 +21,7 @@ export const ErrorCode = {
 
   EMAIL_ALREADY_REGISTERED: "EMAIL_ALREADY_REGISTERED",
   INVALID_CREDENTIALS: "INVALID_CREDENTIALS",
+  LOGIN_TEMPORARILY_LOCKED: "LOGIN_TEMPORARILY_LOCKED", // 429, details.retryAfterSeconds
   REFRESH_TOKEN_MISSING: "REFRESH_TOKEN_MISSING",
   REFRESH_TOKEN_INVALID: "REFRESH_TOKEN_INVALID",
   ACCOUNT_NOT_FOUND: "ACCOUNT_NOT_FOUND",
@@ -32,6 +33,7 @@ export const ErrorCode = {
   OTP_EXPIRED: "OTP_EXPIRED",
   OTP_INVALID: "OTP_INVALID",
   ALIAS_TAKEN: "ALIAS_TAKEN",
+  ALIAS_REQUIRED: "ALIAS_REQUIRED",
   PASSWORD_RESET_TOKEN_INVALID: "PASSWORD_RESET_TOKEN_INVALID",
   ALIAS_CHANGE_TOO_SOON: "ALIAS_CHANGE_TOO_SOON",
   ACCOUNT_HAS_UPCOMING_PASSES: "ACCOUNT_HAS_UPCOMING_PASSES",
@@ -95,7 +97,10 @@ export const ErrorCode = {
   IDEMPOTENCY_KEY_REUSED: "IDEMPOTENCY_KEY_REUSED",
   IDEMPOTENCY_REQUEST_IN_PROGRESS: "IDEMPOTENCY_REQUEST_IN_PROGRESS",
 
-  /** Client side only: the request never reached the API (offline, DNS, CORS, timeout). */
+  /**
+   * Client side only: the request never reached the API (offline, DNS, CORS, timeout, or a
+   * proxy or gateway answering 5xx in its place).
+   */
   NETWORK_ERROR: "NETWORK_ERROR",
 } as const;
 
@@ -156,11 +161,13 @@ export function toApiError(error: unknown): ApiError {
         code: body.code,
         messages: Array.isArray(body.message) ? body.message : [body.message],
         requestId,
-        details: body as unknown as Record<string, unknown>,
+        details: body.details,
       });
     }
 
-    if (error.response) {
+    // A 5xx page that isn't the API's (the dev proxy offline, or a gateway in front of the
+    // API): the request never reached it
+    if (error.response && error.response.status < 500) {
       return new ApiError({
         status: error.response.status,
         code: ErrorCode.INTERNAL_ERROR,
@@ -170,7 +177,7 @@ export function toApiError(error: unknown): ApiError {
     }
 
     return new ApiError({
-      status: 0,
+      status: error.response?.status ?? 0,
       code: ErrorCode.NETWORK_ERROR,
       messages: ["We could not reach Koncave Cinema. Check your connection and try again."],
       requestId,

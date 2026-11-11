@@ -4,24 +4,23 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowRight, Check, LayoutDashboard, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useForm } from "react-hook-form";
 
+import { signIn } from "@/api/auth/auth-api";
 import { Button } from "@/components/ui/button";
 import {
-  DemoHint,
   FieldError,
   FieldLabel,
   FormAlert,
   PasswordInput,
   fieldClass,
   safeNext,
+  signInFailure,
 } from "@/features/auth/form-parts";
 import { isStaff } from "@/features/auth/roles";
 import { signInSchema, type SignInValues } from "@/features/auth/schemas";
-import { DEMO_HINTS, signIn } from "@/features/auth/service";
 import { useSession } from "@/features/auth/session";
-import { ErrorCode, toApiError } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 /**
@@ -35,12 +34,16 @@ export function StaffSignInForm() {
   const next = safeNext(searchParams.get("next"), "/admin");
   const afterReset = searchParams.get("reset") === "1";
   const { status, user, setUser } = useSession();
-  const [failure, setFailure] = useState<string | null>(null);
+  const [failure, setFailure] = useState<ReactNode>(null);
   const {
     register: field,
     handleSubmit,
+    reset,
     formState: { errors, isSubmitting },
-  } = useForm<SignInValues>({ resolver: zodResolver(signInSchema) });
+  } = useForm<SignInValues>({
+    resolver: zodResolver(signInSchema),
+    defaultValues: { email: "", password: "" },
+  });
 
   const staff = status === "signed-in" && isStaff(user?.role);
   useEffect(() => {
@@ -50,16 +53,12 @@ export function StaffSignInForm() {
   const onSubmit = async (values: SignInValues) => {
     setFailure(null);
     try {
-      setUser(await signIn(values.email, values.password));
+      const user = await signIn(values.email, values.password);
+      // Next keeps this page alive after leaving it: nothing typed may wait here for the next visit
+      reset();
+      setUser(user);
     } catch (error) {
-      const apiError = toApiError(error);
-      setFailure(
-        apiError.is(ErrorCode.INVALID_CREDENTIALS)
-          ? "That email and password don't match an account."
-          : apiError.is(ErrorCode.RATE_LIMITED)
-            ? "Too many attempts. Please wait a few minutes and try again."
-            : "We couldn't sign you in just now. Please try again.",
-      );
+      setFailure(signInFailure(error));
     }
   };
 
@@ -149,7 +148,6 @@ export function StaffSignInForm() {
           {isSubmitting || staff ? "Signing in…" : "Sign in"}
           {!isSubmitting && !staff && <ArrowRight data-icon="inline-end" />}
         </Button>
-        <DemoHint>{DEMO_HINTS.staffSignIn}</DemoHint>
       </form>
     </div>
   );

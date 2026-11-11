@@ -2,23 +2,23 @@
 
 import { useQuery } from "@tanstack/react-query";
 
+import { getTicket, listMyTickets, listSuiteGuests } from "@/api/tickets/tickets-api";
 import { useSignedIn } from "@/features/auth/require-session";
-import { getTicket, listMyTickets, listSuiteGuests } from "@/features/booking/service";
 import { DEFAULT_PAGE_SIZE } from "@/hooks/use-pagination";
 
 /*
- * The dashboard's server data. Keys come from one factory, so a change (a payment confirmed, a
- * pass cancelled) invalidates exactly the lists and passes it touches. The ticket key is the
- * same one checkout and confirmation use, so they share the cached pass.
+ * The dashboard's server data. Keys start with the API path (see src/api/refetch.ts), so a
+ * booking write (a hold, a release, a claim) refreshes the lists and passes it touches. The
+ * ticket key is the same one checkout and confirmation use, so they share the cached pass.
  */
 
 export type TicketsWhen = "upcoming" | "past";
 
 export const dashboardKeys = {
   tickets: (when: TicketsWhen, page: number, pageSize: number) =>
-    ["my-tickets", when, page, pageSize] as const,
-  ticket: (ticketId: string) => ["ticket", ticketId] as const,
-  guests: (ticketId: string) => ["ticket", ticketId, "guests"] as const,
+    ["/tickets/my-tickets", { when, page, pageSize }] as const,
+  ticket: (ticketId: string) => [`/tickets/${ticketId}`] as const,
+  guests: (ticketId: string) => [`/tickets/${ticketId}/guests`] as const,
 };
 
 /* Every query waits for a signed-in member: until then it stays pending (the pages show their

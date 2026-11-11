@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import type { CursorPagination } from "@/hooks/use-cursor-pagination";
 import { PAGE_SIZES, type PageSize, type Pagination } from "@/hooks/use-pagination";
-import type { PaginationMeta } from "@/lib/api";
+import type { PaginationMeta } from "@/api";
 
 /**
  * Under a paginated list: how many rows a page shows, which ones these are, and the way through

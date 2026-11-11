@@ -11,11 +11,15 @@
 - **Backend**: `koncavecinema-api` (NestJS v11 on Fastify). Its `docs/` folder is the source of
   truth for API contracts, error codes and business rules. Read the relevant API doc before
   building a screen that uses it.
-- **HTTP**: one axios instance in `src/lib/api/client.ts`. It unwraps the API's response envelope
-  (`{ statusCode, success, data, meta?, timestamp }`), attaches the in-memory access token,
-  refreshes once on `401` through the HttpOnly refresh cookie, and turns error bodies into
-  `ApiError` (branch on `code`, never on `message`). Types for the API come from its OpenAPI
-  document: `npm run api:types` writes `src/lib/api/schema.d.ts`.
+- **HTTP**: every call goes through `src/api/http.ts` on the one axios instance
+  (`src/api/client.ts`). It attaches the in-memory access token, refreshes once on `401`
+  through the HttpOnly refresh cookie, unwraps the envelope (`data`, or `{ items, meta }` for a
+  list) and rejects with `ApiError` (branch on `code`, never on `message`). Server Components
+  use `src/api/http-server.ts` (anonymous, public reads only). Each module parses every response
+  with its Zod schema (`schemas.ts`, only the fields its screens use, types from `z.infer`) and
+  has hand-written TanStack Query hooks: query keys start with the API path, mutation keys are
+  the API's operation name, and `src/api/refetch.ts` lists what each write refetches. The API's
+  `openapi.json` and Swagger are the reference to read; nothing is generated from them.
 - **State**: TanStack Query for server state; Zustand for client state (player, room); nuqs for
   URL state (filters, tabs). Forms use React Hook Form with Zod schemas.
 - **Performance**: read `docs/architecture/performance.md` before adding a dependency, a provider,
@@ -79,8 +83,47 @@
 
 ### 4.2 Pull Requests (PRs)
 
-- Concise, conventional format with only a high-level **Summary** and a flat list of **Key Changes** (no nested bullets).
-- Key changes must represent discrete functional capabilities introduced.
+- **Tone:** formal, professional and technical, as in a release note. No casual phrasing, no
+  first person, no marketing language.
+- **Title:** a conventional commit header, lowercase after the scope, that starts with a verb
+  and names the PR's main capability in specific terms:
+  `feat(catalog): connect film listings and showtime schedules to the api`,
+  `fix(auth): preserve the current public page after sign-out`.
+  Join capabilities with commas only when the PR delivers two or three distinct modules:
+  `feat(studio): implement film management, showtime scheduling, and staff administration`.
+  A long comma list is for release PRs into `main`, which bundle several merged PRs. Never name
+  internal phases or steps ("Step 3", "Phase 5").
+- **Frontend only:** describe what users, the screens and the app do. Never describe the API's
+  internals; name it only as "the API" where a screen depends on it.
+- **Template:** these sections, in this order. Breaking Changes appears only when something
+  outside this repo must change (environment variables, deployment, routes others link to).
+
+  ```markdown
+  ## Breaking Changes
+
+  - One bullet per change another team or deployment must make.
+
+  ## Summary
+
+  Connects the public catalogue to the API, so film listings, film pages and the showtime
+  schedule show live data. This includes server-side caching shared between visitors and
+  clear unavailable states when the API cannot be reached.
+
+  ## Key Changes
+
+  - Render now-showing and coming-soon films from the API on the home and films pages.
+  - Validate every catalogue response against its schema before a page renders it.
+  - Show an unavailable message instead of a not-found page when the API cannot be reached.
+  ```
+
+- **Summary:** one short paragraph that opens with a present-tense verb (Introduces, Connects,
+  Adds, Fixes) stating what is delivered and for whom, then a sentence starting
+  "This includes…", "This ensures…" or "Additionally…" with the main parts or the effect.
+- **Key Changes bullets:** granular, one specific behaviour each, flat (no nesting), described
+  from the user's or system's side. Each starts with an imperative verb (Add, Implement,
+  Introduce, Provide, Render, Enforce, Prevent, Integrate, Restrict, Resolve) and ends with a
+  full stop. Proportional to the change: a large PR gets a long list, a small one a short list.
+- No Testing, Not changed or Found-while-working sections; mention follow-ups in chat.
 
 ---
 

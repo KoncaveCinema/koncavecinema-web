@@ -1,9 +1,10 @@
 "use client";
 
-import { Check, Eye, EyeOff, FlaskConical } from "lucide-react";
+import { Check, Eye, EyeOff } from "lucide-react";
+import Link from "next/link";
 import { forwardRef, useState, type ComponentProps, type ReactNode } from "react";
 
-import { isDemo } from "@/lib/demo";
+import { ErrorCode, toApiError } from "@/api";
 import { cn } from "@/lib/utils";
 
 import { PASSWORD_RULES } from "./schemas";
@@ -35,6 +36,37 @@ export function FormAlert({ children }: { children: ReactNode }) {
       {children}
     </p>
   );
+}
+
+/**
+ * Why a sign-in was refused, for the members' and the staff forms. The email lock (10 failed
+ * sign-ins in 15 minutes, from any device) is lifted by a password reset; the per-address limit
+ * (RATE_LIMITED) only passes with time.
+ */
+export function signInFailure(error: unknown): ReactNode {
+  const apiError = toApiError(error);
+  if (apiError.is(ErrorCode.LOGIN_TEMPORARILY_LOCKED)) {
+    const minutes = Math.max(1, Math.ceil(Number(apiError.details.retryAfterSeconds) / 60)) || 15;
+    return (
+      <>
+        Too many failed attempts. Try again in {minutes} {minutes === 1 ? "minute" : "minutes"}, or{" "}
+        <Link href="/forgot-password" className="font-semibold underline underline-offset-4">
+          reset your password
+        </Link>
+        .
+      </>
+    );
+  }
+  if (apiError.is(ErrorCode.INVALID_CREDENTIALS)) {
+    return "That email and password don't match an account.";
+  }
+  if (apiError.is(ErrorCode.RATE_LIMITED)) {
+    return "Too many attempts. Please wait a few minutes and try again.";
+  }
+  if (apiError.is(ErrorCode.NETWORK_ERROR)) {
+    return "We couldn't reach Koncave Cinema. Check your connection and try again.";
+  }
+  return "We couldn't sign you in just now. Please try again.";
 }
 
 /** A password field with a show/hide toggle */
@@ -82,17 +114,6 @@ export function PasswordChecklist({ id, password }: { id: string; password: stri
         );
       })}
     </ul>
-  );
-}
-
-/** Sample-data mode only: how to reach each state without the API */
-export function DemoHint({ children }: { children: ReactNode }) {
-  if (!isDemo) return null;
-  return (
-    <p className="flex items-start gap-2 rounded-xl border border-dashed border-sky-400/30 bg-sky-400/5 px-3.5 py-2.5 text-xs text-sky-200/80">
-      <FlaskConical className="mt-0.5 size-3.5 shrink-0 text-sky-400" />
-      {children}
-    </p>
   );
 }
 

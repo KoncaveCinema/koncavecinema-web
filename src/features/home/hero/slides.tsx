@@ -1,4 +1,4 @@
-import { ArrowRight, Ticket } from "lucide-react";
+import { ArrowRight, Clapperboard, Ticket } from "lucide-react";
 import Link from "next/link";
 import type { CSSProperties } from "react";
 
@@ -18,6 +18,7 @@ const stagger = (step: number): CSSProperties => ({ animationDelay: `${150 + ste
 
 export function FeaturedSlide({ film, priority }: { film: CatalogFilm; priority: boolean }) {
   const next = sortedShowtimes(film)[0];
+  const comingSoon = film.status === "COMING_SOON";
   const price = film.priceFrom;
   const { lead, accent } = splitTitle(film.title);
 
@@ -44,13 +45,19 @@ export function FeaturedSlide({ film, priority }: { film: CatalogFilm; priority:
           {film.synopsis}
         </p>
 
-        {next && (
+        {(next !== undefined || comingSoon) && (
           <p
             className="mt-4 flex animate-rise flex-wrap items-center gap-x-3 gap-y-1 text-sm text-white/60 sm:mt-6"
             style={stagger(3)}
           >
             <span className="font-medium text-white">
-              Next screening <LocalTime iso={next.startTime} />
+              {next ? (
+                <>
+                  Next screening <LocalTime iso={next.startTime} />
+                </>
+              ) : (
+                "Coming soon · Date to be announced"
+              )}
             </span>
             <span aria-hidden="true">·</span>
             <span>{formatRuntime(film.durationMinutes)}</span>
@@ -65,7 +72,7 @@ export function FeaturedSlide({ film, priority }: { film: CatalogFilm; priority:
           className="mt-6 flex animate-rise flex-wrap items-center gap-3 sm:mt-9"
           style={stagger(4)}
         >
-          {next && (
+          {next ? (
             <Button asChild size="xl">
               <Link href={`/movies/${film.slug}/showtimes/${next.id}`}>
                 <Ticket data-icon="inline-start" />
@@ -75,6 +82,14 @@ export function FeaturedSlide({ film, priority }: { film: CatalogFilm; priority:
                     · from {formatMoney(price.amount, price.currency)}
                   </span>
                 )}
+              </Link>
+            </Button>
+          ) : (
+            // Featured but nothing to book here: announced, or screening beyond the next two weeks
+            <Button asChild size="xl">
+              <Link href={`/movies/${film.slug}`}>
+                <Clapperboard data-icon="inline-start" />
+                See the film
               </Link>
             </Button>
           )}

@@ -4,7 +4,7 @@
 import { SearchX } from "lucide-react";
 import type { ComponentProps, ReactNode } from "react";
 
-import { ErrorCode, toApiError } from "@/lib/api";
+import { ErrorCode, toApiError } from "@/api";
 
 import { EmptyState, ErrorState } from "./states";
 

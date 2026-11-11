@@ -1,5 +1,5 @@
 import type { TicketTier } from "@/types/domain";
-import type { ApiPricingBreakdown } from "./api-types";
+import type { PricingBreakdown } from "@/api/showtimes/showtimes-schemas";
 
 /*
  * Sample data only (NEXT_PUBLIC_DATA_SOURCE=fixtures). A copy of the API's single price formula
@@ -31,7 +31,7 @@ function processingFeeMinor(netMinor: number): number {
   return Math.min(total - netMinor, FEE_CAP_MINOR);
 }
 
-export function fixturePricing(basePrice: number, tier: TicketTier): ApiPricingBreakdown {
+export function fixturePricing(basePrice: number, tier: TicketTier): PricingBreakdown {
   const seatCount = SEATS[tier];
   const baseMinor = Math.round(basePrice * 100) * seatCount;
   const markupMinor = seatCount > 1 ? Math.round((baseMinor * SUITE_MARKUP_PERCENT) / 100) : 0;

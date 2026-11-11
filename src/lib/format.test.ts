@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { formatLagosDate, formatLagosDateTime, formatMoneyExact } from "./format";
+import { formatLagosDate, formatLagosDateTime, formatMoney } from "./format";
 
 describe("console formats", () => {
   // 19:00 in Lagos (UTC+1)
@@ -15,7 +15,9 @@ describe("console formats", () => {
     expect(formatLagosDate("2026-11-06T23:30:00.000Z")).toBe("7 Nov 2026");
   });
   it("keeps kobo only where there is some", () => {
-    expect(formatMoneyExact(5000)).toBe("₦5,000");
-    expect(formatMoneyExact("1234.5")).toBe("₦1,234.50");
+    expect(formatMoney(5000)).toBe("₦5,000");
+    expect(formatMoney("1234.5")).toBe("₦1,234.50");
+    // The processing fee adds kobo: shown as Paystack charges it
+    expect(formatMoney(5177.67)).toBe("₦5,177.67");
   });
 });

@@ -1,4 +1,4 @@
-import type { ApiPricingBreakdown } from "@/features/catalog/api-types";
+import type { PricingBreakdown } from "@/api/showtimes/showtimes-schemas";
 import { formatMoney } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -11,7 +11,7 @@ export function PriceBreakdown({
   className,
   showTotal = true,
 }: {
-  pricing: ApiPricingBreakdown;
+  pricing: PricingBreakdown;
   className?: string;
   showTotal?: boolean;
 }) {

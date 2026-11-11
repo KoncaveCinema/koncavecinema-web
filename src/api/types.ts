@@ -42,6 +42,8 @@ export interface ApiErrorBody {
   /** A list of strings for `VALIDATION_FAILED`, otherwise one sentence. */
   message: string | string[];
   error: string;
+  /** Extra fields some errors carry, e.g. `retryAfterSeconds` on LOGIN_TEMPORARILY_LOCKED */
+  details?: Record<string, unknown>;
   timestamp: string;
   path: string;
 }

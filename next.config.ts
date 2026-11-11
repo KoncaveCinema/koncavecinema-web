@@ -1,7 +1,15 @@
 import type { NextConfig } from "next";
 
 // Validates the environment at startup and build time
-import "./src/env";
+import { env } from "./src/env";
+
+// The /api proxy is for local development only: a deployment calls the API directly. Vercel sets
+// VERCEL_ENV on every build, so a stray proxy setting fails the build instead of going live
+if (env.API_DEV_PROXY_URL && env.VERCEL_ENV) {
+  throw new Error(
+    "API_DEV_PROXY_URL is for local development only; remove it from this Vercel environment.",
+  );
+}
 
 // Applied to every route. The Content Security Policy is added with the player (Phase F5),
 // once the Mux stream, licence and image hosts are known.
@@ -40,7 +48,8 @@ const nextConfig: NextConfig = {
     formats: ["image/avif", "image/webp"],
     minimumCacheTTL: 2_678_400, // 31 days; artwork URLs change when the image changes
     remotePatterns: [
-      // Mux thumbnails and storyboards; add the API's artwork host when it is known
+      // Film artwork from the API, then Mux thumbnails and storyboards
+      { protocol: "https", hostname: "res.cloudinary.com" },
       { protocol: "https", hostname: "image.mux.com" },
       { protocol: "https", hostname: "*.streamable.com" },
       { protocol: "https", hostname: "streamable.com" },
@@ -66,6 +75,12 @@ const nextConfig: NextConfig = {
 
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
+  },
+
+  // Local development against a remote API (see API_DEV_PROXY_URL in src/env.ts)
+  async rewrites() {
+    if (!env.API_DEV_PROXY_URL) return [];
+    return [{ source: "/api/:path*", destination: `${env.API_DEV_PROXY_URL}/:path*` }];
   },
 };
 

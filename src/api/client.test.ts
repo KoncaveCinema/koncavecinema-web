@@ -2,7 +2,7 @@ import axios, { AxiosError, type AxiosAdapter, type InternalAxiosRequestConfig }
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getAccessToken, setAccessToken } from "./access-token";
-import { api, apiClient } from "./client";
+import { api, apiClient, refreshAccessToken } from "./client";
 import { ApiError, ErrorCode } from "./errors";
 
 type Reply = { status: number; data: unknown };
@@ -58,23 +58,25 @@ describe("api client", () => {
     await expect(api.getPage("/movies")).resolves.toEqual({ items: [{ id: "m1" }], meta });
   });
 
-  it("turns the API error body into an ApiError carrying its code", async () => {
+  it("turns the API error body into an ApiError carrying its code and details", async () => {
     apiClient.defaults.adapter = stubAdapter(() => ({
-      status: 409,
+      status: 429,
       data: {
-        statusCode: 409,
-        code: "SCREENING_SOLD_OUT",
-        message: "This screening is sold out.",
-        error: "Conflict",
+        statusCode: 429,
+        code: "LOGIN_TEMPORARILY_LOCKED",
+        message: "Too many failed sign-ins.",
+        error: "Too Many Requests",
+        details: { retryAfterSeconds: 600 },
         timestamp: "2026-10-20T12:00:00.000Z",
-        path: "/api/tickets/reserve",
+        path: "/api/auth/login",
       },
     }));
 
-    const error = await api.post("/tickets/reserve").catch((e: unknown) => e);
+    const error = await api.post("/auth/login").catch((e: unknown) => e);
     expect(error).toBeInstanceOf(ApiError);
-    expect((error as ApiError).is(ErrorCode.SCREENING_SOLD_OUT)).toBe(true);
-    expect((error as ApiError).status).toBe(409);
+    expect((error as ApiError).is(ErrorCode.LOGIN_TEMPORARILY_LOCKED)).toBe(true);
+    expect((error as ApiError).status).toBe(429);
+    expect((error as ApiError).details).toEqual({ retryAfterSeconds: 600 });
   });
 
   it("refreshes once for concurrent 401s and retries with the new token", async () => {
@@ -110,5 +112,35 @@ describe("api client", () => {
 
     await expect(api.get("/auth/me")).rejects.toMatchObject({ code: "UNAUTHORIZED" });
     expect(getAccessToken()).toBeNull();
+  });
+
+  it("keeps the session when the refresh can't reach the API", async () => {
+    setAccessToken("expired");
+    apiClient.defaults.adapter = stubAdapter(() => ({
+      status: 401,
+      data: { statusCode: 401, code: "UNAUTHORIZED", message: "x" },
+    }));
+    axios.defaults.adapter = async (config) => {
+      throw new AxiosError("Network Error", "ERR_NETWORK", config);
+    };
+
+    await expect(refreshAccessToken()).resolves.toBeNull();
+    expect(getAccessToken()).toBe("expired");
+  });
+
+  it("refreshes under the lock every tab shares", async () => {
+    const request = vi.fn((_name: string, task: () => Promise<unknown>) => task());
+    Object.defineProperty(navigator, "locks", { value: { request }, configurable: true });
+    axios.defaults.adapter = stubAdapter(() => ({
+      status: 200,
+      data: envelope({ accessToken: "fresh", expiresIn: 900 }),
+    }));
+
+    try {
+      await expect(refreshAccessToken()).resolves.toBe("fresh");
+      expect(request).toHaveBeenCalledWith("koncave-refresh", expect.any(Function));
+    } finally {
+      Reflect.deleteProperty(navigator, "locks");
+    }
   });
 });

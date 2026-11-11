@@ -16,8 +16,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { roomLabel } from "@/features/admin/rooms";
 import { isSuperAdmin } from "@/features/auth/roles";
 import { useSession } from "@/features/auth/session";
-import { ErrorCode, toApiError } from "@/lib/api";
-import { formatLagosDate, formatLagosDateTime, formatMoneyExact } from "@/lib/format";
+import { ErrorCode, toApiError } from "@/api";
+import { formatLagosDate, formatLagosDateTime, formatMoney } from "@/lib/format";
 import { browserSummary } from "@/lib/user-agent";
 
 import { refundReasonLabel } from "../money/sales";
@@ -121,9 +121,7 @@ function PassRow({
         <div className="flex flex-wrap items-center gap-2">
           <StatusBadge kind="ticket" status={pass.status} />
           <span className="text-sm tabular-nums">
-            {pass.purchasePrice
-              ? formatMoneyExact(pass.purchasePrice, pass.currency)
-              : "Guest seat"}
+            {pass.purchasePrice ? formatMoney(pass.purchasePrice, pass.currency) : "Guest seat"}
           </span>
         </div>
       </div>
@@ -290,7 +288,7 @@ function MemberDetail({ data }: { data: AdminMember }) {
           const result = await cancel.mutateAsync({ ticketId: cancelling.id, reason });
           toast.success(
             result.refundQueued > 0
-              ? `Cancelled; ${formatMoneyExact(result.refundQueued, cancelling.currency)} queued for refund`
+              ? `Cancelled; ${formatMoney(result.refundQueued, cancelling.currency)} queued for refund`
               : "Cancelled",
           );
         }}

@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/sheet";
 import { fieldClass } from "@/features/auth/form-parts";
 import { roomLabel } from "@/features/admin/rooms";
-import { formatLagosDateTime, formatMoneyExact } from "@/lib/format";
+import { formatLagosDateTime, formatMoney } from "@/lib/format";
 
 import type { AdminPayment } from "./api-types";
 import { usePayments } from "./queries";
@@ -44,20 +44,20 @@ function copy(text: string) {
 function PaymentSheet({ payment, onClose }: { payment: AdminPayment | null; onClose: () => void }) {
   const rows = payment
     ? [
-        { label: "Amount", value: formatMoneyExact(payment.amount, payment.currency) },
+        { label: "Amount", value: formatMoney(payment.amount, payment.currency) },
         ...(payment.settlement
           ? [
               {
                 label: "Gateway fee",
-                value: formatMoneyExact(payment.settlement.gatewayFee, payment.currency),
+                value: formatMoney(payment.settlement.gatewayFee, payment.currency),
               },
               {
                 label: "Producer share",
-                value: formatMoneyExact(payment.settlement.producerShare, payment.currency),
+                value: formatMoney(payment.settlement.producerShare, payment.currency),
               },
               {
                 label: "Platform share",
-                value: formatMoneyExact(payment.settlement.platformShare, payment.currency),
+                value: formatMoney(payment.settlement.platformShare, payment.currency),
               },
             ]
           : []),
@@ -181,7 +181,7 @@ export function PaymentsPage() {
       id: "amount",
       header: "Amount",
       align: "end",
-      cell: (payment) => formatMoneyExact(payment.amount, payment.currency),
+      cell: (payment) => formatMoney(payment.amount, payment.currency),
     },
     {
       id: "status",

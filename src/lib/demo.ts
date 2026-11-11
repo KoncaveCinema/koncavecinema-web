@@ -1,5 +1,5 @@
 import { env } from "@/env";
-import { ApiError } from "@/lib/api";
+import { ApiError } from "@/api";
 
 /*
  * Demo mode (NEXT_PUBLIC_DATA_SOURCE=fixtures): services answer in the API's place with the same

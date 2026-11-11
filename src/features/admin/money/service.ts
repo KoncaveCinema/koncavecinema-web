@@ -1,4 +1,4 @@
-import { api, type Paginated } from "@/lib/api";
+import { api, type Paginated } from "@/api";
 import { isDemo } from "@/lib/demo";
 
 import type { AdminPayment, SalesReport } from "./api-types";

@@ -1,4 +1,4 @@
-import { ErrorCode, type Paginated } from "@/lib/api";
+import { ErrorCode, type Paginated } from "@/api";
 import { demoDelay, demoError } from "@/lib/demo";
 import { screeningOverAt } from "@/lib/screening-window";
 

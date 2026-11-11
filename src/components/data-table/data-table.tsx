@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/table";
 import type { CursorPagination } from "@/hooks/use-cursor-pagination";
 import type { Pagination } from "@/hooks/use-pagination";
-import type { PaginationMeta } from "@/lib/api";
+import type { PaginationMeta } from "@/api";
 
 import { DataTableCursorPagination, DataTablePagination } from "./data-table-pagination";
 

@@ -13,8 +13,8 @@ import { StatusBadge } from "@/components/console/status-badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { roomLabel } from "@/features/admin/rooms";
-import { ErrorCode } from "@/lib/api";
-import { formatLagosDateTime, formatMoneyExact } from "@/lib/format";
+import { ErrorCode } from "@/api";
+import { formatLagosDateTime, formatMoney } from "@/lib/format";
 
 import type { AdminShowtime, ShowtimeCancellation } from "./api-types";
 import { useCancelShowtime, useShowtime } from "./queries";
@@ -68,15 +68,15 @@ function ShowtimeDetail({
   const cancelled = data.state === "CANCELLED";
   const revenue = [
     { label: "Payments", value: String(data.revenue.payments) },
-    { label: "Gross", value: formatMoneyExact(data.revenue.gross, data.currency) },
-    { label: "Gateway fees", value: formatMoneyExact(data.revenue.gatewayFees, data.currency) },
+    { label: "Gross", value: formatMoney(data.revenue.gross, data.currency) },
+    { label: "Gateway fees", value: formatMoney(data.revenue.gatewayFees, data.currency) },
     {
       label: "Producer's share",
-      value: formatMoneyExact(data.revenue.producerShare, data.currency),
+      value: formatMoney(data.revenue.producerShare, data.currency),
     },
     {
       label: "Platform's share",
-      value: formatMoneyExact(data.revenue.platformShare, data.currency),
+      value: formatMoney(data.revenue.platformShare, data.currency),
     },
   ];
 
@@ -89,7 +89,7 @@ function ShowtimeDetail({
         description={
           <>
             {formatLagosDateTime(data.startTime, { year: true })} ·{" "}
-            {formatMoneyExact(data.basePrice, data.currency)} base ·{" "}
+            {formatMoney(data.basePrice, data.currency)} base ·{" "}
             <Link href={`/admin/films/${data.movie.id}`} className="underline underline-offset-4">
               Film page
             </Link>
@@ -136,7 +136,7 @@ function ShowtimeDetail({
               <p className="mt-3 text-white/80">
                 {result.passesCancelled} {result.passesCancelled === 1 ? "pass" : "passes"}{" "}
                 cancelled · {result.refundsQueued} refunds queued (
-                {formatMoneyExact(result.refundTotal, result.currency)}) ·{" "}
+                {formatMoney(result.refundTotal, result.currency)}) ·{" "}
                 <Link href="/admin/refunds" className="font-semibold underline underline-offset-4">
                   Open the refunds queue
                 </Link>

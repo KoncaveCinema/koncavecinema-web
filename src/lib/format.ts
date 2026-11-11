@@ -10,35 +10,16 @@ import type { AgeRating } from "@/types/domain";
 const formatters = new Map<string, Intl.NumberFormat>();
 
 /**
- * Formats a price for display: `₦5,000`, `$12`. Whole units only; the API's amounts for
- * tickets are whole naira. Amounts arrive as numbers or numeric strings (Prisma decimals).
+ * Formats an amount exactly as the API gives it: `₦5,000`, `₦5,177.67`. The payment processing
+ * fee adds kobo, and the price shown must match what Paystack charges, so it is never rounded.
+ * Amounts arrive as numbers or numeric strings (Prisma decimals).
  */
 export function formatMoney(amount: number | string, currency = "NGN"): string {
-  let formatter = formatters.get(currency);
-  if (!formatter) {
-    formatter = new Intl.NumberFormat("en-NG", {
-      style: "currency",
-      currency,
-      currencyDisplay: "narrowSymbol",
-      maximumFractionDigits: 0,
-    });
-    formatters.set(currency, formatter);
-  }
-  return formatter.format(typeof amount === "string" ? Number(amount) : amount);
-}
-
-const exactFormatters = new Map<string, Intl.NumberFormat>();
-
-/**
- * Money to the kobo where there is any: `₦5,000`, `₦1,234.50`. For reports and settlements,
- * whose shares and fees are not whole naira.
- */
-export function formatMoneyExact(amount: number | string, currency = "NGN"): string {
   const value = typeof amount === "string" ? Number(amount) : amount;
   // Whole naira, or exactly two decimals: never "₦1,234.5"
   const digits = Number.isInteger(value) ? 0 : 2;
   const key = `${currency}:${digits}`;
-  let formatter = exactFormatters.get(key);
+  let formatter = formatters.get(key);
   if (!formatter) {
     formatter = new Intl.NumberFormat("en-NG", {
       style: "currency",
@@ -47,7 +28,7 @@ export function formatMoneyExact(amount: number | string, currency = "NGN"): str
       minimumFractionDigits: digits,
       maximumFractionDigits: digits,
     });
-    exactFormatters.set(key, formatter);
+    formatters.set(key, formatter);
   }
   return formatter.format(value);
 }

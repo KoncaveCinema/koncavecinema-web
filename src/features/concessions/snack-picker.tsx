@@ -1,5 +1,3 @@
-"use client";
-
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, Clock3, MapPin, Minus, Plus } from "lucide-react";
 import Image from "next/image";

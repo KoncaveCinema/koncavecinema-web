@@ -1,5 +1,6 @@
-import type { UserRole } from "@/features/auth/api-types";
-import type { PaymentStatus, TicketStatus } from "@/features/booking/api-types";
+import type { UserRole } from "@/api/auth/auth-schemas";
+import type { PaymentStatus } from "@/api/payments/payments-schemas";
+import type { TicketStatus } from "@/api/tickets/tickets-schemas";
 import type { TicketTier } from "@/types/domain";
 
 import type { RefundReason } from "../money/api-types";

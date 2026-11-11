@@ -25,7 +25,7 @@ import { useTicket } from "@/features/dashboard/queries";
 import { roomName } from "@/features/dashboard/ticket-card";
 import { SUPPORT_EMAIL } from "@/features/support/content";
 import { useServerNow } from "@/hooks/use-now";
-import { ErrorCode, toApiError } from "@/lib/api";
+import { ErrorCode, toApiError } from "@/api";
 import { isDemo } from "@/lib/demo";
 import { formatClock } from "@/lib/format";
 import { screeningPhase, watchesAtOwnPace } from "@/lib/screening-window";

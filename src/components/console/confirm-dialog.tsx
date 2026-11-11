@@ -15,7 +15,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { toApiError, type ApiError } from "@/lib/api";
+import { toApiError, type ApiError } from "@/api";
 
 /** What a confirmation dialog asks for before an action that can't be undone. */
 export interface ReasonRule {

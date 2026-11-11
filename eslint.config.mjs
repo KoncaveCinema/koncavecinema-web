@@ -38,7 +38,7 @@ export default defineConfig([
             {
               name: "axios",
               importNames: ["default"],
-              message: "Call the API through @/lib/api (or @/lib/api/server in Server Components).",
+              message: "Call the API through @/api (or @/api/http-server in Server Components).",
             },
           ],
         },
@@ -58,7 +58,7 @@ export default defineConfig([
   },
   {
     // The API layer and its tests are the only places that use axios and Motion directly
-    files: ["src/lib/api/**", "src/lib/motion/**", "src/components/motion/**"],
+    files: ["src/api/**", "src/lib/motion/**", "src/components/motion/**"],
     rules: { "no-restricted-imports": "off" },
   },
   {
@@ -82,7 +82,6 @@ export default defineConfig([
     "playwright-report/**",
     "test-results/**",
     "next-env.d.ts",
-    "src/lib/api/schema.d.ts",
     "**/*.{png,jpg,jpeg,gif,webp,avif,ico}",
   ]),
 ]);

@@ -20,7 +20,7 @@ import { StatTile, StatTileSkeleton } from "@/components/console/stat-tile";
 import { EmptyState, ErrorState } from "@/components/states/states";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatMoneyExact } from "@/lib/format";
+import { formatMoney } from "@/lib/format";
 
 import type { AdminOverview, AdminSalesWindow, PublishRequirement } from "./api-types";
 import { useOverview } from "./queries";
@@ -58,14 +58,14 @@ const MISSING_LABEL: Record<PublishRequirement, string> = {
 function SalesColumn({ label, sales }: { label: string; sales: AdminSalesWindow }) {
   const rows = [
     { label: "Passes sold", value: sales.passesSold.toLocaleString("en-NG") },
-    { label: "Producer share", value: formatMoneyExact(sales.producerShare) },
-    { label: "Platform share", value: formatMoneyExact(sales.platformShare) },
+    { label: "Producer share", value: formatMoney(sales.producerShare) },
+    { label: "Platform share", value: formatMoney(sales.platformShare) },
   ];
   return (
     <div className="p-6">
       <p className="text-[0.68rem] font-bold tracking-[0.2em] text-white/50 uppercase">{label}</p>
       <p className="mt-3 font-display text-3xl leading-none font-black tracking-tight tabular-nums">
-        {formatMoneyExact(sales.gross)}
+        {formatMoney(sales.gross)}
       </p>
       <p className="mt-1.5 text-xs text-white/45">Gross collected</p>
       <dl className="mt-5 space-y-2.5 border-t border-white/8 pt-4 text-sm">
@@ -150,7 +150,7 @@ export function OverviewPage() {
               value={data.refundsWaiting.count}
               hint={
                 data.refundsWaiting.count > 0
-                  ? `${formatMoneyExact(data.refundsWaiting.amount)} owed back`
+                  ? `${formatMoney(data.refundsWaiting.amount)} owed back`
                   : "Nothing owed back"
               }
               icon={Undo2}

@@ -4,17 +4,17 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowRight, Check, MailCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useForm, useWatch } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
 import { TERMS_VERSION } from "@/features/legal/documents";
-import { ErrorCode, toApiError } from "@/lib/api";
+import { ErrorCode, toApiError } from "@/api";
+import { register, requestPasswordReset, resetPassword, signIn } from "@/api/auth/auth-api";
 import { cn } from "@/lib/utils";
 
 import {
   AuthHeading,
-  DemoHint,
   FieldError,
   FieldLabel,
   FormAlert,
@@ -22,6 +22,7 @@ import {
   PasswordInput,
   fieldClass,
   safeNext,
+  signInFailure,
 } from "./form-parts";
 import {
   forgotPasswordSchema,
@@ -33,7 +34,6 @@ import {
   type ResetPasswordValues,
   type SignInValues,
 } from "./schemas";
-import { DEMO_HINTS, register, requestPasswordReset, resetPassword, signIn } from "./service";
 import { isStaff } from "./roles";
 import { useSession } from "./session";
 
@@ -49,29 +49,28 @@ export function SignInForm() {
   const next = searchParams.get("next");
   const afterReset = searchParams.get("reset") === "1";
   const setUser = useSession((state) => state.setUser);
-  const [failure, setFailure] = useState<string | null>(null);
+  const [failure, setFailure] = useState<ReactNode>(null);
   const {
     register: field,
     handleSubmit,
+    reset,
     formState: { errors, isSubmitting },
-  } = useForm<SignInValues>({ resolver: zodResolver(signInSchema) });
+  } = useForm<SignInValues>({
+    resolver: zodResolver(signInSchema),
+    defaultValues: { email: "", password: "" },
+  });
 
   const onSubmit = async (values: SignInValues) => {
     setFailure(null);
     try {
       const user = await signIn(values.email, values.password);
+      // Next keeps this page alive after leaving it: nothing typed may wait here for the next visit
+      reset();
       setUser(user);
-      // Staff without somewhere to return to go to their console
-      router.replace(safeNext(next, isStaff(user.role) ? "/admin" : undefined));
+      // Without somewhere to return to: staff go to their console, members to their dashboard
+      router.replace(safeNext(next, isStaff(user.role) ? "/admin" : "/dashboard"));
     } catch (error) {
-      const apiError = toApiError(error);
-      setFailure(
-        apiError.is(ErrorCode.INVALID_CREDENTIALS)
-          ? "That email and password don't match an account."
-          : apiError.is(ErrorCode.RATE_LIMITED)
-            ? "Too many attempts. Please wait a few minutes and try again."
-            : "We couldn't sign you in just now. Please try again.",
-      );
+      setFailure(signInFailure(error));
     }
   };
 
@@ -132,7 +131,6 @@ export function SignInForm() {
           {isSubmitting ? "Signing in…" : "Sign in"}
           {!isSubmitting && <ArrowRight data-icon="inline-end" />}
         </Button>
-        <DemoHint>{DEMO_HINTS.signIn}</DemoHint>
       </form>
       <p className="text-center text-sm text-muted-foreground">
         New to Koncave?{" "}
@@ -428,7 +426,6 @@ export function ResetPasswordForm() {
         <Button type="submit" size="xl" disabled={isSubmitting} className="w-full">
           {isSubmitting ? "Saving…" : "Save password"}
         </Button>
-        <DemoHint>{DEMO_HINTS.reset}</DemoHint>
       </form>
     </div>
   );

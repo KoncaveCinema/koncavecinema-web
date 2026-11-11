@@ -55,7 +55,7 @@ export function AddToCalendar({
 
   if (appearance === "label") {
     return (
-      <Button variant="glass" size="lg" onClick={download} className={className}>
+      <Button variant="glass" size="xl" onClick={download} className={className}>
         <CalendarPlus data-icon="inline-start" />
         Add to calendar
       </Button>

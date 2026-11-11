@@ -1,9 +1,22 @@
-import { environmentManager, QueryClient } from "@tanstack/react-query";
+import { environmentManager, MutationCache, QueryClient } from "@tanstack/react-query";
 
-import { isApiError } from "@/lib/api/errors";
+import { isApiError } from "./errors";
+import { matchesPrefixes, refetchAfter } from "./refetch";
 
 function makeQueryClient(): QueryClient {
-  return new QueryClient({
+  const queryClient: QueryClient = new QueryClient({
+    // After a mutation succeeds, refetch what it changed (refetch.ts), found by its key: its
+    // operation name. Mutations of the modules not yet moved have none and refresh themselves.
+    mutationCache: new MutationCache({
+      onSuccess: (_data, _variables, _context, mutation) => {
+        const [operation] = mutation.options.mutationKey ?? [];
+        const prefixes = typeof operation === "string" ? refetchAfter[operation] : undefined;
+        if (!prefixes?.length) return;
+        return queryClient.invalidateQueries({
+          predicate: (query) => matchesPrefixes(query.queryKey, prefixes),
+        });
+      },
+    }),
     defaultOptions: {
       queries: {
         // Data rendered on the server is not refetched immediately after hydration
@@ -21,6 +34,7 @@ function makeQueryClient(): QueryClient {
       },
     },
   });
+  return queryClient;
 }
 
 let browserQueryClient: QueryClient | undefined;

@@ -12,8 +12,7 @@ import { Button } from "@/components/ui/button";
 import { FilmBackdrop } from "@/features/catalog/film-backdrop";
 import { FilmShowtimes } from "@/features/catalog/film-showtimes";
 import { FilmTile } from "@/features/catalog/film-tile";
-import { getCatalog } from "@/features/catalog/get-catalog";
-import { getFilm } from "@/features/catalog/queries";
+import { getAllFilms, getFilm, getNowShowing } from "@/features/catalog/queries";
 import { creditLine, lowestPrice, sortedShowtimes } from "@/features/catalog/screening";
 import { AUDITORIUMS } from "@/features/home/auditoriums/halls";
 import { formatMoney, formatRuntime, ratingDescription, ratingLabel } from "@/lib/format";
@@ -24,7 +23,7 @@ import { cn } from "@/lib/utils";
 export const instant = false;
 
 export async function generateStaticParams() {
-  const { films, announced } = await getCatalog();
+  const { films, announced } = await getAllFilms();
   const slugs = [...films, ...announced].map((film) => ({ slug: film.slug }));
   // Cache Components needs at least one param; an empty catalog renders the not-found page
   return slugs.length ? slugs : [{ slug: "none" }];
@@ -32,7 +31,8 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: PageProps<"/movies/[slug]">): Promise<Metadata> {
   const film = await getFilm((await params).slug);
-  if (!film) return { title: "Film not found" };
+  if (film === "unavailable") return {};
+  if (film === "missing") return { title: "Film not found" };
   return {
     title: film.title,
     description: film.synopsis,
@@ -51,9 +51,17 @@ const eyebrow =
 
 export default async function FilmPage({ params }: PageProps<"/movies/[slug]">) {
   const film = await getFilm((await params).slug);
-  if (!film) notFound();
+  // An outage is not a missing film: no 404, so search engines keep the page
+  if (film === "unavailable") {
+    return (
+      <p className="mx-auto mt-32 mb-24 max-w-lg rounded-3xl border border-dashed border-white/12 p-10 text-center text-muted-foreground">
+        We couldn&rsquo;t load this film. Please refresh in a moment.
+      </p>
+    );
+  }
+  if (film === "missing") notFound();
 
-  const { films } = await getCatalog();
+  const { films } = await getNowShowing();
   // Announced, not yet bookable: no screenings, no prices
   const comingSoon = film.status === "COMING_SOON";
   const next = sortedShowtimes(film)[0];

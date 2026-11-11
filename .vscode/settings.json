@@ -13,7 +13,6 @@
   "search.exclude": {
     "**/node_modules": true,
     "**/.next": true,
-    "**/coverage": true,
-    "src/lib/api/schema.d.ts": true
+    "**/coverage": true
   }
 }

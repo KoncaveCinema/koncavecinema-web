@@ -3,7 +3,7 @@
 import { Timer } from "lucide-react";
 
 import { useNow } from "@/hooks/use-now";
-import { serverOffset } from "@/lib/api";
+import { serverOffset } from "@/api";
 import { formatCountdown } from "@/lib/format";
 import { cn } from "@/lib/utils";
 

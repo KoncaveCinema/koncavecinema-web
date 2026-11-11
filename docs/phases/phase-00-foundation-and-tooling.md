@@ -9,9 +9,9 @@ A clean, typed, enforced codebase that every later phase builds on.
 - Next.js 16 App Router with TypeScript strict, `src/` layout, `@/*` alias, Turbopack.
 - Tailwind CSS v4 and shadcn/ui initialised (`components.json`, `src/components/ui`, `cn()`).
 - Validated environment (`src/env.ts`) and `.env.example`.
-- axios API client (`src/lib/api/`): envelope unwrapping, in-memory access token, single-flight
-  refresh, `ApiError`, request ids, idempotency keys. `npm run api:types` generates API types
-  from `/api/docs-json`.
+- axios API client (`src/api/`): envelope unwrapping, in-memory access token, single-flight
+  refresh, `ApiError`, request ids, idempotency keys. Responses are parsed with each module's
+  Zod schemas.
 - App providers: TanStack Query (with devtools in development), nuqs adapter, Motion
   `LazyMotion`, Sonner toaster.
 - Security headers in `next.config.ts`; dev server on port 3001.

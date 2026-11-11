@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-import { getCatalog } from "@/features/catalog/get-catalog";
+import { getAllFilms } from "@/features/catalog/queries";
 import { absoluteUrl } from "@/lib/seo";
 
 /**
@@ -8,7 +8,7 @@ import { absoluteUrl } from "@/lib/seo";
  * booking pages, checkout and the account area are left out (noindex).
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const { films, announced } = await getCatalog();
+  const { films, announced } = await getAllFilms();
   return [
     { url: absoluteUrl("/"), changeFrequency: "daily", priority: 1.0 },
     { url: absoluteUrl("/movies"), changeFrequency: "daily", priority: 0.9 },

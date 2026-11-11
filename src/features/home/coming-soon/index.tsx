@@ -1,6 +1,6 @@
 import { ProjectorBeam } from "@/components/brand/atmosphere";
 import { SectionHeading } from "@/components/cinema/section-heading";
-import { getCatalog } from "@/features/catalog/get-catalog";
+import { getAllFilms } from "@/features/catalog/queries";
 import { allScreenings } from "@/features/catalog/screening";
 
 import { comingSoonFilms } from "../schedule";
@@ -10,7 +10,7 @@ const MAX_CARDS = 4;
 const MAX_ANNOUNCED = 2;
 
 export async function ComingSoon() {
-  const { films, announced } = await getCatalog();
+  const { films, announced } = await getAllFilms();
   // One row of four: up to two announced films keep their place, dated premieres fill the rest
   const undated = announced.slice(0, MAX_ANNOUNCED);
   const dated = comingSoonFilms(films, allScreenings(films)).slice(0, MAX_CARDS - undated.length);

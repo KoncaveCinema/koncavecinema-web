@@ -4,7 +4,7 @@ import Image from "next/image";
 import { SeatRows } from "@/components/brand/atmosphere";
 import { PriceFrom } from "@/components/cinema/badges";
 import { SectionHeading } from "@/components/cinema/section-heading";
-import { getCatalog } from "@/features/catalog/get-catalog";
+import { getNowShowing } from "@/features/catalog/queries";
 import { lowestPrice } from "@/features/catalog/screening";
 import type { TicketTier } from "@/types/domain";
 
@@ -20,7 +20,7 @@ const ICONS: Record<TicketTier, typeof User> = {
 };
 
 export async function Auditoriums() {
-  const { films } = await getCatalog();
+  const { films } = await getNowShowing();
   const showtimes = films.flatMap((film) => film.showtimes);
 
   return (

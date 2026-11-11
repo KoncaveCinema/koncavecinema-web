@@ -1,5 +1,5 @@
 import { env } from "@/env";
-import { api } from "@/lib/api";
+import { api } from "@/api";
 import { isDemo } from "@/lib/demo";
 
 import type { DrmTokenRefresh, HeartbeatResponse, PlaybackAuthorization } from "./api-types";
