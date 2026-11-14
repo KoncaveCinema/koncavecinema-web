@@ -1,5 +1,4 @@
 import { api, type Paginated } from "@/api";
-import { isDemo } from "@/lib/demo";
 
 import type {
   AdminFilm,
@@ -13,12 +12,10 @@ import type {
   VideoAsset,
   VideoKind,
 } from "./api-types";
-import * as demo from "./demo";
 
 /*
  * The film catalogue's admin calls, one function per endpoint, plus the two uploads that go
  * straight from the browser to the media hosts (posters to the image host, videos to Mux).
- * With NEXT_PUBLIC_DATA_SOURCE=fixtures a demo plays the API's part and nothing leaves the tab.
  */
 
 export interface FilmsQuery {
@@ -30,48 +27,40 @@ export interface FilmsQuery {
 }
 
 export function listFilms(query: FilmsQuery): Promise<Paginated<AdminFilmListItem>> {
-  if (isDemo) return demo.listFilms(query);
   return api.getPage<AdminFilmListItem>("/admin/movies", { params: query });
 }
 
 export function getFilm(id: string): Promise<AdminFilm> {
-  if (isDemo) return demo.getFilm(id);
   return api.get<AdminFilm>(`/admin/movies/${id}`);
 }
 
 export function createFilm(input: FilmInput): Promise<{ id: string }> {
-  if (isDemo) return demo.createFilm(input);
   return api.post<{ id: string }>("/admin/movies", input);
 }
 
 export async function updateFilm(id: string, input: FilmInput): Promise<void> {
-  if (isDemo) return demo.updateFilm(id, input);
   await api.patch(`/admin/movies/${id}`, input);
 }
 
 export async function setCertificate(id: string, input: CertificateInput): Promise<void> {
-  if (isDemo) return demo.setCertificate(id, input);
   await api.patch(`/admin/movies/${id}/compliance`, input);
 }
 
 export async function publishFilm(id: string): Promise<void> {
-  if (isDemo) return demo.publishFilm(id);
   await api.patch(`/admin/movies/${id}/publish`);
 }
 
 export async function unpublishFilm(id: string): Promise<void> {
-  if (isDemo) return demo.unpublishFilm(id);
   await api.patch(`/admin/movies/${id}/unpublish`);
 }
 
 export async function deleteFilm(id: string): Promise<void> {
-  if (isDemo) return demo.deleteFilm(id);
   await api.delete(`/admin/movies/${id}`);
 }
 
 /* Posters: sign, send the file to the image host, then confirm */
 
-/** Moves a progress bar along while a demo or simulated upload "sends" */
+/** Moves a progress bar along while a simulated upload "sends" (an API without media keys) */
 async function simulateProgress(onProgress: (percent: number) => void, ms = 1200) {
   for (let percent = 10; percent <= 100; percent += 15) {
     onProgress(Math.min(percent, 100));
@@ -100,9 +89,10 @@ export async function uploadPoster(
   file: File,
   onProgress: (percent: number) => void,
 ): Promise<StoredPoster> {
-  const signature = isDemo
-    ? await demo.signPosterUpload(movieId)
-    : await api.post<PosterUploadSignature>("/admin/uploads/images", { movieId, kind });
+  const signature = await api.post<PosterUploadSignature>("/admin/uploads/images", {
+    movieId,
+    kind,
+  });
 
   if (signature.simulated) {
     // No image host behind the signature: show the file locally, as the API's docs describe
@@ -114,14 +104,12 @@ export async function uploadPoster(
     await sendForm(signature.uploadUrl, form, onProgress);
   }
 
-  if (isDemo) return demo.completePosterUpload(movieId, kind, file);
   return api.post<StoredPoster>("/admin/uploads/images/complete", { movieId, kind });
 }
 
 /* Videos: open a direct upload, send the file to Mux in resumable chunks, follow processing */
 
 export function createDirectUpload(movieId: string, kind: VideoKind): Promise<DirectUpload> {
-  if (isDemo) return demo.createDirectUpload(movieId, kind);
   return api.post<DirectUpload>("/admin/videos/direct-upload", { movieId, kind });
 }
 
@@ -138,7 +126,7 @@ export async function sendVideo(
   file: File,
   onProgress: (percent: number) => void,
 ): Promise<VideoUploadControl> {
-  if (isDemo || upload.simulated) {
+  if (upload.simulated) {
     let paused = false;
     let aborted = false;
     const done = (async () => {
@@ -148,14 +136,12 @@ export async function sendVideo(
         onProgress(percent);
         await new Promise((resolve) => setTimeout(resolve, 140));
       }
-      if (isDemo) demo.finishVideoUpload(upload.videoAssetId, file.name);
     })();
     return {
       pause: () => (paused = true),
       resume: () => (paused = false),
       abort: () => {
         aborted = true;
-        if (isDemo) demo.cancelVideoUpload(upload.videoAssetId);
       },
       done,
     };
@@ -178,22 +164,15 @@ export async function sendVideo(
 }
 
 export function getVideo(id: string): Promise<VideoAsset> {
-  if (isDemo) return demo.getVideo(id);
   return api.get<VideoAsset>(`/admin/videos/${id}`);
 }
 
 export async function attachVideo(movieId: string, kind: VideoKind, videoId: string) {
-  if (isDemo) {
-    return kind === "MASTER"
-      ? demo.attachMaster(movieId, videoId)
-      : demo.attachTrailer(movieId, videoId);
-  }
   await api.post(`/admin/movies/${movieId}/${kind === "MASTER" ? "video" : "trailer"}`, {
     videoAssetId: videoId,
   });
 }
 
 export async function deleteVideo(id: string): Promise<void> {
-  if (isDemo) return demo.deleteVideo(id);
   await api.delete(`/admin/videos/${id}`);
 }

@@ -44,7 +44,6 @@ export function MovieCard({
             priority={priority}
             sizes="(min-width: 1280px) 30vw, (min-width: 768px) 45vw, 92vw"
             className="object-cover transition-transform duration-700 ease-cinema group-hover:scale-[1.04]"
-            style={film.posterFocus ? { objectPosition: film.posterFocus } : undefined}
           />
         </ViewTransition>
         <div

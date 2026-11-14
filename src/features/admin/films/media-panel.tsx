@@ -10,7 +10,6 @@ import { StatusBadge } from "@/components/console/status-badge";
 import { VideoUploadDialog } from "@/components/console/upload-dialogs";
 import { Button } from "@/components/ui/button";
 import { ErrorCode, toApiError } from "@/api";
-import { isDemo } from "@/lib/demo";
 import { formatLagosDateTime } from "@/lib/format";
 
 import type { AdminFilm, AdminVideo, VideoKind } from "./api-types";
@@ -257,11 +256,7 @@ export function MediaPanel({ film }: { film: AdminFilm }) {
       id="media"
       flush
       title="Media"
-      description={
-        isDemo
-          ? "Demo: uploads stay in this browser and finish in a few seconds. A file named with “fail” fails."
-          : "Videos go straight to Mux in resumable chunks; keep this page open until they finish."
-      }
+      description="Videos go straight to Mux in resumable chunks; keep this page open until they finish."
     >
       <div className="grid gap-4 p-6 md:grid-cols-2">
         <VideoSlot film={film} kind="MASTER" />

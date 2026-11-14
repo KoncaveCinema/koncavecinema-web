@@ -31,7 +31,6 @@ export function FeaturedFilm({ film }: { film: CatalogFilm }) {
             priority
             sizes="(min-width: 1440px) 1312px, 100vw"
             className="-z-10 object-cover"
-            style={film.posterFocus ? { objectPosition: film.posterFocus } : undefined}
           />
         </ViewTransition>
         <div

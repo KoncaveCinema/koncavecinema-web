@@ -1,7 +1,6 @@
 import type { MovieDetail, MovieListItem, MovieShowtime } from "@/api/movies/movies-schemas";
 import type { ScheduleShowtime } from "@/api/showtimes/showtimes-schemas";
 
-import { fixturePosterFocus } from "./fixture-films";
 import type { CatalogFilm, CatalogShowtime, FilmDetail } from "./types";
 
 /*
@@ -35,8 +34,6 @@ function filmFields(movie: MovieListItem | MovieDetail): FilmFields {
     trailerUrl: movie.trailerStreamUrl || null,
     posterLandscape: movie.posterLandscape,
     posterPortrait: movie.posterPortrait || movie.posterLandscape,
-    // Art direction for the sample films (the staging seed keeps their slugs)
-    posterFocus: fixturePosterFocus(movie.slug),
   };
 }
 
