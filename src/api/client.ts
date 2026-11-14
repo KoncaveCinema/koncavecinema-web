@@ -86,7 +86,16 @@ export function refreshAccessToken(): Promise<string | null> {
   return refreshInFlight;
 }
 
-async function requestRefresh(): Promise<string | null> {
+/**
+ * The page-load refresh. Like refreshAccessToken, but a network or server failure rejects
+ * instead of resolving to null, so the caller can try again rather than treat a dropped
+ * connection as signed out. Only a 401 resolves to null.
+ */
+export function restoreAccessToken(): Promise<string | null> {
+  return oneTabAtATime(() => requestRefresh(true));
+}
+
+async function requestRefresh(restoring = false): Promise<string | null> {
   try {
     const response = await axios.post<ApiEnvelope<{ accessToken: string; expiresIn: number }>>(
       "/auth/refresh",
@@ -94,7 +103,8 @@ async function requestRefresh(): Promise<string | null> {
       {
         baseURL: env.NEXT_PUBLIC_API_URL,
         withCredentials: true,
-        timeout: 15_000,
+        // Generous: if the API rotates the cookie after we give up, its new cookie is lost
+        timeout: 30_000,
         headers: { "X-Request-Id": newRequestId() },
       },
     );
@@ -102,7 +112,8 @@ async function requestRefresh(): Promise<string | null> {
     return response.data.data.accessToken;
   } catch (error) {
     const ended = axios.isAxiosError(error) && error.response?.status === 401;
-    // Without a token yet (the start-up restore) this also releases the requests waiting on it
+    if (!ended && restoring) throw toApiError(error);
+    // Without a token yet this also releases the requests waiting on it
     if (ended || getAccessToken() === null) setAccessToken(null);
     return null;
   }

@@ -1,6 +1,6 @@
 /**
  * A small seeded pseudo-random generator (mulberry32): the same seed always gives the same
- * sequence. For reproducible patterns (the watermark's drift) and sample data, never security.
+ * sequence. For reproducible patterns (the watermark's drift), never security.
  */
 export function seededRandom(seed: number): () => number {
   let state = seed >>> 0;

@@ -1,6 +1,5 @@
 "use client";
 
-import { cn } from "cn";
 import { CalendarPlus, CalendarX2 } from "lucide-react";
 import { parseAsString, useQueryStates } from "nuqs";
 import { useState } from "react";
@@ -12,7 +11,7 @@ import { StatusBadge } from "@/components/console/status-badge";
 import { UrlTabs, useTabParam } from "@/components/console/url-controls";
 import { usePagination } from "@/hooks/use-pagination";
 import { Button } from "@/components/ui/button";
-import { fieldClass } from "@/features/auth/form-parts";
+import { DatePicker, SearchSelect, filmOptions } from "@/components/console/pickers";
 import { formatLagosDateTime, formatMoney } from "@/lib/format";
 
 import { PosterThumb } from "../films/poster-thumb";
@@ -124,40 +123,31 @@ export function ShowtimesPage() {
       <Panel flush>
         <UrlTabs param="status" tabs={TABS} fallback="upcoming" label="Showtime state" />
         <div className="grid gap-3 border-b border-white/8 p-4 sm:grid-cols-[minmax(0,1fr)_10rem_10rem]">
-          <label>
-            <span className="sr-only">Film</span>
-            <select
-              value={filters.film}
-              onChange={(event) => setFilter({ film: event.target.value })}
-              className={cn(fieldClass, "h-10 appearance-none rounded-full bg-surface-1")}
-            >
-              <option value="">All films</option>
-              {films.data?.items.map((film) => (
-                <option key={film.id} value={film.id}>
-                  {film.title}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <span className="sr-only">From (Lagos day)</span>
-            <input
-              type="date"
-              value={filters.from}
-              onChange={(event) => setFilter({ from: event.target.value })}
-              className={cn(fieldClass, "h-10 rounded-full scheme-dark")}
-            />
-          </label>
-          <label>
-            <span className="sr-only">To (Lagos day)</span>
-            <input
-              type="date"
-              value={filters.to}
-              min={filters.from || undefined}
-              onChange={(event) => setFilter({ to: event.target.value })}
-              className={cn(fieldClass, "h-10 rounded-full scheme-dark")}
-            />
-          </label>
+          <SearchSelect
+            label="Film"
+            value={filters.film}
+            onChange={(film) => setFilter({ film })}
+            options={filmOptions(films.data?.items)}
+            anyLabel="All films"
+            searchPlaceholder="Search films"
+            emptyText="No film by that name."
+            className="h-10 rounded-full"
+          />
+          <DatePicker
+            label="From (Lagos day)"
+            placeholder="From"
+            value={filters.from}
+            onChange={(from) => setFilter({ from })}
+            className="h-10 rounded-full"
+          />
+          <DatePicker
+            label="To (Lagos day)"
+            placeholder="To"
+            value={filters.to}
+            onChange={(to) => setFilter({ to })}
+            disabled={filters.from ? { before: new Date(`${filters.from}T00:00`) } : undefined}
+            className="h-10 rounded-full"
+          />
           {rangeProblem && (
             <p role="alert" className="text-xs text-destructive sm:col-span-3">
               {rangeProblem}
@@ -169,7 +159,7 @@ export function ShowtimesPage() {
           columns={COLUMNS}
           rowKey={(showtime) => showtime.id}
           rowHref={(showtime) => `/admin/showtimes/${showtime.id}`}
-          isLoading={showtimes.isPending}
+          isLoading={showtimes.isPending || showtimes.isPlaceholderData}
           error={showtimes.error}
           onRetry={() => void showtimes.refetch()}
           caption="Showtimes"

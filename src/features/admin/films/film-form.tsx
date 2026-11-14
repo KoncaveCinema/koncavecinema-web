@@ -1,11 +1,12 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { cn } from "cn";
 import { useState, type ReactNode } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 
+import { ErrorCode, toApiError } from "@/api";
+import { OptionSelect } from "@/components/console/pickers";
 import { Button } from "@/components/ui/button";
 import { FieldError, FormAlert, fieldClass } from "@/features/auth/form-parts";
-import { ErrorCode, toApiError } from "@/api";
 import { ratingDescription, ratingLabel } from "@/lib/format";
 
 import type { FilmInput } from "./api-types";
@@ -63,8 +64,6 @@ function Field({
   );
 }
 
-const selectClass = cn(fieldClass, "appearance-none bg-surface-1");
-
 /**
  * A film's details, as the API's CreateMovieDto takes them. Used to start a draft and to edit
  * one; the API's own field messages show under the fields when it refuses.
@@ -85,6 +84,7 @@ export function FilmForm({
   const [failure, setFailure] = useState<string | null>(null);
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<FilmFormInput, unknown, FilmValues>({
@@ -150,13 +150,21 @@ export function FilmForm({
           />
         </Field>
         <Field id="ageRating" label="NFVCB rating" error={errors.ageRating?.message}>
-          <select id="ageRating" {...register("ageRating")} className={selectClass}>
-            {AGE_RATINGS.map((rating) => (
-              <option key={rating} value={rating}>
-                {ratingLabel(rating)}: {ratingDescription(rating)}
-              </option>
-            ))}
-          </select>
+          <Controller
+            control={control}
+            name="ageRating"
+            render={({ field }) => (
+              <OptionSelect
+                id="ageRating"
+                value={field.value}
+                onChange={field.onChange}
+                options={AGE_RATINGS.map((rating) => ({
+                  value: rating,
+                  label: `${ratingLabel(rating)}: ${ratingDescription(rating)}`,
+                }))}
+              />
+            )}
+          />
         </Field>
         <Field id="producerName" label="Producer" error={errors.producerName?.message}>
           <input
@@ -185,13 +193,21 @@ export function FilmForm({
           />
         </Field>
         <Field id="watermarkMode" label="Viewer watermark" className="sm:col-span-2">
-          <select id="watermarkMode" {...register("watermarkMode")} className={selectClass}>
-            {WATERMARK_MODES.map((mode) => (
-              <option key={mode} value={mode}>
-                {WATERMARK_LABEL[mode]}
-              </option>
-            ))}
-          </select>
+          <Controller
+            control={control}
+            name="watermarkMode"
+            render={({ field }) => (
+              <OptionSelect
+                id="watermarkMode"
+                value={field.value}
+                onChange={field.onChange}
+                options={WATERMARK_MODES.map((mode) => ({
+                  value: mode,
+                  label: WATERMARK_LABEL[mode],
+                }))}
+              />
+            )}
+          />
         </Field>
       </div>
       {failure && <FormAlert>{failure}</FormAlert>}

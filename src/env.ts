@@ -8,12 +8,10 @@ import { z } from "zod";
 export const env = createEnv({
   server: {
     NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-    // Base URL used by Server Components to reach the API. Defaults to the public URL; set it
-    // when the server can reach the API over a private network.
-    API_INTERNAL_URL: z.url().optional(),
     // Local development only: the API that /api on this app forwards to, e.g. staging. Its
     // refresh cookie is SameSite=Strict, so the browser sends it only to the same site; through
-    // this proxy the API looks like part of this app. Leave unset when deployed
+    // this proxy the API looks like part of this app. Server pages call it directly. Leave unset
+    // when deployed
     API_DEV_PROXY_URL: z.url().optional(),
     // Local development only: "true" prints every server-side API call (and the full error body
     // on failure) in the terminal. Ignored in production
@@ -30,21 +28,15 @@ export const env = createEnv({
     NEXT_PUBLIC_APP_URL: z.url(),
     // Base URL of koncavecinema-api including its global prefix, e.g. http://localhost:3000/api
     NEXT_PUBLIC_API_URL: z.url(),
-    // Where every page gets its data: the API, or built-in sample data for development, design
-    // review and screenshots (films with placeholder art, showtimes relative to now, and a demo
-    // booking flow that never charges). Read on the server and in the browser; not a secret.
-    NEXT_PUBLIC_DATA_SOURCE: z.enum(["api", "fixtures"]).default("api"),
   },
   runtimeEnv: {
     NODE_ENV: process.env.NODE_ENV,
-    API_INTERNAL_URL: process.env.API_INTERNAL_URL,
     API_DEV_PROXY_URL: process.env.API_DEV_PROXY_URL,
     API_DEBUG: process.env.API_DEBUG,
     VERCEL_ENV: process.env.VERCEL_ENV,
     STAGING_PASSWORD: process.env.STAGING_PASSWORD,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
-    NEXT_PUBLIC_DATA_SOURCE: process.env.NEXT_PUBLIC_DATA_SOURCE,
   },
   emptyStringAsUndefined: true,
   // Lets tooling (lint, unit tests) import modules without a full environment

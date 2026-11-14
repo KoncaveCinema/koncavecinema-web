@@ -3,6 +3,8 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 
+import { safeNext } from "./form-parts";
+import { isStaff } from "./roles";
 import { useSession } from "./session";
 
 /**
@@ -62,4 +64,27 @@ export function PageSkeleton() {
       </div>
     </div>
   );
+}
+
+/**
+ * On a member sign-in page: someone already signed in goes straight on, to `next` or their
+ * home (the console for staff, the dashboard for members). The staff sign-in has its own.
+ */
+export function SignedInRedirect({
+  next,
+  home,
+}: {
+  next: string | null;
+  /** Where to go without `next`, when the form sends people elsewhere than their home */
+  home?: string;
+}) {
+  const router = useRouter();
+  const role = useSession((state) => (state.status === "signed-in" ? state.user?.role : null));
+  const to = role ? safeNext(next, home ?? (isStaff(role) ? "/admin" : "/dashboard")) : null;
+
+  useEffect(() => {
+    if (to) router.replace(to);
+  }, [to, router]);
+
+  return null;
 }

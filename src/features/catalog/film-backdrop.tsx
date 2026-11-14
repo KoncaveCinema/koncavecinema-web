@@ -13,14 +13,11 @@ export function FilmBackdrop({
   slug,
   image,
   title,
-  focus,
   children,
 }: {
   slug: string;
   image: string;
   title: string;
-  /** CSS object-position for the crop */
-  focus?: string;
   children: ReactNode;
 }) {
   return (
@@ -33,8 +30,7 @@ export function FilmBackdrop({
             fill
             priority
             sizes="100vw"
-            className="object-cover"
-            style={{ objectPosition: focus ?? "center 25%" }}
+            className="object-cover object-[center_25%]"
           />
         </ViewTransition>
         {/* A flat dim over the whole still, so bright art still contrasts with white text */}

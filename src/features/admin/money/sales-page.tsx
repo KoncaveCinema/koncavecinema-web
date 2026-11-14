@@ -10,7 +10,7 @@ import { EmptyState, ErrorState } from "@/components/states/states";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { roomLabel } from "@/features/admin/rooms";
-import { fieldClass } from "@/features/auth/form-parts";
+import { DatePicker, SearchSelect, filmOptions } from "@/components/console/pickers";
 import { useServerNow } from "@/hooks/use-now";
 import { downloadFile } from "@/lib/download";
 import { formatLagosDateTime, formatMoney } from "@/lib/format";
@@ -237,40 +237,44 @@ export function SalesPage() {
               ))}
             </div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-[10rem_10rem_14rem]">
-              <label>
-                <span className="text-xs text-white/50">From</span>
-                <input
-                  type="date"
+              <div>
+                <label htmlFor="sales-from" className="text-xs text-white/50">
+                  From
+                </label>
+                <DatePicker
+                  id="sales-from"
                   value={from}
-                  onChange={(e) => void setRange({ from: e.target.value || null })}
-                  className={cn(fieldClass, "mt-1 h-10 scheme-dark")}
+                  onChange={(next) => void setRange({ from: next || null })}
+                  className="mt-1 h-10"
                 />
-              </label>
-              <label>
-                <span className="text-xs text-white/50">To</span>
-                <input
-                  type="date"
+              </div>
+              <div>
+                <label htmlFor="sales-to" className="text-xs text-white/50">
+                  To
+                </label>
+                <DatePicker
+                  id="sales-to"
                   value={to}
-                  min={from || undefined}
-                  onChange={(e) => void setRange({ to: e.target.value || null })}
-                  className={cn(fieldClass, "mt-1 h-10 scheme-dark")}
+                  onChange={(next) => void setRange({ to: next || null })}
+                  disabled={from ? { before: new Date(`${from}T00:00`) } : undefined}
+                  className="mt-1 h-10"
                 />
-              </label>
-              <label className="col-span-2 sm:col-span-1">
-                <span className="text-xs text-white/50">Film</span>
-                <select
+              </div>
+              <div className="col-span-2 sm:col-span-1">
+                <label htmlFor="sales-film" className="text-xs text-white/50">
+                  Film
+                </label>
+                <SearchSelect
+                  id="sales-film"
                   value={range.film}
-                  onChange={(e) => void setRange({ film: e.target.value || null })}
-                  className={cn(fieldClass, "mt-1 h-10 appearance-none bg-surface-1")}
-                >
-                  <option value="">All films</option>
-                  {films.data?.items.map((film) => (
-                    <option key={film.id} value={film.id}>
-                      {film.title}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                  onChange={(film) => void setRange({ film: film || null })}
+                  options={filmOptions(films.data?.items)}
+                  anyLabel="All films"
+                  searchPlaceholder="Search films"
+                  emptyText="No film by that name."
+                  className="mt-1 h-10"
+                />
+              </div>
             </div>
           </div>
           {problem && (
@@ -280,7 +284,7 @@ export function SalesPage() {
           )}
         </Panel>
 
-        {problem ? null : !data ? (
+        {problem ? null : !data || report.isPlaceholderData ? (
           report.isError ? (
             <ErrorState title="The report couldn't load" onRetry={() => void report.refetch()} />
           ) : (

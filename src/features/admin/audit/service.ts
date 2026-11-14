@@ -1,11 +1,8 @@
 import { api } from "@/api";
-import { isDemo } from "@/lib/demo";
 
 import type { AuditEntriesPage } from "./api-types";
-import * as demo from "./demo";
 
-/* The audit log (super admin only). With NEXT_PUBLIC_DATA_SOURCE=fixtures a demo plays the
-   API's part. */
+/* The audit log (super admin only). */
 
 export interface AuditQuery {
   /** One member's entries */
@@ -19,6 +16,5 @@ export interface AuditQuery {
 }
 
 export function listAudit(query: AuditQuery): Promise<AuditEntriesPage> {
-  if (isDemo) return demo.listAudit(query);
   return api.get<AuditEntriesPage>("/admin/audit-logs", { params: query });
 }

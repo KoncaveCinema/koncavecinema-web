@@ -88,12 +88,7 @@ export default async function FilmPage({ params }: PageProps<"/movies/[slug]">) 
 
   return (
     <>
-      <FilmBackdrop
-        slug={film.slug}
-        image={film.posterLandscape}
-        title={film.title}
-        focus={film.posterFocus}
-      >
+      <FilmBackdrop slug={film.slug} image={film.posterLandscape} title={film.title}>
         <div className="max-w-2xl">
           <div className="flex animate-rise items-center gap-2.5">
             {next && <ScreeningStatus startTime={next.startTime} endTime={next.endTime} />}

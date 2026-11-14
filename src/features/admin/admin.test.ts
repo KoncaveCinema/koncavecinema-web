@@ -4,74 +4,8 @@ import { toCsv } from "@/lib/csv";
 import { fromLagosInputs, lagosInputs } from "@/lib/format";
 import { browserSummary } from "@/lib/user-agent";
 
-import { isPaid, paginate, readStore } from "./demo-store";
 import { posterProblem } from "./films/schemas";
 import { presetRange, rangeProblem, salesCsv } from "./money/sales";
-import { getOverview } from "./overview/demo";
-import { cancelShowtime } from "./showtimes/demo";
-import { showtimeStateAt } from "./showtimes/state";
-
-describe("sample pagination", () => {
-  const items = Array.from({ length: 45 }, (_, index) => index);
-
-  it("answers with the API's meta at any page size", () => {
-    const { items: page, meta } = paginate(items, 2, 10);
-    expect(page).toEqual([10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);
-    expect(meta).toMatchObject({ page: 2, pageSize: 10, total: 45, totalPages: 5 });
-    expect(meta).toMatchObject({ previousPage: 1, nextPage: 3 });
-  });
-
-  it("defaults to the API's 20, and keeps a page past the end on the last one", () => {
-    expect(paginate(items).meta).toMatchObject({ pageSize: 20, totalPages: 3 });
-    const last = paginate(items, 9, 20);
-    expect(last.meta).toMatchObject({ page: 3, hasNextPage: false, nextPage: null });
-    expect(last.items).toHaveLength(5);
-  });
-});
-
-describe("admin overview demo", () => {
-  it("nests its sales windows and never pays out more than it collects", async () => {
-    const { sales } = await getOverview();
-    expect(sales.today.passesSold).toBeLessThanOrEqual(sales.last7Days.passesSold);
-    expect(sales.last7Days.passesSold).toBeLessThanOrEqual(sales.last30Days.passesSold);
-    for (const window of [sales.today, sales.last7Days, sales.last30Days]) {
-      expect(window.producerShare + window.platformShare).toBeLessThan(window.gross + 0.01);
-    }
-  });
-});
-
-describe("cancelling a showtime in the demo", () => {
-  it("cancels every open pass, queues each payment and records who did it", async () => {
-    const store = readStore();
-    const showtime = store.showtimes.find(
-      (item) =>
-        showtimeStateAt(item) === "UPCOMING" &&
-        store.passes.some((pass) => pass.showtimeId === item.id && isPaid(pass)),
-    )!;
-    const paid = store.passes.filter((pass) => pass.showtimeId === showtime.id && isPaid(pass));
-    const paidWithPayment = paid.filter((pass) =>
-      store.payments.some(
-        (payment) => payment.ticketId === pass.id && payment.status === "SUCCESS",
-      ),
-    );
-
-    const result = await cancelShowtime(showtime.id, "The producer has moved the date.");
-
-    const after = readStore();
-    expect(result.passesCancelled).toBeGreaterThanOrEqual(paid.length);
-    expect(result.refundsQueued).toBe(paidWithPayment.length);
-    expect(
-      after.passes.filter((pass) => pass.showtimeId === showtime.id && pass.status !== "CANCELLED"),
-    ).toHaveLength(0);
-    expect(after.audit[0]).toMatchObject({
-      action: "ADMIN_SHOWTIME_CANCELLED",
-      metadata: { showtimeId: showtime.id },
-    });
-    await expect(cancelShowtime(showtime.id, "Again")).rejects.toMatchObject({
-      code: "SHOWTIME_CANCELLED",
-    });
-  });
-});
 
 describe("sales ranges", () => {
   // Wednesday 4 November 2026, noon in Lagos

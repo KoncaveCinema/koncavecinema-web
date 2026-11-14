@@ -30,11 +30,6 @@ export interface CatalogFilm {
   trailerUrl: string | null;
   posterLandscape: string;
   posterPortrait: string;
-  /**
-   * Where to centre crops of the landscape art (CSS object-position), so faces stay in frame on
-   * tall cards. Not from the API: art direction, kept with the sample data for now.
-   */
-  posterFocus?: string;
   /** The lowest a buyer pays for a seat (fee included); null when no screening is open */
   priceFrom: { amount: number; currency: string } | null;
   /** Start of the next screening not yet over; it may lie beyond `showtimes` */
