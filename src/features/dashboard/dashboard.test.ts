@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import type { TicketDetail } from "@/api/tickets/tickets-schemas";
+import type { CancellationReason, TicketDetail } from "@/api/tickets/tickets-schemas";
 
 import { buildIcs, googleCalendarUrl } from "@/lib/ics";
 
 import { passEvent } from "./pass-details-page";
-import { ticketView } from "./ticket-state";
+import { cancellationText, paidFor, ticketView } from "./pass-state";
 
 const MINUTE = 60_000;
 const start = Date.parse("2026-11-06T18:00:00.000Z");
@@ -139,6 +139,42 @@ describe("ticketView", () => {
     ).toBe("Refunded");
     expect(ticketView(ticket({ status: "CANCELLED" }), start).note).toBeUndefined();
   });
+
+  it("shows money owed back on a pass that still stands", () => {
+    const refund = {
+      state: "PENDING" as const,
+      amount: 5177.67,
+      currency: "NGN",
+      refundedAt: null,
+    };
+    const paidTwice = ticket({ refund });
+    expect(ticketView(paidTwice, start - 2 * 60 * MINUTE)).toMatchObject({
+      phase: "upcoming",
+      note: "Refund on its way",
+    });
+    expect(ticketView(paidTwice, start + 5 * MINUTE).note).toBe("Refund on its way");
+    expect(ticketView(ticket(), start).note).toBeUndefined();
+  });
+});
+
+describe("cancellationText", () => {
+  const cancelledAt = new Date(start).toISOString();
+  const because = (reason: CancellationReason | null) =>
+    cancellationText(
+      ticket({ status: "CANCELLED", cancellation: { reason, message: null, cancelledAt } }),
+    );
+
+  it("says why, in the member's terms, for every reason the API gives", () => {
+    expect(because("SHOWTIME_CANCELLED")).toBe("The screening was cancelled.");
+    expect(because("CANCELLED_BY_SUPPORT")).toBe("Our support team cancelled this pass.");
+    expect(because("RELEASED_BY_MEMBER")).toMatch(/^You released this hold.*Nothing was charged/);
+    expect(because("HOLD_EXPIRED")).toMatch(/^This hold ran out.*Nothing was charged/);
+    expect(because("ACCOUNT_DELETED")).toBe(
+      "This pass was cancelled when the account was deleted.",
+    );
+    // Passes cancelled before reasons were recorded: never blamed on support
+    expect(because(null)).toBe("This pass was cancelled.");
+  });
 });
 
 describe("calendar", () => {
@@ -163,5 +199,29 @@ describe("calendar", () => {
     const url = new URL(googleCalendarUrl(passEvent(ticket(), appUrl)));
     expect(url.searchParams.get("dates")).toBe("20261106T180000Z/20261106T195800Z");
     expect(url.searchParams.get("text")).toBe("Ember & Ash on Koncave Cinema");
+  });
+});
+
+describe("paidFor", () => {
+  it("counts a valid pass and a cancelled one with money owed back, never a hold", () => {
+    const cancelledAt = new Date(start).toISOString();
+    const refund = {
+      state: "PENDING" as const,
+      amount: 5177.67,
+      currency: "NGN",
+      refundedAt: null,
+    };
+    expect(paidFor(ticket())).toBe(true);
+    expect(paidFor(ticket({ status: "CHECKED_IN" }))).toBe(true);
+    expect(paidFor(ticket({ status: "CANCELLED", refund }))).toBe(true);
+    expect(paidFor(ticket({ status: "RESERVED" }))).toBe(false);
+    expect(
+      paidFor(
+        ticket({
+          status: "CANCELLED",
+          cancellation: { reason: "RELEASED_BY_MEMBER", message: null, cancelledAt },
+        }),
+      ),
+    ).toBe(false);
   });
 });

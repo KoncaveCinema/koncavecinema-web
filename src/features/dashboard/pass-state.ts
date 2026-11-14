@@ -14,14 +14,46 @@ export interface TicketView {
   action: { label: string; href: string } | null;
   /** True when the pass can be played now (lobby or screening) */
   watchable: boolean;
-  /** A line under the badge, e.g. where a cancelled pass's money is */
+  /** A line under the badge: where money owed back for the pass is */
   note?: string;
 }
 
+/** Where money owed back for the pass is: on a cancelled pass, or a paid one (paid twice) */
 function refundNote(ticket: TicketDetail): string | undefined {
   if (ticket.refund?.state === "PENDING") return "Refund on its way";
   if (ticket.refund?.state === "REFUNDED") return "Refunded";
   return undefined;
+}
+
+/**
+ * True when money was paid for the pass: a valid pass, or a cancelled one with money owed back.
+ * A hold (live, released or run out) was never paid for.
+ */
+export function paidFor(ticket: TicketDetail): boolean {
+  if (ticket.status === "CONFIRMED" || ticket.status === "CHECKED_IN") return true;
+  return ticket.status === "CANCELLED" && ticket.refund !== null;
+}
+
+/**
+ * Why a pass was cancelled, in one sentence, from the API's reason. Staff's own words, when they
+ * gave any, are shown beside it (`cancellation.message`).
+ */
+export function cancellationText(ticket: TicketDetail): string {
+  switch (ticket.cancellation?.reason) {
+    case "SHOWTIME_CANCELLED":
+      return "The screening was cancelled.";
+    case "CANCELLED_BY_SUPPORT":
+      return "Our support team cancelled this pass.";
+    case "RELEASED_BY_MEMBER":
+      return "You released this hold before paying. Nothing was charged.";
+    case "HOLD_EXPIRED":
+      return "This hold ran out before payment. Nothing was charged.";
+    case "ACCOUNT_DELETED":
+      return "This pass was cancelled when the account was deleted.";
+    default:
+      // Passes cancelled before reasons were recorded
+      return "This pass was cancelled.";
+  }
 }
 
 export function ticketView(ticket: TicketDetail, now: number): TicketView {
@@ -94,6 +126,7 @@ export function ticketView(ticket: TicketDetail, now: number): TicketView {
           : { kind: "showtime", status: "PAST", label: "Ended" },
       action: { label: "View pass", href: pass },
       watchable: false,
+      note: refundNote(ticket),
     };
   }
   if (now >= start) {
@@ -102,6 +135,7 @@ export function ticketView(ticket: TicketDetail, now: number): TicketView {
       badge: { kind: "showtime", status: "LIVE", label: "Live now" },
       action: { label: "Watch now", href: watch },
       watchable: true,
+      note: refundNote(ticket),
     };
   }
   if (now >= Date.parse(ticket.lobbyOpensAt)) {
@@ -110,6 +144,7 @@ export function ticketView(ticket: TicketDetail, now: number): TicketView {
       badge: { kind: "ticket", status: "CONFIRMED", label: "Lobby open" },
       action: { label: "Enter lobby", href: watch },
       watchable: true,
+      note: refundNote(ticket),
     };
   }
   return {
@@ -117,5 +152,6 @@ export function ticketView(ticket: TicketDetail, now: number): TicketView {
     badge: { kind: "ticket", status: "CONFIRMED", label: "Confirmed" },
     action: { label: "View pass", href: pass },
     watchable: false,
+    note: refundNote(ticket),
   };
 }

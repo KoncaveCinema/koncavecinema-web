@@ -10,10 +10,11 @@ import { EmptyState, ErrorState } from "@/components/states/states";
 import { Button } from "@/components/ui/button";
 import { usePagination } from "@/hooks/use-pagination";
 
-import { useMyTickets, type TicketsWhen } from "./queries";
+import { useGetMyTickets } from "@/api/tickets/tickets-api";
+import { useSignedIn } from "@/features/auth/require-session";
 import { TicketCard, TicketCardSkeleton } from "./ticket-card";
 
-const WHEN = ["upcoming", "past"] as const satisfies readonly TicketsWhen[];
+const WHEN = ["upcoming", "past"] as const;
 
 const EMPTY = {
   upcoming: {
@@ -32,7 +33,10 @@ const EMPTY = {
 export function TicketsPage() {
   const [when] = useTabParam("when", WHEN, "upcoming");
   const pagination = usePagination();
-  const tickets = useMyTickets(when, pagination.page, pagination.pageSize);
+  const tickets = useGetMyTickets(
+    { when, page: pagination.page, pageSize: pagination.pageSize },
+    useSignedIn(),
+  );
 
   return (
     <>

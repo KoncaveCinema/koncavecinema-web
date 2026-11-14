@@ -3,6 +3,7 @@
 import { ArrowRight, CalendarPlus, Info, Users } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { use } from "react";
 import { toast } from "sonner";
 import { encode } from "uqr";
@@ -27,8 +28,9 @@ import { formatCountdown, formatMoney } from "@/lib/format";
 import { useServerNow } from "@/hooks/use-now";
 import { downloadIcs, googleCalendarUrl, type CalendarEvent } from "@/lib/ics";
 
-import { useSuiteGuests, useTicket } from "./queries";
-import { ticketView } from "./ticket-state";
+import { useGetSuiteGuests, useGetTicket, useReleaseTicket } from "@/api/tickets/tickets-api";
+import { useSignedIn } from "@/features/auth/require-session";
+import { cancellationText, paidFor, ticketView } from "./pass-state";
 
 /* "Add to calendar" for a pass, built in the browser: an .ics file every calendar app opens,
    and a Google Calendar link. No third party sees the booking until the member chooses. */
@@ -81,6 +83,7 @@ const CRUMBS = [{ href: "/dashboard/tickets", label: "My tickets" }];
 function PassCard({ ticket }: { ticket: TicketDetail }) {
   const hall = AUDITORIUMS.find((item) => item.tier === ticket.tier);
   const cancelled = ticket.status === "CANCELLED";
+  const admits = ticket.status === "CONFIRMED" || ticket.status === "CHECKED_IN";
   return (
     <article className="overflow-hidden rounded-3xl border border-white/10 bg-surface-1 sm:grid sm:grid-cols-[1fr_13rem]">
       <div>
@@ -131,7 +134,8 @@ function PassCard({ ticket }: { ticket: TicketDetail }) {
               </div>
             ) : (
               <div>
-                <dt className="text-xs text-white/45">Paid</dt>
+                {/* A hold was never paid for: it shows what the seat costs */}
+                <dt className="text-xs text-white/45">{paidFor(ticket) ? "Paid" : "Price"}</dt>
                 <dd className="mt-1 font-medium tabular-nums">
                   {formatMoney(ticket.pricing.totalPayable, ticket.currency)}
                 </dd>
@@ -141,12 +145,15 @@ function PassCard({ ticket }: { ticket: TicketDetail }) {
         </div>
       </div>
       <div className="flex flex-col items-center justify-center gap-3 border-t-2 border-dashed border-white/12 px-6 py-6 text-center sm:border-t-0 sm:border-l-2">
-        <div className="size-28">
-          <PassQr
-            payload={ticket.qrAdmissionPayload}
-            label={`Admission code for pass ${ticket.seatIdentifier}`}
-          />
-        </div>
+        {/* The admission code only on a pass that admits someone */}
+        {admits && (
+          <div className="size-28">
+            <PassQr
+              payload={ticket.qrAdmissionPayload}
+              label={`Admission code for pass ${ticket.seatIdentifier}`}
+            />
+          </div>
+        )}
         <p className="text-[0.65rem] font-bold tracking-[0.24em] text-white/45 uppercase">
           Pass number
         </p>
@@ -156,55 +163,121 @@ function PassCard({ ticket }: { ticket: TicketDetail }) {
   );
 }
 
-/** Why a pass was cancelled and where its money is. */
+/** Where money owed back for a pass is, from the API's refund */
+function RefundLine({ refund }: { refund: NonNullable<TicketDetail["refund"]> }) {
+  const amount = (
+    <strong className="text-foreground">{formatMoney(refund.amount, refund.currency)}</strong>
+  );
+  if (refund.state === "PENDING") {
+    return (
+      <p>
+        {amount} is on its way back to the card or account you paid with. We&rsquo;ll email you when
+        it&rsquo;s done.
+      </p>
+    );
+  }
+  return (
+    <p>
+      We refunded {amount}
+      {refund.refundedAt && (
+        <>
+          {" "}
+          on <LocalTime iso={refund.refundedAt} />
+        </>
+      )}
+      . Banks can take a few working days to show it.
+    </p>
+  );
+}
+
+function SupportLine({ ticket }: { ticket: TicketDetail }) {
+  return (
+    <p className="text-white/50">
+      Questions? Email {SUPPORT_EMAIL} with pass{" "}
+      <span className="font-mono text-white/75">{ticket.seatIdentifier}</span>.
+    </p>
+  );
+}
+
+/** A pass cancelled by staff or with the account: why, in their words, and where the money is */
 function CancelledNotice({ ticket }: { ticket: TicketDetail }) {
-  const refund = ticket.refund;
   return (
     <Panel tone="danger" title="This pass was cancelled">
       <div className="space-y-3 text-sm text-white/70">
         <p>
-          {ticket.cancellation?.reason === "SHOWTIME_CANCELLED"
-            ? "The screening was cancelled."
-            : "The pass was cancelled by our support team."}
+          {cancellationText(ticket)}
           {ticket.cancellation?.message && <> Reason given: “{ticket.cancellation.message}”</>}
         </p>
-        {refund?.state === "PENDING" && (
-          <p>
-            Your refund of{" "}
-            <strong className="text-foreground">
-              {formatMoney(refund.amount, refund.currency)}
-            </strong>{" "}
-            is on its way to the card or account you paid with. We&rsquo;ll email you when
-            it&rsquo;s done.
-          </p>
-        )}
-        {refund?.state === "REFUNDED" && (
-          <p>
-            We refunded{" "}
-            <strong className="text-foreground">
-              {formatMoney(refund.amount, refund.currency)}
-            </strong>
-            {refund.refundedAt && (
-              <>
-                {" "}
-                on <LocalTime iso={refund.refundedAt} />
-              </>
-            )}
-            . Banks can take a few working days to show it.
-          </p>
-        )}
-        <p className="text-white/50">
-          Questions? Email {SUPPORT_EMAIL} with pass{" "}
-          <span className="font-mono text-white/75">{ticket.seatIdentifier}</span>.
-        </p>
+        {ticket.refund && <RefundLine refund={ticket.refund} />}
+        <SupportLine ticket={ticket} />
       </div>
     </Panel>
   );
 }
 
+/** A hold that ended unpaid, let go or run out: nothing to settle, and Book again above */
+function HoldEndedNotice({ ticket }: { ticket: TicketDetail }) {
+  // A hold past its time may still read RESERVED until the API tidies it up
+  const released = ticket.cancellation?.reason === "RELEASED_BY_MEMBER";
+  return (
+    <Panel title="This hold has ended">
+      <p className="text-sm text-white/70">
+        {released
+          ? cancellationText(ticket)
+          : "This hold ran out before payment. Nothing was charged."}
+      </p>
+    </Panel>
+  );
+}
+
+/** Money owed back on a pass that still stands (usually a second payment for it) */
+function RefundNotice({
+  ticket,
+  refund,
+}: {
+  ticket: TicketDetail;
+  refund: NonNullable<TicketDetail["refund"]>;
+}) {
+  return (
+    <Panel title="A refund on this pass">
+      <div className="space-y-3 text-sm text-white/70">
+        <p>
+          Your pass stands. We received more than this pass costs, so the difference is returned.
+        </p>
+        <RefundLine refund={refund} />
+        <SupportLine ticket={ticket} />
+      </div>
+    </Panel>
+  );
+}
+
+/** Lets a live hold go (DELETE /tickets/release), then back to the screening to choose again */
+function ReleaseHoldButton({ ticket }: { ticket: TicketDetail }) {
+  const router = useRouter();
+  const release = useReleaseTicket();
+  return (
+    <Button
+      variant="outline"
+      disabled={release.isPending || release.isSuccess}
+      onClick={() =>
+        release.mutate(ticket.id, {
+          onSuccess: () => {
+            toast.success("Seat released", { description: "Nothing was charged." });
+            router.push(`/movies/${ticket.movieSlug}/showtimes/${ticket.showtimeId}`);
+          },
+          onError: () => toast.error("We couldn't release your seat. Please try again."),
+        })
+      }
+    >
+      {release.isPending || release.isSuccess ? "Releasing…" : "Release this seat"}
+    </Button>
+  );
+}
+
 /** Who has taken a seat in the host's suite. */
 function SuiteGuests({ ticket }: { ticket: TicketDetail }) {
-  const guests = useSuiteGuests(ticket.id, ticket.isSuiteHost);
+  const signedIn = useSignedIn();
+  const guests = useGetSuiteGuests(ticket.id, ticket.isSuiteHost && signedIn);
   const seats = ticket.suiteSeats ?? 0;
   const taken = ticket.suiteSeatsTaken ?? 1;
   return (
@@ -301,7 +374,7 @@ export function PassSkeleton() {
  */
 export function PassDetailsPage({ params }: { params: Promise<{ ticketId: string }> }) {
   const { ticketId } = use(params);
-  const ticket = useTicket(ticketId);
+  const ticket = useGetTicket(ticketId, useSignedIn());
   return (
     <QueryView
       query={ticket}
@@ -345,13 +418,18 @@ function PassDetail({ detail }: { detail: TicketDetail }) {
           <StatusBadge kind={view.badge.kind} status={view.badge.status} label={view.badge.label} />
         }
         actions={
-          primary && (
-            <Button asChild>
-              <Link href={primary.href}>
-                {primary.label}
-                <ArrowRight data-icon="inline-end" />
-              </Link>
-            </Button>
+          (primary || view.phase === "hold") && (
+            <>
+              {view.phase === "hold" && <ReleaseHoldButton ticket={detail} />}
+              {primary && (
+                <Button asChild>
+                  <Link href={primary.href}>
+                    {primary.label}
+                    <ArrowRight data-icon="inline-end" />
+                  </Link>
+                </Button>
+              )}
+            </>
           )
         }
       />
@@ -359,7 +437,11 @@ function PassDetail({ detail }: { detail: TicketDetail }) {
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="min-w-0 space-y-6">
           <PassCard ticket={detail} />
-          {detail.status === "CANCELLED" && <CancelledNotice ticket={detail} />}
+          {view.phase === "cancelled" && <CancelledNotice ticket={detail} />}
+          {(view.phase === "released" || view.phase === "hold-expired") && (
+            <HoldEndedNotice ticket={detail} />
+          )}
+          {active && detail.refund && <RefundNotice ticket={detail} refund={detail.refund} />}
           {detail.isSuiteHost && active && view.phase !== "ended" && <HostAliasPrompt />}
           {detail.isSuiteHost && active && view.phase !== "ended" && detail.roomInviteCode && (
             <InviteLinks code={detail.roomInviteCode} seatsLeft={seatsLeft} />
@@ -401,8 +483,9 @@ function PassDetail({ detail }: { detail: TicketDetail }) {
             </Panel>
           )}
 
-          {detail.pricing.totalPayable > 0 && (
-            <Panel title="Payment">
+          {/* What was paid, or what a live hold will cost; nothing for a hold that has ended */}
+          {detail.pricing.totalPayable > 0 && (paidFor(detail) || view.phase === "hold") && (
+            <Panel title={paidFor(detail) ? "Payment" : "Price"}>
               <PriceBreakdown pricing={detail.pricing} />
             </Panel>
           )}

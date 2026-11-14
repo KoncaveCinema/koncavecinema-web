@@ -88,10 +88,38 @@ export async function claimInvite(code: string): Promise<TicketDetail> {
   );
 }
 
-/* Hooks */
+/* Hooks. The member's own reads take `enabled`, so a page that renders before the session is
+   known asks for nothing until the member is signed in. */
 
-export function useGetTicket(ticketId: string) {
-  return useQuery({ queryKey: [`/tickets/${ticketId}`], queryFn: () => getTicket(ticketId) });
+export function useGetTicket(ticketId: string, enabled = true) {
+  return useQuery({
+    queryKey: [`/tickets/${ticketId}`],
+    queryFn: () => getTicket(ticketId),
+    enabled,
+  });
+}
+
+export interface MyTicketsQuery {
+  when: "upcoming" | "past";
+  page?: number;
+  pageSize?: number;
+}
+
+/** The API's own defaults, so the home page, the sidebar and My tickets share one request */
+export function useGetMyTickets({ when, page = 1, pageSize = 20 }: MyTicketsQuery, enabled = true) {
+  return useQuery({
+    queryKey: ["/tickets/my-tickets", { when, page, pageSize }],
+    queryFn: () => listMyTickets(when, page, pageSize),
+    enabled,
+  });
+}
+
+export function useGetSuiteGuests(ticketId: string, enabled = true) {
+  return useQuery({
+    queryKey: [`/tickets/${ticketId}/guests`],
+    queryFn: () => listSuiteGuests(ticketId),
+    enabled,
+  });
 }
 
 export function useReserveTicket() {

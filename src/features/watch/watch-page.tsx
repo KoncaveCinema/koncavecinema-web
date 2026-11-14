@@ -21,7 +21,8 @@ import { use, useEffect, useState, type ReactNode } from "react";
 
 import { LiveDot } from "@/components/cinema/live-dot";
 import { Button } from "@/components/ui/button";
-import { useTicket } from "@/features/dashboard/queries";
+import { useGetTicket } from "@/api/tickets/tickets-api";
+import { useSignedIn } from "@/features/auth/require-session";
 import { roomName } from "@/features/dashboard/ticket-card";
 import { SUPPORT_EMAIL } from "@/features/support/content";
 import { useServerNow } from "@/hooks/use-now";
@@ -70,7 +71,7 @@ function useIdle(active: boolean): boolean {
  */
 export function WatchPage({ params }: { params: Promise<{ ticketId: string }> }) {
   const { ticketId } = use(params);
-  const ticket = useTicket(ticketId);
+  const ticket = useGetTicket(ticketId, useSignedIn());
   const now = useServerNow();
   const [attempt, setAttempt] = useState(0);
   const [ended, setEnded] = useState<PlaybackEnd | null>(null);
