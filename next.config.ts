@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 // Validates the environment at startup and build time
 import { env } from "./src/env";
+import { IMAGE_HOSTS } from "./src/lib/image-hosts";
 
 // The /api proxy is for local development only: a deployment calls the API directly. Vercel sets
 // VERCEL_ENV on every build, so a stray proxy setting fails the build instead of going live
@@ -47,13 +48,8 @@ const nextConfig: NextConfig = {
     // AVIF first (about 20% smaller than WebP for posters and billboards), WebP fallback
     formats: ["image/avif", "image/webp"],
     minimumCacheTTL: 2_678_400, // 31 days; artwork URLs change when the image changes
-    remotePatterns: [
-      // Film artwork from the API, then Mux thumbnails and storyboards
-      { protocol: "https", hostname: "res.cloudinary.com" },
-      { protocol: "https", hostname: "image.mux.com" },
-      { protocol: "https", hostname: "*.streamable.com" },
-      { protocol: "https", hostname: "streamable.com" },
-    ],
+    // Film artwork from the API, then Mux thumbnails and storyboards (src/lib/image-hosts.ts)
+    remotePatterns: IMAGE_HOSTS.map((hostname) => ({ protocol: "https", hostname })),
   },
 
   turbopack: {

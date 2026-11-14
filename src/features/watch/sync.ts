@@ -31,6 +31,18 @@ export function targetPosition(startTime: string, now: number): number {
   return Math.max(0, (now - Date.parse(startTime)) / 1000);
 }
 
+/**
+ * True once `position` reaches the end of the video. A film runs as long as its slot, but a
+ * shorter video (a test clip) would otherwise sit on its last frame until the cutoff.
+ */
+export function filmOver(positionSeconds: number, durationSeconds: number): boolean {
+  return (
+    Number.isFinite(durationSeconds) &&
+    durationSeconds > 0 &&
+    positionSeconds >= durationSeconds - 0.5
+  );
+}
+
 /* The watermark's drift: seeded by the API, so the same session always produces the same
    positions and a leaked recording can be traced to it. */
 

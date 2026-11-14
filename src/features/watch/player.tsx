@@ -10,15 +10,18 @@ import { LogoMark } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
 import { useServerNow } from "@/hooks/use-now";
 import { ErrorCode, serverOffset, toApiError } from "@/api";
-import { isDemo } from "@/lib/demo";
+import { heartbeat, refreshDrmToken, secureStop } from "@/api/stream-security/stream-security-api";
+import type {
+  PlaybackAuthorization,
+  Watermark as WatermarkInfo,
+} from "@/api/stream-security/stream-security-schemas";
 import { formatClock, formatCountdown } from "@/lib/format";
 
-import type { PlaybackAuthorization } from "./api-types";
-import { heartbeat, refreshDrmToken, secureStop } from "./service";
 import {
   CATCH_UP_RATE,
   SYNC_CHECK_MS,
   WATERMARK_OPACITY,
+  filmOver,
   syncZone,
   targetPosition,
   watermarkDrift,
@@ -60,7 +63,7 @@ function savePosition(ticketId: string, seconds: number) {
 }
 
 /** The viewer's alias and reference, drifting across the picture from the session's seed */
-function Watermark({ watermark }: { watermark: NonNullable<PlaybackAuthorization["watermark"]> }) {
+function Watermark({ watermark }: { watermark: WatermarkInfo }) {
   const [spot, setSpot] = useState<WatermarkSpot | null>(null);
 
   useEffect(() => {
@@ -94,7 +97,6 @@ export default function Player({
   idle,
   authorization,
   onEnd,
-  demoNudge,
 }: {
   ticketId: string;
   title: string;
@@ -104,8 +106,6 @@ export default function Player({
   idle: boolean;
   authorization: PlaybackAuthorization;
   onEnd: (reason: PlaybackEnd) => void;
-  /** Demo only: "behind" drops the player back 30 s; "heartbeat" sends one at once */
-  demoNudge?: { kind: "behind" | "heartbeat"; count: number };
 }) {
   const ref = useRef<PlayerElement>(null);
   const [drmToken, setDrmToken] = useState(authorization.drmToken);
@@ -118,18 +118,14 @@ export default function Player({
   const started = now !== null && now >= startsAt;
   const endsAt = formatClock(schedule.hardCutoff);
 
-  /** Where the room is now. The demo's film is a short teaser, so it loops to stay in range. */
-  const roomPosition = () => {
-    const position = targetPosition(schedule.startTime, Date.now() + serverOffset());
-    const duration = ref.current?.duration;
-    return isDemo && duration && Number.isFinite(duration) ? position % duration : position;
-  };
+  /** Where the room is now */
+  const roomPosition = () => targetPosition(schedule.startTime, Date.now() + serverOffset());
 
   /** Plays from `from` (Individual Watch) or the room's moment; with neither, carries on */
   const play = (from?: number) => {
     const player = ref.current;
     if (!player) return;
-    // The room's moment needs the film's length (the demo loops), known once metadata loads
+    // A position set before the metadata loads is lost: wait for it
     if (player.readyState < 1) {
       player.addEventListener("loadedmetadata", () => play(from), { once: true });
       return;
@@ -163,17 +159,16 @@ export default function Player({
     if (ownPace) {
       savePosition(ticketId, player.currentTime);
       const rest = player.duration - player.currentTime;
-      setShortOfTime(!isDemo && Number.isFinite(rest) && rest * 1000 > timeLeft);
+      setShortOfTime(Number.isFinite(rest) && rest * 1000 > timeLeft);
       return;
     }
     const target = roomPosition();
-    let lag = target - player.currentTime;
-    // Round the demo's loop, the gap is the shorter way: just past the end is just behind
-    const duration = player.duration;
-    if (isDemo && Number.isFinite(duration) && Math.abs(lag) > duration / 2) {
-      lag -= Math.sign(lag) * duration;
+    // The room has passed the end of the video: the screening is over, whatever the cutoff
+    if (filmOver(target, player.duration)) {
+      onEnd("closed");
+      return;
     }
-    const next = syncZone(lag);
+    const next = syncZone(target - player.currentTime);
     if (next === "ahead") player.currentTime = target;
     player.playbackRate = next === "catch-up" ? CATCH_UP_RATE : 1;
     setZone(next === "ahead" ? "live" : next);
@@ -224,34 +219,19 @@ export default function Player({
     };
   }, [ticketId, sessionId]);
 
-  const onNudge = useEffectEvent(() => {
-    const player = ref.current;
-    if (demoNudge?.kind === "behind" && player) {
-      player.currentTime = Math.max(0, player.currentTime - 30);
-    }
-    if (demoNudge?.kind === "heartbeat") onBeat();
-  });
-  const nudges = demoNudge?.count ?? 0;
-  useEffect(() => {
-    if (nudges > 0) onNudge();
-  }, [nudges]);
-
   return (
     <div id={STAGE_ID} className="relative aspect-video w-full overflow-hidden bg-black">
       <MuxPlayer
         ref={ref}
         playbackId={authorization.playbackId}
-        tokens={
-          authorization.playbackToken
-            ? {
-                playback: authorization.playbackToken,
-                drm: drmToken ?? undefined,
-              }
-            : undefined
-        }
+        tokens={{ playback: authorization.playbackToken, drm: drmToken ?? undefined }}
         streamType="on-demand"
         preload="auto"
-        loop={isDemo}
+        // The end of the video ends the screening; an Individual viewer starts over next time
+        onEnded={() => {
+          if (ownPace) savePosition(ticketId, 0);
+          onEnd("closed");
+        }}
         fullscreenElement={STAGE_ID}
         accentColor="#d60211"
         metadataVideoTitle={title}
