@@ -36,6 +36,7 @@ import {
   type SignInValues,
 } from "./schemas";
 import { isStaff } from "./roles";
+import { SignedInRedirect } from "./require-session";
 import { useSession } from "./session";
 
 /* The four auth forms. Each sends the API's request shape and branches on its error codes. */
@@ -77,6 +78,7 @@ export function SignInForm() {
 
   return (
     <div className="space-y-8">
+      <SignedInRedirect next={next} />
       <AuthHeading
         title="Welcome back"
         description={
@@ -178,6 +180,7 @@ export function RegisterForm() {
 
   return (
     <div className="space-y-8">
+      <SignedInRedirect next={next} home="/movies" />
       <AuthHeading
         title="Create your account"
         description="One account for every premiere and private suite you book."

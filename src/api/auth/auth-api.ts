@@ -1,5 +1,6 @@
 import { setAccessToken } from "../access-token";
-import { refreshAccessToken } from "../client";
+import { refreshAccessToken, restoreAccessToken } from "../client";
+import { ErrorCode, toApiError } from "../errors";
 import { http } from "../http";
 import {
   accessTokenSchema,
@@ -21,10 +22,33 @@ export async function getProfile(): Promise<UserProfile> {
   return userProfileSchema.parse(await http({ url: "/auth/me" }));
 }
 
-/** On page load: the refresh cookie gives an access token, then the profile. Null when signed out. */
-export async function restoreSession(): Promise<UserProfile | null> {
-  const token = await refreshAccessToken();
-  return token ? getProfile() : null;
+/** Waits between page-load tries when the API can't be reached: about 17 seconds in all */
+export const RESTORE_RETRY_MS = [2000, 5000, 10_000];
+
+/**
+ * On page load: the refresh cookie gives an access token, then the profile. Null when signed
+ * out. A dropped connection or a failing server is tried again (the cookie is still good), so a
+ * moment offline never signs anyone out; only the API refusing the cookie does.
+ */
+export async function restoreSession(
+  wait: (ms: number) => Promise<void> = (ms) => new Promise((done) => setTimeout(done, ms)),
+): Promise<UserProfile | null> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const token = await restoreAccessToken();
+      return token ? await getProfile() : null;
+    } catch (error) {
+      const apiError = toApiError(error);
+      const unreachable = apiError.is(ErrorCode.NETWORK_ERROR) || apiError.status >= 500;
+      const delay = RESTORE_RETRY_MS[attempt];
+      if (!unreachable || delay === undefined) {
+        // Release the requests waiting on a token; the session ends here
+        setAccessToken(null);
+        throw apiError;
+      }
+      await wait(delay);
+    }
+  }
 }
 
 /** POST /auth/login */

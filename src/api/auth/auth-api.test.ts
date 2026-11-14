@@ -1,11 +1,17 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { refreshAccessToken } from "../client";
+import { getAccessToken, setAccessToken } from "../access-token";
+import { refreshAccessToken, restoreAccessToken } from "../client";
+import { ApiError, ErrorCode } from "../errors";
 import { http } from "../http";
-import { updateScreenAlias, verifyIdentity } from "./auth-api";
+import { RESTORE_RETRY_MS, restoreSession, updateScreenAlias, verifyIdentity } from "./auth-api";
 
 vi.mock("../http", () => ({ http: vi.fn() }));
-vi.mock("../client", () => ({ refreshAccessToken: vi.fn() }));
+vi.mock("../client", () => ({ refreshAccessToken: vi.fn(), restoreAccessToken: vi.fn() }));
+
+const restoreMock = vi.mocked(restoreAccessToken);
+const offline = new ApiError({ status: 0, code: ErrorCode.NETWORK_ERROR, messages: ["offline"] });
+const noWait = (_ms: number) => Promise.resolve();
 
 const httpMock = vi.mocked(http);
 const profile = {
@@ -42,5 +48,38 @@ describe("auth calls", () => {
       otp: "123456",
       legalFullName: "Ada Obi",
     });
+  });
+});
+
+describe("restoring the session on page load", () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+    setAccessToken(null);
+  });
+
+  it("tries again while the API can't be reached, and signs in once it answers", async () => {
+    restoreMock.mockRejectedValueOnce(offline).mockRejectedValueOnce(offline);
+    restoreMock.mockResolvedValueOnce("token");
+    httpMock.mockResolvedValue(profile);
+    const wait = vi.fn(noWait);
+
+    await expect(restoreSession(wait)).resolves.toEqual(profile);
+    expect(wait.mock.calls.map(([ms]) => ms)).toEqual(RESTORE_RETRY_MS.slice(0, 2));
+  });
+
+  it("is signed out at once when the API refuses the cookie", async () => {
+    restoreMock.mockResolvedValue(null);
+
+    await expect(restoreSession(noWait)).resolves.toBeNull();
+    expect(restoreMock).toHaveBeenCalledOnce();
+  });
+
+  it("gives up after its last try, releasing anything waiting on a token", async () => {
+    setAccessToken("stale");
+    restoreMock.mockRejectedValue(offline);
+
+    await expect(restoreSession(noWait)).rejects.toBe(offline);
+    expect(restoreMock).toHaveBeenCalledTimes(RESTORE_RETRY_MS.length + 1);
+    expect(getAccessToken()).toBeNull();
   });
 });
