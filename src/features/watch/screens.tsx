@@ -10,9 +10,8 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 import { FormAlert } from "@/features/auth/form-parts";
 import { useServerNow } from "@/hooks/use-now";
 import { ErrorCode, toApiError } from "@/api";
+import { useConfirmLocation, useSendLocationCode } from "@/api/stream-security/stream-security-api";
 import { formatCountdown } from "@/lib/format";
-
-import { confirmLocation, sendLocationCode } from "./service";
 
 /* The room's full-frame screens: everything the stage shows when it isn't playing the film. */
 
@@ -78,30 +77,40 @@ export function LobbyCountdown({
 export function LocationCheck({ onConfirmed }: { onConfirmed: () => void }) {
   const [sent, setSent] = useState(false);
   const [code, setCode] = useState("");
-  const [pending, setPending] = useState(false);
-  const [failure, setFailure] = useState<string | null>(null);
+  const sendCode = useSendLocationCode();
+  const confirm = useConfirmLocation();
+  const pending = sendCode.isPending || confirm.isPending;
 
-  const run = async (action: () => Promise<void>, after: () => void) => {
-    setPending(true);
-    setFailure(null);
-    try {
-      await action();
-      after();
-    } catch (error) {
-      const apiError = toApiError(error);
-      setFailure(
-        apiError.is(ErrorCode.OTP_INVALID)
-          ? "That code isn't right. Check the email and try again."
-          : apiError.is(ErrorCode.OTP_EXPIRED)
-            ? "That code has expired. Send a new one."
-            : apiError.is(ErrorCode.RATE_LIMITED) || apiError.is(ErrorCode.OTP_RATE_LIMITED)
-              ? "Too many codes requested. Please wait a few minutes."
-              : "That didn't work. Please try again.",
-      );
-    } finally {
-      setPending(false);
-    }
+  const send = () => {
+    confirm.reset();
+    sendCode.mutate(undefined, {
+      onSuccess: () => {
+        setSent(true);
+        setCode("");
+      },
+      // Nothing left to confirm (done in another tab, or the check lapsed): just ask again
+      onError: (error) => {
+        if (toApiError(error).is(ErrorCode.BAD_REQUEST)) onConfirmed();
+      },
+    });
   };
+  const check = () => {
+    sendCode.reset();
+    confirm.mutate(code, { onSuccess: onConfirmed });
+  };
+
+  const error = sendCode.error ?? confirm.error;
+  const apiError = error ? toApiError(error) : null;
+  const failure =
+    !apiError || apiError.is(ErrorCode.BAD_REQUEST)
+      ? null
+      : apiError.is(ErrorCode.OTP_INVALID)
+        ? "That code isn't right. Check the email and try again."
+        : apiError.is(ErrorCode.OTP_EXPIRED)
+          ? "That code has expired. Send a new one."
+          : apiError.is(ErrorCode.RATE_LIMITED, ErrorCode.OTP_RATE_LIMITED)
+            ? "Too many codes requested. Please wait a few minutes."
+            : "That didn't work. Please try again.";
 
   return (
     <RoomMessage icon={MailCheck} tone="attention" title="Confirm it's you">
@@ -111,11 +120,7 @@ export function LocationCheck({ onConfirmed }: { onConfirmed: () => void }) {
       </p>
       <div className="flex flex-col items-center gap-4 pt-5">
         {!sent ? (
-          <Button
-            size="lg"
-            disabled={pending}
-            onClick={() => void run(sendLocationCode, () => setSent(true))}
-          >
+          <Button size="lg" disabled={pending} onClick={send}>
             {pending ? "Sending…" : "Email me a code"}
           </Button>
         ) : (
@@ -138,19 +143,10 @@ export function LocationCheck({ onConfirmed }: { onConfirmed: () => void }) {
               </InputOTPGroup>
             </InputOTP>
             <div className="flex gap-3">
-              <Button
-                size="lg"
-                disabled={pending || code.length !== 6}
-                onClick={() => void run(() => confirmLocation(code), onConfirmed)}
-              >
+              <Button size="lg" disabled={pending || code.length !== 6} onClick={check}>
                 {pending ? "Checking…" : "Confirm and watch"}
               </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                disabled={pending}
-                onClick={() => void run(sendLocationCode, () => setCode(""))}
-              >
+              <Button size="lg" variant="outline" disabled={pending} onClick={send}>
                 Send a new code
               </Button>
             </div>

@@ -1,12 +1,11 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import { cn } from "cn";
 import {
   ArrowLeft,
   Clapperboard,
   CreditCard,
-  FlaskConical,
+  Hourglass,
   Loader,
   MonitorSmartphone,
   RotateCw,
@@ -21,20 +20,18 @@ import { use, useEffect, useState, type ReactNode } from "react";
 
 import { LiveDot } from "@/components/cinema/live-dot";
 import { Button } from "@/components/ui/button";
+import { useAuthorizePlayback } from "@/api/stream-security/stream-security-api";
 import { useGetTicket } from "@/api/tickets/tickets-api";
 import { useSignedIn } from "@/features/auth/require-session";
 import { roomName } from "@/features/dashboard/ticket-card";
 import { SUPPORT_EMAIL } from "@/features/support/content";
 import { useServerNow } from "@/hooks/use-now";
 import { ErrorCode, toApiError } from "@/api";
-import { isDemo } from "@/lib/demo";
 import { formatClock } from "@/lib/format";
 import { screeningPhase, watchesAtOwnPace } from "@/lib/screening-window";
 
-import { DEMO_REFUSALS, setDemoRefusal, type DemoRefusal } from "./demo";
 import type { PlaybackEnd } from "./player";
 import { LobbyCountdown, LocationCheck, RoomMessage } from "./screens";
-import { authorizePlayback } from "./service";
 
 // Mux Player loads on this page only, and only in the browser
 const Player = dynamic(() => import("./player"), {
@@ -75,7 +72,6 @@ export function WatchPage({ params }: { params: Promise<{ ticketId: string }> })
   const now = useServerNow();
   const [attempt, setAttempt] = useState(0);
   const [ended, setEnded] = useState<PlaybackEnd | null>(null);
-  const [nudge, setNudge] = useState<{ kind: "behind" | "heartbeat"; count: number }>();
 
   const pass = ticket.data;
   const phase = pass && now !== null ? screeningPhase(pass, now) : null;
@@ -84,18 +80,7 @@ export function WatchPage({ params }: { params: Promise<{ ticketId: string }> })
   const doorsOpen = paid && !over && (phase === "lobby" || phase === "live" || phase === "ended");
 
   // Playback is asked for once the doors open, and again only when the viewer retries
-  const playback = useQuery({
-    queryKey: ["playback", ticketId, attempt],
-    queryFn: () => authorizePlayback(ticketId),
-    enabled: doorsOpen,
-    staleTime: Infinity,
-    gcTime: 0,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-    // Our clock and the API's can disagree by a moment at the door: ask again shortly
-    retry: (count, error) => toApiError(error).is(ErrorCode.STREAM_NOT_OPEN) && count < 8,
-    retryDelay: 15_000,
-  });
+  const playback = useAuthorizePlayback(ticketId, attempt, doorsOpen);
   const authorization = ended ? undefined : playback.data;
   const playing = authorization !== undefined;
   const ownPace = pass !== undefined && watchesAtOwnPace(pass.tier);
@@ -230,7 +215,6 @@ export function WatchPage({ params }: { params: Promise<{ ticketId: string }> })
           idle={idle}
           authorization={authorization}
           onEnd={setEnded}
-          demoNudge={nudge}
         />
       );
     }
@@ -250,6 +234,17 @@ export function WatchPage({ params }: { params: Promise<{ ticketId: string }> })
         return endedScreen;
       case ErrorCode.PASS_NOT_CONFIRMED:
         return unpaid;
+      case ErrorCode.RATE_LIMITED:
+        return (
+          <RoomMessage
+            icon={Hourglass}
+            tone="attention"
+            title="Too many tries in a row"
+            actions={<Button onClick={retry}>Try again</Button>}
+          >
+            <p>Wait a minute, then try again.</p>
+          </RoomMessage>
+        );
       case ErrorCode.STREAM_NOT_READY:
         return (
           <RoomMessage
@@ -345,70 +340,12 @@ export function WatchPage({ params }: { params: Promise<{ ticketId: string }> })
       </main>
 
       <footer className="flex flex-col items-center gap-4 px-4 py-6 text-center text-xs text-white/40">
-        {isDemo && pass && (
-          <DemoSwitcher
-            // Nobody to fall behind in Individual Watch
-            canFallBehind={playing && !ownPace}
-            playing={playing}
-            onRefuse={(code) => {
-              setDemoRefusal(code);
-              if (code === ErrorCode.STREAM_SESSION_INVALID && playing) {
-                setNudge((current) => ({ kind: "heartbeat", count: (current?.count ?? 0) + 1 }));
-              } else retry();
-            }}
-            onBehind={() =>
-              setNudge((current) => ({ kind: "behind", count: (current?.count ?? 0) + 1 }))
-            }
-          />
-        )}
         <p>
           <a href="https://db-ip.com" className="underline-offset-4 hover:underline">
             IP Geolocation by DB-IP
           </a>
         </p>
       </footer>
-    </div>
-  );
-}
-
-/** Demo only: reach every screen of the room without waiting for it to happen */
-function DemoSwitcher({
-  playing,
-  canFallBehind,
-  onRefuse,
-  onBehind,
-}: {
-  playing: boolean;
-  canFallBehind: boolean;
-  onRefuse: (code: DemoRefusal) => void;
-  onBehind: () => void;
-}) {
-  return (
-    <div className="flex max-w-2xl flex-wrap items-center justify-center gap-2 rounded-xl border border-dashed border-sky-400/30 bg-sky-400/5 px-3.5 py-2.5 text-sky-200/80">
-      <FlaskConical aria-hidden="true" className="size-3.5 text-sky-400" />
-      Demo:
-      {(Object.keys(DEMO_REFUSALS) as DemoRefusal[])
-        // A takeover ends a session that is playing
-        .filter((code) => playing || code !== ErrorCode.STREAM_SESSION_INVALID)
-        .map((code) => (
-          <button
-            key={code}
-            type="button"
-            onClick={() => onRefuse(code)}
-            className="rounded-full border border-sky-400/25 px-2.5 py-1 transition-colors hover:bg-sky-400/10"
-          >
-            {DEMO_REFUSALS[code].label}
-          </button>
-        ))}
-      {canFallBehind && (
-        <button
-          type="button"
-          onClick={onBehind}
-          className="rounded-full border border-sky-400/25 px-2.5 py-1 transition-colors hover:bg-sky-400/10"
-        >
-          Fall behind
-        </button>
-      )}
     </div>
   );
 }

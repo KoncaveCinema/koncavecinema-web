@@ -1,4 +1,3 @@
-import { cancelDemoShowtime } from "@/features/booking/demo";
 import { ErrorCode, type Paginated } from "@/api";
 import { demoDelay, demoError } from "@/lib/demo";
 import { dayKey } from "@/lib/format";
@@ -256,8 +255,6 @@ export async function cancelShowtime(id: string, reason: string): Promise<Showti
     passesCancelled: affected.length,
   });
   writeStore(store);
-  // The member's own demo passes in this tab follow, as the API's single database would
-  cancelDemoShowtime(id, reason);
 
   return {
     id,

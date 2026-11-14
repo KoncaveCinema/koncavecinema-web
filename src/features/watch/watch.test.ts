@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { syncZone, targetPosition, watermarkDrift } from "./sync";
+import { filmOver, syncZone, targetPosition, watermarkDrift } from "./sync";
 
 describe("synchronised playout", () => {
   it("sorts the gap to the room into its zones", () => {
@@ -17,6 +17,17 @@ describe("synchronised playout", () => {
     const start = "2026-11-06T18:00:00.000Z";
     expect(targetPosition(start, Date.parse(start) + 90_500)).toBe(90.5);
     expect(targetPosition(start, Date.parse(start) - 60_000)).toBe(0);
+  });
+});
+
+describe("filmOver", () => {
+  it("ends the screening once the room passes the end of the video", () => {
+    expect(filmOver(59, 120)).toBe(false);
+    expect(filmOver(119.6, 120)).toBe(true);
+    expect(filmOver(4000, 120)).toBe(true);
+    // Before the video's length is known, nothing has ended
+    expect(filmOver(4000, Number.NaN)).toBe(false);
+    expect(filmOver(4000, 0)).toBe(false);
   });
 });
 
