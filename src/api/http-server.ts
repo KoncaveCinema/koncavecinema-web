@@ -13,7 +13,8 @@ import { ErrorCode, isApiError, toApiError } from "./errors";
  * with `"use cache"` and shared between visitors.
  */
 const serverClient = axios.create({
-  baseURL: env.API_INTERNAL_URL ?? env.NEXT_PUBLIC_API_URL,
+  // Locally, straight to the API the dev proxy forwards to (no cookies here, so no proxy needed)
+  baseURL: env.API_DEV_PROXY_URL ?? env.NEXT_PUBLIC_API_URL,
   timeout: 10_000,
   headers: { Accept: "application/json" },
 });
