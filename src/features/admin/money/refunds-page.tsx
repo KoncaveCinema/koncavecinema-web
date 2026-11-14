@@ -137,7 +137,7 @@ export function RefundsPage() {
           rows={refunds.data?.items}
           columns={columns}
           rowKey={(payment) => payment.id}
-          isLoading={refunds.isPending}
+          isLoading={refunds.isPending || refunds.isPlaceholderData}
           error={refunds.error}
           onRetry={() => void refunds.refetch()}
           caption="Refunds"

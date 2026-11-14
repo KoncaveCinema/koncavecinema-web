@@ -11,6 +11,7 @@ import { Panel } from "@/components/console/panel";
 import { StatusBadge } from "@/components/console/status-badge";
 import { DataTable, type Column } from "@/components/data-table/data-table";
 import { Button } from "@/components/ui/button";
+import { RadioGroup, RadioGroupCard } from "@/components/ui/radio-group";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -129,7 +130,7 @@ export function StaffPage() {
           rows={staff.data}
           columns={columns}
           rowKey={(member) => member.id}
-          isLoading={staff.isPending}
+          isLoading={staff.isPending || staff.isPlaceholderData}
           error={staff.error}
           onRetry={() => void staff.refetch()}
           caption="Staff accounts"
@@ -175,34 +176,23 @@ export function StaffPage() {
           </label>
           <fieldset>
             <legend className="text-sm font-medium">Role</legend>
-            <div className="mt-2 grid grid-cols-2 gap-2">
+            <RadioGroup
+              value={role}
+              onValueChange={(value) => setRole(value as typeof role)}
+              aria-label="Role"
+              className="mt-2 grid-cols-2"
+            >
               {(["ADMIN", "SUPER_ADMIN"] as const).map((value) => (
-                <label
-                  key={value}
-                  className={cn(
-                    "cursor-pointer rounded-xl border p-3 text-sm transition-colors",
-                    role === value
-                      ? "border-brand/50 bg-brand/10"
-                      : "border-white/10 hover:border-white/25",
-                  )}
-                >
-                  <input
-                    type="radio"
-                    name="role"
-                    value={value}
-                    checked={role === value}
-                    onChange={() => setRole(value)}
-                    className="sr-only"
-                  />
+                <RadioGroupCard key={value} value={value}>
                   <span className="block font-semibold">{ROLE_NAME[value]}</span>
                   <span className="mt-0.5 block text-xs text-white/50">
                     {value === "ADMIN"
                       ? "Runs the catalogue, money and support"
                       : "Also staff, refunds and the audit log"}
                   </span>
-                </label>
+                </RadioGroupCard>
               ))}
-            </div>
+            </RadioGroup>
           </fieldset>
         </div>
       </ConfirmDialog>

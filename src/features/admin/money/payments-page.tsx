@@ -1,6 +1,5 @@
 "use client";
 
-import { cn } from "cn";
 import { Copy, CreditCard } from "lucide-react";
 import Link from "next/link";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
@@ -20,7 +19,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { fieldClass } from "@/features/auth/form-parts";
+import { OptionSelect } from "@/components/console/pickers";
 import { roomLabel } from "@/features/admin/rooms";
 import { formatLagosDateTime, formatMoney } from "@/lib/format";
 
@@ -216,24 +215,17 @@ export function PaymentsPage() {
       />
       <Panel flush>
         <div className="grid gap-3 border-b border-white/8 p-4 sm:grid-cols-[10rem_minmax(0,1fr)_minmax(0,1fr)]">
-          <label>
-            <span className="sr-only">Status</span>
-            <select
-              value={status ?? ""}
-              onChange={(event) => {
-                void setStatus((event.target.value || null) as (typeof STATUSES)[number] | null);
-                pagination.resetPage();
-              }}
-              className={cn(fieldClass, "h-10 appearance-none rounded-full bg-surface-1")}
-            >
-              <option value="">Any status</option>
-              {STATUSES.map((value) => (
-                <option key={value} value={value}>
-                  {STATUS_LABEL[value]}
-                </option>
-              ))}
-            </select>
-          </label>
+          <OptionSelect
+            label="Status"
+            value={status ?? ""}
+            onChange={(next) => {
+              void setStatus((next || null) as (typeof STATUSES)[number] | null);
+              pagination.resetPage();
+            }}
+            options={STATUSES.map((value) => ({ value, label: STATUS_LABEL[value] }))}
+            anyLabel="Any status"
+            className="h-10 rounded-full"
+          />
           <UrlSearch
             param="reference"
             label="Search by reference"
@@ -245,7 +237,7 @@ export function PaymentsPage() {
           rows={payments.data?.items}
           columns={columns}
           rowKey={(payment) => payment.id}
-          isLoading={payments.isPending}
+          isLoading={payments.isPending || payments.isPlaceholderData}
           error={payments.error}
           onRetry={() => void payments.refetch()}
           caption="Payments"

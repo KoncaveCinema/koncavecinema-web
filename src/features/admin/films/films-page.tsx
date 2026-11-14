@@ -142,7 +142,7 @@ export function FilmsPage() {
           columns={COLUMNS}
           rowKey={(film) => film.id}
           rowHref={(film) => `/admin/films/${film.id}`}
-          isLoading={films.isPending}
+          isLoading={films.isPending || films.isPlaceholderData}
           error={films.error}
           onRetry={() => void films.refetch()}
           caption="Films"

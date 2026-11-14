@@ -13,6 +13,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { FormAlert, fieldClass } from "@/features/auth/form-parts";
+import {
+  DatePicker,
+  OptionSelect,
+  SearchSelect,
+  TimeSelect,
+  filmOptions,
+} from "@/components/console/pickers";
 import { formatLagosDateTime, fromLagosInputs, lagosInputs } from "@/lib/format";
 
 import { useFilm, useFilms } from "../films/queries";
@@ -147,19 +154,16 @@ function ShowtimeForm({
             <label htmlFor="st-film" className={labelClass}>
               Film
             </label>
-            <select
+            <SearchSelect
               id="st-film"
               value={movieId}
-              onChange={(event) => setMovieId(event.target.value)}
-              className={cn(fieldClass, "mt-2 appearance-none bg-surface-1")}
-            >
-              <option value="">Choose a published film</option>
-              {films.data?.items.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.title}
-                </option>
-              ))}
-            </select>
+              onChange={setMovieId}
+              options={filmOptions(films.data?.items)}
+              placeholder="Choose a published film"
+              searchPlaceholder="Search films"
+              emptyText="No published film by that name."
+              className="mt-2"
+            />
           </div>
         )}
         <div className="grid grid-cols-2 gap-4">
@@ -167,25 +171,19 @@ function ShowtimeForm({
             <label htmlFor="st-date" className={labelClass}>
               Date
             </label>
-            <input
+            <DatePicker
               id="st-date"
-              type="date"
               value={date}
-              onChange={(event) => setDate(event.target.value)}
-              className={cn(fieldClass, "mt-2 scheme-dark")}
+              onChange={setDate}
+              disabled={{ before: new Date() }}
+              className="mt-2"
             />
           </div>
           <div>
             <label htmlFor="st-time" className={labelClass}>
               Starts (WAT)
             </label>
-            <input
-              id="st-time"
-              type="time"
-              value={time}
-              onChange={(event) => setTime(event.target.value)}
-              className={cn(fieldClass, "mt-2 scheme-dark")}
-            />
+            <TimeSelect id="st-time" value={time} onChange={setTime} className="mt-2" />
           </div>
         </div>
         <div className="grid grid-cols-[minmax(0,1fr)_7rem] gap-4">
@@ -210,16 +208,13 @@ function ShowtimeForm({
             <label htmlFor="st-currency" className={labelClass}>
               Currency
             </label>
-            <select
+            <OptionSelect
               id="st-currency"
               value={currency}
-              onChange={(event) => setCurrency(event.target.value)}
-              className={cn(fieldClass, "mt-2 appearance-none bg-surface-1")}
-            >
-              {CURRENCIES.map((code) => (
-                <option key={code}>{code}</option>
-              ))}
-            </select>
+              onChange={setCurrency}
+              options={CURRENCIES.map((code) => ({ value: code, label: code }))}
+              className="mt-2"
+            />
           </div>
         </div>
         {startsAt && runtime && (

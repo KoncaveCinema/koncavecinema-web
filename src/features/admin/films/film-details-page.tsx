@@ -19,6 +19,7 @@ import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/console/confirm-dialog";
 import { DataTable } from "@/components/data-table/data-table";
+import { OnThisPage } from "@/components/console/on-this-page";
 import { PageHeader } from "@/components/console/page-header";
 import { Panel } from "@/components/console/panel";
 import { QueryView } from "@/components/states/query-view";
@@ -486,20 +487,7 @@ function FilmDetail({ data }: { data: AdminFilm }) {
           <Showtimes film={data} />
           <Revenue film={data} />
         </div>
-        <nav aria-label="On this page" className="hidden lg:block">
-          <ul className="sticky top-24 space-y-1 border-l border-white/10 text-sm">
-            {SECTIONS.map((section) => (
-              <li key={section.id}>
-                <a
-                  href={`#${section.id}`}
-                  className="-ml-px block border-l border-transparent py-1 pl-4 text-white/50 transition-colors hover:border-white/40 hover:text-foreground"
-                >
-                  {section.label}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </nav>
+        <OnThisPage sections={SECTIONS} />
       </div>
 
       <ConfirmDialog

@@ -1,12 +1,13 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Film, Pause, Play, Trash2, Upload, X } from "lucide-react";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/console/confirm-dialog";
 import { DataTable } from "@/components/data-table/data-table";
 import { Panel } from "@/components/console/panel";
 import { StatusBadge } from "@/components/console/status-badge";
+import { VideoUploadDialog } from "@/components/console/upload-dialogs";
 import { Button } from "@/components/ui/button";
 import { ErrorCode, toApiError } from "@/api";
 import { isDemo } from "@/lib/demo";
@@ -27,7 +28,8 @@ function duration(seconds: number | null) {
 
 /** One kind of video: what's attached, sending a new file, and attaching it once it's ready */
 function VideoSlot({ film, kind }: { film: AdminFilm; kind: VideoKind }) {
-  const inputId = useId();
+  const noun = kind === "MASTER" ? "master" : "trailer";
+  const [choosing, setChoosing] = useState(false);
   const queryClient = useQueryClient();
   const attach = useAttachVideo();
   const control = useRef<VideoUploadControl | null>(null);
@@ -213,28 +215,14 @@ function VideoSlot({ film, kind }: { film: AdminFilm; kind: VideoKind }) {
       )}
 
       <div className="mt-5">
-        <input
-          id={inputId}
-          type="file"
-          accept="video/*"
-          className="sr-only"
+        <Button
+          variant="outline"
+          size="sm"
           disabled={Boolean(sending) || locked}
-          onChange={(event) => {
-            const file = event.target.files?.[0];
-            event.target.value = "";
-            if (file) void send(file);
-          }}
-        />
-        <Button asChild variant="outline" size="sm" disabled={Boolean(sending) || locked}>
-          <label
-            htmlFor={inputId}
-            className={sending || locked ? "pointer-events-none opacity-50" : "cursor-pointer"}
-          >
-            <Upload data-icon="inline-start" />
-            {attached
-              ? `Upload a new ${kind === "MASTER" ? "master" : "trailer"}`
-              : `Upload the ${kind === "MASTER" ? "master" : "trailer"}`}
-          </label>
+          onClick={() => setChoosing(true)}
+        >
+          <Upload data-icon="inline-start" />
+          {attached ? `Upload a new ${noun}` : `Upload the ${noun}`}
         </Button>
         {locked && !attached && (
           <p className="mt-2 text-xs text-white/50">
@@ -242,6 +230,19 @@ function VideoSlot({ film, kind }: { film: AdminFilm; kind: VideoKind }) {
           </p>
         )}
       </div>
+
+      <VideoUploadDialog
+        open={choosing}
+        onOpenChange={setChoosing}
+        title={attached ? `Upload a new ${noun}` : `Upload the ${noun}`}
+        description="It goes straight to Mux in resumable chunks. Keep this page open until it finishes."
+        note={
+          kind === "MASTER"
+            ? "Its length becomes the film's runtime, which sets when each screening ends."
+            : undefined
+        }
+        onStart={(file) => void send(file)}
+      />
     </div>
   );
 }

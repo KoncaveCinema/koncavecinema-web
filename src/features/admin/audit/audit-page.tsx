@@ -179,7 +179,7 @@ export function AuditPage() {
           columns={COLUMNS}
           rowKey={(entry) => entry.id}
           expanded={metadataOf}
-          isLoading={audit.isPending}
+          isLoading={audit.isPending || audit.isPlaceholderData}
           error={audit.error}
           onRetry={() => void audit.refetch()}
           caption="Audit log"

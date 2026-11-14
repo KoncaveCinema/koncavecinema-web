@@ -70,6 +70,10 @@ export function DataTable<Row>({
   columns: Column<Row>[];
   rowKey: (row: Row) => string;
   rowHref?: (row: Row) => string;
+  /**
+   * The rows for what's asked aren't here yet: skeleton rows, with the pager kept in place. Pass
+   * `isPlaceholderData` too, so a new filter or page shows it instead of the last result.
+   */
   isLoading?: boolean;
   error?: unknown;
   onRetry?: () => void;
@@ -112,11 +116,17 @@ export function DataTable<Row>({
           />
         ));
 
-  if (error && !rows?.length) {
+  // A failed refresh of rows already shown keeps them; a failed new filter or page says so
+  if (error && (isLoading || !rows?.length)) {
     return <ErrorState onRetry={onRetry} className={className} />;
   }
-  if (isLoading && !rows) {
-    return <LoadingRows columns={columns} count={loadingRows} className={className} />;
+  if (isLoading) {
+    return (
+      <div className={className}>
+        <LoadingRows columns={columns} count={loadingRows} />
+        {footer}
+      </div>
+    );
   }
   if (!rows?.length) {
     return filtered ? (

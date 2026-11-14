@@ -5,9 +5,10 @@ import { ArrowRight, Check, MailCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, type ReactNode } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { TERMS_VERSION } from "@/features/legal/documents";
 import { ErrorCode, toApiError } from "@/api";
 import { register, requestPasswordReset, resetPassword, signIn } from "@/api/auth/auth-api";
@@ -207,13 +208,23 @@ export function RegisterForm() {
           </div>
           <PasswordChecklist id="password-rules" password={password} />
         </div>
-        <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 bg-white/2 p-4 text-sm text-muted-foreground transition-colors has-checked:border-white/25">
-          <input
-            type="checkbox"
-            {...field("acceptTerms")}
-            className="mt-0.5 size-5 shrink-0 accent-brand"
+        <div className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/2 p-4 text-sm text-muted-foreground transition-colors has-data-[state=checked]:border-white/25">
+          <Controller
+            control={control}
+            name="acceptTerms"
+            render={({ field: terms }) => (
+              <Checkbox
+                id="acceptTerms"
+                ref={terms.ref}
+                checked={terms.value === true}
+                onCheckedChange={(checked) => terms.onChange(checked === true)}
+                onBlur={terms.onBlur}
+                aria-invalid={errors.acceptTerms ? true : undefined}
+                className="mt-0.5"
+              />
+            )}
           />
-          <span>
+          <label htmlFor="acceptTerms" className="cursor-pointer">
             I agree to the{" "}
             <Link href="/terms" className="text-foreground underline">
               Terms of use
@@ -223,8 +234,8 @@ export function RegisterForm() {
               Privacy policy
             </Link>
             .
-          </span>
-        </label>
+          </label>
+        </div>
         <FieldError message={errors.acceptTerms?.message} />
         {failure && <FormAlert>{failure}</FormAlert>}
         <Button type="submit" size="xl" disabled={isSubmitting} className="w-full">

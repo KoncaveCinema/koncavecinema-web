@@ -1,6 +1,5 @@
 "use client";
 
-import { cn } from "cn";
 import { BadgeCheck, Users } from "lucide-react";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 
@@ -10,7 +9,7 @@ import { Panel } from "@/components/console/panel";
 import { StatusBadge } from "@/components/console/status-badge";
 import { UrlSearch, useSearchParam } from "@/components/console/url-controls";
 import { usePagination } from "@/hooks/use-pagination";
-import { fieldClass } from "@/features/auth/form-parts";
+import { OptionSelect } from "@/components/console/pickers";
 import { formatLagosDate, formatLagosDateTime } from "@/lib/format";
 
 import type { AdminMemberListItem } from "./api-types";
@@ -97,31 +96,24 @@ export function MembersPage() {
       <Panel flush>
         <div className="grid gap-3 border-b border-white/8 p-4 sm:grid-cols-[minmax(0,1fr)_12rem]">
           <UrlSearch label="Search members" placeholder="Email or screen alias" />
-          <label>
-            <span className="sr-only">Role</span>
-            <select
-              value={role ?? ""}
-              onChange={(event) => {
-                void setRole((event.target.value || null) as (typeof ROLES)[number] | null);
-                pagination.resetPage();
-              }}
-              className={cn(fieldClass, "h-10 appearance-none rounded-full bg-surface-1")}
-            >
-              <option value="">Everyone</option>
-              {ROLES.map((value) => (
-                <option key={value} value={value}>
-                  {ROLE_LABEL[value]}
-                </option>
-              ))}
-            </select>
-          </label>
+          <OptionSelect
+            label="Role"
+            value={role ?? ""}
+            onChange={(next) => {
+              void setRole((next || null) as (typeof ROLES)[number] | null);
+              pagination.resetPage();
+            }}
+            options={ROLES.map((value) => ({ value, label: ROLE_LABEL[value] }))}
+            anyLabel="Everyone"
+            className="h-10 rounded-full"
+          />
         </div>
         <DataTable
           rows={members.data?.items}
           columns={COLUMNS}
           rowKey={(member) => member.id}
           rowHref={(member) => `/admin/members/${member.id}`}
-          isLoading={members.isPending}
+          isLoading={members.isPending || members.isPlaceholderData}
           error={members.error}
           onRetry={() => void members.refetch()}
           caption="Members"
