@@ -35,6 +35,9 @@ const memberPassSchema = z.object({
   currency: z.string(),
   movie: z.object({ title: z.string(), slug: z.string() }),
   startTime: z.iso.datetime(),
+  endTime: z.iso.datetime(),
+  /** The API's own rule: an open pass whose screening hasn't passed its cutoff */
+  cancellable: z.boolean(),
   createdAt: z.iso.datetime(),
   payments: z.array(
     z.object({

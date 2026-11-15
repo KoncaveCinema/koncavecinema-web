@@ -113,15 +113,15 @@ function PassRow({
 }) {
   const resend = useResendConfirmation();
   const paid = PAID.includes(pass.status);
-  const open = paid || pass.status === "RESERVED";
+  const actions = paid || pass.cancellable;
   return (
     <li className="space-y-3 px-6 py-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="font-semibold">{pass.movie.title}</p>
           <p className="mt-0.5 text-sm text-white/55">
-            {formatLagosDateTime(pass.startTime)} · {roomLabel(pass.tier)} ·{" "}
-            <span className="font-mono">{pass.seatIdentifier}</span>
+            {formatLagosDateTime(pass.startTime, { until: pass.endTime })} · {roomLabel(pass.tier)}{" "}
+            · <span className="font-mono">{pass.seatIdentifier}</span>
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -151,7 +151,7 @@ function PassRow({
           ))}
         </ul>
       )}
-      {open && (
+      {actions && (
         <div className="flex flex-wrap gap-2">
           {paid && (
             <Button
@@ -174,10 +174,12 @@ function PassRow({
               {resend.isPending ? "Sending…" : "Resend booking email"}
             </Button>
           )}
-          <Button size="sm" variant="ghost" onClick={() => onCancel(pass)}>
-            <XCircle data-icon="inline-start" />
-            Cancel pass
-          </Button>
+          {pass.cancellable && (
+            <Button size="sm" variant="ghost" onClick={() => onCancel(pass)}>
+              <XCircle data-icon="inline-start" />
+              Cancel pass
+            </Button>
+          )}
         </div>
       )}
     </li>

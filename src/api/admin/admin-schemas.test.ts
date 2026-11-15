@@ -198,7 +198,22 @@ describe("admin schemas", () => {
       termsVersion: "2026-10-28",
       createdAt: at,
       lastSignInAt: null,
-      passes: [],
+      passes: [
+        {
+          id: "t1",
+          tier: "INDIVIDUAL",
+          seatIdentifier: "PASS-000001",
+          status: "CHECKED_IN",
+          purchasePrice: 5177.67,
+          currency: "NGN",
+          movie: { title: "Ember & Ash", slug: "ember-and-ash" },
+          startTime: at,
+          endTime: at,
+          cancellable: false,
+          createdAt: at,
+          payments: [],
+        },
+      ],
       recentSignIns: [
         { action: "USER_LOGIN_SUCCESS", ipAddress: "100.64.0.12", userAgent: null, timestamp: at },
       ],
