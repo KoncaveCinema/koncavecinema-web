@@ -6,6 +6,7 @@ import { ChevronRight, FilterX } from "lucide-react";
 import Link from "next/link";
 import { Fragment, useState, type ComponentProps, type ReactNode } from "react";
 
+import type { PaginationMeta } from "@/api";
 import { EmptyState, ErrorState } from "@/components/states/states";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -20,7 +21,6 @@ import {
 } from "@/components/ui/table";
 import type { CursorPagination } from "@/hooks/use-cursor-pagination";
 import type { Pagination } from "@/hooks/use-pagination";
-import type { PaginationMeta } from "@/api";
 
 import { DataTableCursorPagination, DataTablePagination } from "./data-table-pagination";
 
@@ -244,7 +244,7 @@ export function DataTable<Row>({
                         key={column.id}
                         className={cn(
                           cellClass(column),
-                          "h-12 whitespace-normal",
+                          "h-12 whitespace-nowrap",
                           index === 0 && "font-medium",
                           column.align === "end" && "tabular-nums",
                         )}

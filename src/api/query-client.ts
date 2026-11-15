@@ -1,7 +1,8 @@
 import { environmentManager, MutationCache, QueryClient } from "@tanstack/react-query";
 
 import { isApiError } from "./errors";
-import { matchesPrefixes, refetchAfter } from "./refetch";
+import { refreshCatalog } from "./catalog-actions";
+import { matchesPrefixes, refetchAfter, refreshesCatalog } from "./refetch";
 
 function makeQueryClient(): QueryClient {
   const queryClient: QueryClient = new QueryClient({
@@ -10,6 +11,10 @@ function makeQueryClient(): QueryClient {
     mutationCache: new MutationCache({
       onSuccess: (_data, _variables, _context, mutation) => {
         const [operation] = mutation.options.mutationKey ?? [];
+        if (typeof operation === "string" && refreshesCatalog.has(operation)) {
+          // The public pages too; a failure only leaves them on the cache's few minutes
+          void refreshCatalog().catch(() => {});
+        }
         const prefixes = typeof operation === "string" ? refetchAfter[operation] : undefined;
         if (!prefixes?.length) return;
         return queryClient.invalidateQueries({
