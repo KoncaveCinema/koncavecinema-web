@@ -12,9 +12,10 @@ import { Button } from "@/components/ui/button";
 import { ErrorCode, toApiError } from "@/api";
 import { formatLagosDateTime } from "@/lib/format";
 
-import type { AdminFilm, AdminVideo, VideoKind } from "./api-types";
-import { filmKeys, useAttachVideo, useDeleteVideo, useVideoProgress } from "./queries";
-import { createDirectUpload, sendVideo, type VideoUploadControl } from "./service";
+import type { AdminFilm, AdminVideo, VideoKind } from "@/api/admin/films-schemas";
+import { useAttachVideo, useDeleteVideo, useVideoProgress } from "@/api/admin/films-api";
+import { createDirectUpload, sendVideo, type VideoUploadControl } from "@/api/admin/films-api";
+import { useStaffSignedIn } from "../require-staff";
 
 const KIND_LABEL: Record<VideoKind, string> = { MASTER: "Master", TRAILER: "Trailer" };
 
@@ -25,19 +26,51 @@ function duration(seconds: number | null) {
   return `${Math.floor(minutes / 60)}h ${String(minutes % 60).padStart(2, "0")}m`;
 }
 
+/** The API's refusal of an upload, an attach or a delete, in words; `fallback` otherwise */
+function mediaRefusal(error: unknown, fallback: string): string {
+  const apiError = toApiError(error);
+  if (apiError.is(ErrorCode.MOVIE_ALREADY_PUBLISHED)) {
+    return "A published film keeps its master: its screenings were timed by it.";
+  }
+  if (apiError.is(ErrorCode.VIDEO_ASSET_WRONG_KIND)) {
+    return "That upload is the wrong kind for this slot: a trailer can't be the master.";
+  }
+  if (apiError.is(ErrorCode.VIDEO_ASSET_NOT_READY)) {
+    return "Mux hasn't finished with that upload yet. Attach it once it shows Ready.";
+  }
+  if (apiError.is(ErrorCode.VIDEO_ASSET_OTHER_MOVIE)) {
+    return "That upload belongs to another film.";
+  }
+  if (apiError.is(ErrorCode.VIDEO_ASSET_IN_USE)) {
+    return "This is the film's current master or trailer, so it can't be deleted.";
+  }
+  if (
+    apiError.is(
+      ErrorCode.VIDEO_PROVIDER_UNAVAILABLE,
+      ErrorCode.VIDEO_PROVIDER_ERROR,
+      ErrorCode.BAD_GATEWAY,
+      ErrorCode.SERVICE_UNAVAILABLE,
+    )
+  ) {
+    return "Mux isn't answering. Try again in a few minutes.";
+  }
+  return fallback;
+}
+
 /** One kind of video: what's attached, sending a new file, and attaching it once it's ready */
 function VideoSlot({ film, kind }: { film: AdminFilm; kind: VideoKind }) {
   const noun = kind === "MASTER" ? "master" : "trailer";
   const [choosing, setChoosing] = useState(false);
   const queryClient = useQueryClient();
-  const attach = useAttachVideo();
+  const attach = useAttachVideo(kind);
   const control = useRef<VideoUploadControl | null>(null);
   const [sending, setSending] = useState<{ percent: number; paused: boolean } | null>(null);
   const [videoId, setVideoId] = useState<string | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
-  const progress = useVideoProgress(sending ? null : videoId);
+  const progress = useVideoProgress(sending ? null : videoId, useStaffSignedIn());
 
-  const locked = kind === "MASTER" && film.isPublished;
+  // A published film keeps the master its screenings were timed by
+  const locked = kind === "MASTER" && film.status === "PUBLISHED";
   const attached = film.videos.find((video) => video.kind === kind && video.isAttached);
   // The newest ready upload not yet attached: the one to offer
   const ready =
@@ -60,7 +93,7 @@ function VideoSlot({ film, kind }: { film: AdminFilm; kind: VideoKind }) {
   // The film page's uploads list follows the processing upload's status
   useEffect(() => {
     if (progress.data?.status === "READY" || progress.data?.status === "ERRORED") {
-      void queryClient.invalidateQueries({ queryKey: filmKeys.film(film.id) });
+      void queryClient.invalidateQueries({ queryKey: [`/admin/movies/${film.id}`] });
     }
   }, [progress.data?.status, queryClient, film.id]);
 
@@ -79,17 +112,10 @@ function VideoSlot({ film, kind }: { film: AdminFilm; kind: VideoKind }) {
       );
       await control.current.done;
       setSending(null);
-      void queryClient.invalidateQueries({ queryKey: filmKeys.film(film.id) });
+      void queryClient.invalidateQueries({ queryKey: [`/admin/movies/${film.id}`] });
     } catch (error) {
       setSending(null);
-      const apiError = toApiError(error);
-      setProblem(
-        apiError.is(ErrorCode.MOVIE_ALREADY_PUBLISHED)
-          ? "A published film's master can't be replaced."
-          : apiError.is(ErrorCode.BAD_GATEWAY, ErrorCode.SERVICE_UNAVAILABLE)
-            ? "Mux isn't answering. Try again in a few minutes."
-            : "The upload stopped. Choose the file again to start over.",
-      );
+      setProblem(mediaRefusal(error, "The upload stopped. Choose the file again to start over."));
     } finally {
       control.current = null;
     }
@@ -184,11 +210,7 @@ function VideoSlot({ film, kind }: { film: AdminFilm; kind: VideoKind }) {
                       toast.success(`${KIND_LABEL[kind]} attached`);
                     },
                     onError: (error) =>
-                      setProblem(
-                        toApiError(error).is(ErrorCode.VIDEO_ASSET_WRONG_KIND)
-                          ? "That upload is the wrong kind for this slot."
-                          : "It couldn't be attached. Try again.",
-                      ),
+                      setProblem(mediaRefusal(error, "It couldn't be attached. Try again.")),
                   },
                 )
               }
@@ -333,11 +355,7 @@ export function MediaPanel({ film }: { film: AdminFilm }) {
         onConfirm={async () => {
           if (deleting) await remove.mutateAsync(deleting.id);
         }}
-        explainError={(error) =>
-          error.is(ErrorCode.VIDEO_ASSET_IN_USE)
-            ? "This upload is attached to the film, so it can't be deleted."
-            : undefined
-        }
+        explainError={(error) => mediaRefusal(error, "The upload couldn't be deleted. Try again.")}
       />
     </Panel>
   );

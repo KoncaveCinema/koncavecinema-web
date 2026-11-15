@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { FieldError, FormAlert, fieldClass } from "@/features/auth/form-parts";
 import { ratingDescription, ratingLabel } from "@/lib/format";
 
-import type { FilmInput } from "./api-types";
+import type { FilmInput } from "@/api/admin/films-schemas";
 import {
   AGE_RATINGS,
   WATERMARK_MODES,
@@ -74,12 +74,15 @@ export function FilmForm({
   pendingLabel,
   onSubmit,
   onCancel,
+  splitLocked = false,
 }: {
   initial?: FilmValues;
   submitLabel: string;
   pendingLabel: string;
   onSubmit: (input: FilmInput) => Promise<unknown>;
   onCancel?: () => void;
+  /** A pass for the film has been paid: the producer's share is fixed, and isn't sent */
+  splitLocked?: boolean;
 }) {
   const [failure, setFailure] = useState<string | null>(null);
   const {
@@ -95,13 +98,15 @@ export function FilmForm({
   const submit = async (values: FilmValues) => {
     setFailure(null);
     try {
-      await onSubmit(values);
+      await onSubmit(splitLocked ? { ...values, producerRevenueSplit: undefined } : values);
     } catch (error) {
       const apiError = toApiError(error);
       setFailure(
         apiError.is(ErrorCode.VALIDATION_FAILED)
           ? apiError.messages.join(" ")
-          : "The film couldn't be saved. Please try again.",
+          : apiError.is(ErrorCode.PRODUCER_SPLIT_LOCKED)
+            ? "A pass for this film has been paid, so the producer's share can't change now."
+            : "The film couldn't be saved. Please try again.",
       );
     }
   };
@@ -177,7 +182,11 @@ export function FilmForm({
         <Field
           id="producerRevenueSplit"
           label="Producer's share (%)"
-          hint="Of the base box office, before fees. 50 to 95; 85 is the standard agreement."
+          hint={
+            splitLocked
+              ? "Fixed: a pass for this film has been paid, so the share it was sold under stays."
+              : "Of the base box office, before fees. 50 to 95; 85 is the standard agreement."
+          }
           error={errors.producerRevenueSplit?.message}
         >
           <input
@@ -188,8 +197,9 @@ export function FilmForm({
             max={95}
             step={0.5}
             {...register("producerRevenueSplit")}
+            readOnly={splitLocked}
             aria-invalid={Boolean(errors.producerRevenueSplit)}
-            className={fieldClass}
+            className={cn(fieldClass, splitLocked && "cursor-not-allowed opacity-60")}
           />
         </Field>
         <Field id="watermarkMode" label="Viewer watermark" className="sm:col-span-2">

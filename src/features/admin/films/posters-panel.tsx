@@ -1,6 +1,5 @@
 "use client";
 
-import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "cn";
 import { ImagePlus } from "lucide-react";
 import Image from "next/image";
@@ -11,10 +10,9 @@ import { ErrorCode, toApiError } from "@/api";
 import { Panel } from "@/components/console/panel";
 import { ImageUploadDialog, type PixelSize } from "@/components/console/upload-dialogs";
 
-import type { AdminFilm, PosterKind } from "./api-types";
-import { filmKeys } from "./queries";
+import type { AdminFilm, PosterKind } from "@/api/admin/films-schemas";
 import { POSTER_RULES, posterProblem } from "./schemas";
-import { uploadPoster } from "./service";
+import { useUploadPoster } from "@/api/admin/films-api";
 
 const SLOTS: {
   kind: PosterKind;
@@ -51,7 +49,7 @@ function uploadRefusal(error: unknown): string {
 }
 
 function PosterSlot({ film, slot }: { film: AdminFilm; slot: (typeof SLOTS)[number] }) {
-  const queryClient = useQueryClient();
+  const upload = useUploadPoster();
   const [choosing, setChoosing] = useState(false);
   const current = slot.kind === "POSTER_LANDSCAPE" ? film.posterLandscape : film.posterPortrait;
 
@@ -105,8 +103,7 @@ function PosterSlot({ film, slot }: { film: AdminFilm; slot: (typeof SLOTS)[numb
         accept={POSTER_RULES.types.join(",")}
         check={(file) => posterProblem(file)}
         onUpload={async (file, onProgress) => {
-          await uploadPoster(film.id, slot.kind, file, onProgress);
-          await queryClient.invalidateQueries({ queryKey: filmKeys.all });
+          await upload.mutateAsync({ movieId: film.id, kind: slot.kind, file, onProgress });
           toast.success(`${slot.label} poster updated`);
         }}
         explainError={uploadRefusal}

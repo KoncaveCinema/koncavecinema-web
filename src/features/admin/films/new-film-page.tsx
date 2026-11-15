@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/console/page-header";
 import { Panel } from "@/components/console/panel";
 
 import { FilmForm } from "./film-form";
-import { useCreateFilm } from "./queries";
+import { useCreateFilm } from "@/api/admin/films-api";
 
 /** /admin/films/new: start a draft, then add its posters, videos and certificate on its page. */
 export function NewFilmPage() {
