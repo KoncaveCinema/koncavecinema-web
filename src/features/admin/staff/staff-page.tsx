@@ -24,8 +24,14 @@ import { useSession } from "@/features/auth/session";
 import { ErrorCode, type ApiError } from "@/api";
 import { formatLagosDate, formatLagosDateTime } from "@/lib/format";
 
-import type { StaffMember, StaffRole } from "./api-types";
-import { useChangeStaffRole, useInviteStaff, useStaff } from "./queries";
+import type { StaffMember, StaffRole } from "@/api/admin/staff-schemas";
+import {
+  useChangeStaffRole,
+  useInviteStaff,
+  useRemoveStaff,
+  useStaff,
+} from "@/api/admin/staff-api";
+import { useSuperAdminSignedIn } from "../require-staff";
 
 const ROLE_NAME: Record<StaffRole | "VIEWER", string> = {
   ADMIN: "Staff",
@@ -44,9 +50,10 @@ type Change = { member: StaffMember; role: StaffRole | "VIEWER" };
 
 /** /admin/staff: who runs Koncave, inviting more, and changing or removing their access. */
 export function StaffPage() {
-  const staff = useStaff();
+  const staff = useStaff(useSuperAdminSignedIn());
   const invite = useInviteStaff();
   const change = useChangeStaffRole();
+  const remove = useRemoveStaff();
   const me = useSession((session) => session.user?.id);
   const [inviting, setInviting] = useState(false);
   const [email, setEmail] = useState("");
@@ -214,7 +221,8 @@ export function StaffPage() {
         pendingLabel="Saving…"
         tone={pending?.role === "VIEWER" ? "danger" : "default"}
         onConfirm={async () => {
-          if (pending) await change.mutateAsync({ id: pending.member.id, role: pending.role });
+          if (pending?.role === "VIEWER") await remove.mutateAsync(pending.member.id);
+          else if (pending) await change.mutateAsync({ id: pending.member.id, role: pending.role });
           toast.success("Access updated");
         }}
         explainError={lastSuperAdmin}
