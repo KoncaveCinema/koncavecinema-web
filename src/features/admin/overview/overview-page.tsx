@@ -20,10 +20,16 @@ import { StatTile, StatTileSkeleton } from "@/components/console/stat-tile";
 import { EmptyState, ErrorState } from "@/components/states/states";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatMoney } from "@/lib/format";
+import { useServerNow } from "@/hooks/use-now";
+import { dayKey, formatMoney } from "@/lib/format";
 
-import type { AdminOverview, AdminSalesWindow, PublishRequirement } from "./api-types";
-import { useOverview } from "./queries";
+import type {
+  AdminOverview,
+  AdminSalesWindow,
+  PublishRequirement,
+} from "@/api/admin/money-schemas";
+import { useOverview } from "@/api/admin/money-api";
+import { useStaffSignedIn } from "../require-staff";
 
 const QUICK_ACTIONS = [
   { href: "/admin/films/new", label: "New film", hint: "Start a draft", icon: FilePlus2 },
@@ -103,8 +109,14 @@ function OverviewSkeleton() {
  * first; then how sales are going; then the drafts that can't be published yet.
  */
 export function OverviewPage() {
-  const overview = useOverview();
+  const overview = useOverview(useStaffSignedIn());
   const data = overview.data;
+  // The screenings behind each count: the Lagos days they cover, once the time is known
+  const now = useServerNow();
+  const days = (span: number) =>
+    now === null
+      ? "/admin/showtimes"
+      : `/admin/showtimes?from=${dayKey(now)}&to=${dayKey(now + span * 24 * 60 * 60_000)}`;
 
   return (
     <>
@@ -135,7 +147,7 @@ export function OverviewPage() {
               hint="Starting today, Lagos time"
               icon={CalendarDays}
               tone="brand"
-              href="/admin/showtimes"
+              href={days(0)}
             />
             <StatTile
               label="This week"
@@ -143,15 +155,15 @@ export function OverviewPage() {
               hint="Starting in the next 7 days"
               icon={CalendarClock}
               tone="neutral"
-              href="/admin/showtimes"
+              href={days(6)}
             />
             <StatTile
               label="Refunds waiting"
               value={data.refundsWaiting.count}
               hint={
                 data.refundsWaiting.count > 0
-                  ? `${formatMoney(data.refundsWaiting.amount)} owed back`
-                  : "Nothing owed back"
+                  ? `${formatMoney(data.refundsWaiting.amount)} to refund`
+                  : "Nothing to refund"
               }
               icon={Undo2}
               tone="gold"
@@ -171,7 +183,7 @@ export function OverviewPage() {
           <Panel
             flush
             title="Sales"
-            description="Kept revenue: payments owed back are left out until they're refunded."
+            description="Kept revenue: payments that require a refund are left out."
             actions={
               <Link
                 href="/admin/sales"
@@ -198,8 +210,8 @@ export function OverviewPage() {
               {data.filmsNeedingAttention.length === 0 ? (
                 <EmptyState
                   icon={CheckCircle2}
-                  title="Every draft has its certificate and master"
-                  hint="New drafts that are missing either show up here."
+                  title="Every unreleased film has what publishing needs"
+                  hint="A draft or coming-soon film missing its certificate, master, trailer or posters shows up here."
                 />
               ) : (
                 <ul className="divide-y divide-white/8">

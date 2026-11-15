@@ -23,9 +23,10 @@ import { OptionSelect } from "@/components/console/pickers";
 import { roomLabel } from "@/features/admin/rooms";
 import { formatLagosDateTime, formatMoney } from "@/lib/format";
 
-import type { AdminPayment } from "./api-types";
-import { usePayments } from "./queries";
+import type { AdminPayment } from "@/api/admin/money-schemas";
+import { usePayments } from "@/api/admin/money-api";
 import { refundReasonLabel } from "./sales";
+import { useStaffSignedIn } from "../require-staff";
 
 const STATUSES = ["PENDING", "SUCCESS", "FAILED", "REFUNDED"] as const;
 const STATUS_LABEL = {
@@ -133,12 +134,15 @@ export function PaymentsPage() {
   const [email, setEmail] = useSearchParam("email");
   const pagination = usePagination();
   const [open, setOpen] = useState<AdminPayment | null>(null);
-  const payments = usePayments({
-    status: status ?? undefined,
-    reference: reference || undefined,
-    email: email || undefined,
-    ...pagination.query,
-  });
+  const payments = usePayments(
+    {
+      status: status ?? undefined,
+      reference: reference || undefined,
+      email: email || undefined,
+      ...pagination.query,
+    },
+    useStaffSignedIn(),
+  );
   const filtered = Boolean(status || reference || email);
 
   const columns: Column<AdminPayment>[] = [

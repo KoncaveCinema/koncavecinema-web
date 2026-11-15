@@ -21,8 +21,14 @@ import { formatLagosDate, formatLagosDateTime, formatMoney } from "@/lib/format"
 import { browserSummary } from "@/lib/user-agent";
 
 import { refundReasonLabel } from "../money/sales";
-import type { AdminMember, AdminMemberPass } from "./api-types";
-import { useCancelPass, useMember, useResendConfirmation, useRevealLegalName } from "./queries";
+import type { AdminMember, AdminMemberPass } from "@/api/admin/members-schemas";
+import {
+  useCancelPass,
+  useMember,
+  useResendConfirmation,
+  useRevealLegalName,
+} from "@/api/admin/members-api";
+import { useStaffSignedIn } from "../require-staff";
 
 const CRUMBS = [{ href: "/admin/members", label: "Members" }];
 const PAID = ["CONFIRMED", "CHECKED_IN"];
@@ -181,7 +187,7 @@ function PassRow({
 /** /admin/members/[id]: one member's account, passes and payments, and fixing a booking. */
 export function MemberDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const member = useMember(id);
+  const member = useMember(id, useStaffSignedIn());
   return (
     <QueryView
       query={member}
@@ -275,7 +281,7 @@ function MemberDetail({ data }: { data: AdminMember }) {
         consequences={[
           paidPass
             ? "Its payment goes on the refunds queue."
-            : "It was never paid for, so nothing is owed back.",
+            : "It was never paid for, so there is nothing to refund.",
           "The member is emailed your reason.",
           "This can't be undone.",
         ]}
