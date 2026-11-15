@@ -4,6 +4,11 @@ import { toCsv } from "@/lib/csv";
 import { fromLagosInputs, lagosInputs } from "@/lib/format";
 import { browserSummary } from "@/lib/user-agent";
 
+import type { FeaturedPlacement } from "@/api/admin/featured-schemas";
+
+import { auditActionLabel } from "./audit/actions";
+import { hiddenText, moveInLineup } from "./featured/featured";
+import { readinessGroups, readinessSummary } from "./films/film-details-page";
 import { posterProblem } from "./films/schemas";
 import { presetRange, rangeProblem, salesCsv } from "./money/sales";
 
@@ -75,6 +80,91 @@ describe("console helpers", () => {
         "Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Mobile/15E148 Safari/604.1",
       ),
     ).toBe("Safari on iPhone");
+    expect(browserSummary("node")).toBe("Node.js");
+    expect(
+      browserSummary(
+        "Mozilla/5.0 (Windows NT; Windows NT 10.0; en-US) WindowsPowerShell/5.1.22621.6133",
+      ),
+    ).toBe("PowerShell on Windows");
     expect(browserSummary(null)).toBe("Unknown browser");
+  });
+});
+
+describe("a film's readiness", () => {
+  const ready = {
+    certified: false,
+    masterAttached: false,
+    trailer: false,
+    posters: false,
+    canAnnounce: false,
+    canPublish: false,
+  };
+
+  it("asks for the trailer and posters to announce, then the certificate and master to publish", () => {
+    const [announce, publish] = readinessGroups({ readiness: ready });
+    expect(announce?.items.map((item) => item.label)).toEqual([
+      "Trailer attached",
+      "Landscape and portrait posters",
+    ]);
+    expect(publish?.items.map((item) => item.label)).toEqual([
+      "NFVCB certificate",
+      "Master video attached",
+    ]);
+  });
+
+  it("says where the film stands, from the API's own rules", () => {
+    expect(readinessSummary({ status: "DRAFT", readiness: ready })).toBe(
+      "2 things to do before announcing.",
+    );
+    const announceable = { ...ready, trailer: true, posters: true, canAnnounce: true };
+    expect(readinessSummary({ status: "DRAFT", readiness: announceable })).toBe(
+      "Ready to announce. 2 things more to publish.",
+    );
+    expect(
+      readinessSummary({ status: "COMING_SOON", readiness: { ...announceable, certified: true } }),
+    ).toBe("Announced as coming soon. 1 thing to do before publishing.");
+    expect(readinessSummary({ status: "PUBLISHED", readiness: ready })).toBe(
+      "Published and on sale.",
+    );
+  });
+});
+
+describe("featured films", () => {
+  const placement = (overrides: Partial<FeaturedPlacement>): FeaturedPlacement => ({
+    id: "fp1",
+    position: 1,
+    kind: "EVERYDAY",
+    startsAt: "2026-11-20T23:00:00.000Z",
+    endsAt: null,
+    live: true,
+    hiddenReason: null,
+    film: { id: "f1", title: "Sade", status: "PUBLISHED", posterPortrait: "/p.jpg" },
+    ...overrides,
+  });
+
+  it("says why a placement isn't on the home page", () => {
+    expect(hiddenText(placement({}))).toBeNull();
+    expect(hiddenText(placement({ live: false, hiddenReason: "NO_OPEN_SCREENING" }))).toBe(
+      "Hidden: no screening open for booking",
+    );
+    expect(hiddenText(placement({ live: false, hiddenReason: "NOT_STARTED" }))).toMatch(
+      /^Starts Sat 21 Nov/,
+    );
+  });
+
+  it("moves a film one place in the lineup, and no further than its ends", () => {
+    expect(moveInLineup(["a", "b", "c"], "c", -1)).toEqual(["a", "c", "b"]);
+    expect(moveInLineup(["a", "b", "c"], "a", 1)).toEqual(["b", "a", "c"]);
+    expect(moveInLineup(["a", "b", "c"], "a", -1)).toEqual(["a", "b", "c"]);
+    expect(moveInLineup(["a", "b", "c"], "c", 1)).toEqual(["a", "b", "c"]);
+  });
+});
+
+describe("audit actions", () => {
+  it("keep the API's own words, in sentence case, for any action it adds later too", () => {
+    expect(auditActionLabel("PASSWORD_CHECK_FAILED")).toBe("Password check failed");
+    expect(auditActionLabel("PAYMENT_REQUIRES_REFUND")).toBe("Payment requires refund");
+    expect(auditActionLabel("ADMIN_MOVIE_ANNOUNCED")).toBe("Movie announced");
+    expect(auditActionLabel("KYC_OTP_DISPATCHED")).toBe("KYC OTP dispatched");
   });
 });
