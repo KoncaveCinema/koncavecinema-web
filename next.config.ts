@@ -58,9 +58,9 @@ const securityHeaders = [
     key: "Permissions-Policy",
     value: "camera=(), geolocation=(), payment=(self), microphone=(self)",
   },
-  // Report-only for now: a breach is logged in the browser console, never blocked. Once a day
-  // of staging use logs nothing, this becomes Content-Security-Policy
-  { key: "Content-Security-Policy-Report-Only", value: contentSecurityPolicy },
+  // Enforced after a clean run on staging in report-only mode (November 2026). Anything the
+  // pages load from elsewhere is blocked, with a console line naming it
+  { key: "Content-Security-Policy", value: contentSecurityPolicy },
 ];
 
 const nextConfig: NextConfig = {

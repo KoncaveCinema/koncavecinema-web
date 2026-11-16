@@ -35,6 +35,18 @@ import {
   type WatermarkSpot,
 } from "./sync";
 
+// No Chromecast or AirPlay: a cast screen plays the stream on its own, without the watermark
+// this page draws over it. Mux reads the setting the moment a player is created (and would
+// otherwise load Google's cast script), so it is set on the element itself, before any exists
+const MuxVideo = globalThis.customElements?.get("mux-video");
+if (MuxVideo) {
+  Object.defineProperty(MuxVideo.prototype, "disableRemotePlayback", {
+    get: () => true,
+    set() {},
+    configurable: true,
+  });
+}
+
 /*
  * The screening itself: Mux Player held on the first frame until the start, then playing the
  * room's moment, or, for Individual Watch, the member's own film from the beginning, theirs to
