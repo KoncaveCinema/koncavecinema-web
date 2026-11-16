@@ -53,6 +53,8 @@ export default defineConfig([
       "src/components/providers/**",
       "*.config.{ts,mts,mjs}",
       "scripts/**",
+      // The Playwright journeys run outside the app, with accounts from .env.e2e.local
+      "e2e/helpers.ts",
     ],
     rules: { "no-restricted-properties": "off" },
   },
