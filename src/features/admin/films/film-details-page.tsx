@@ -465,7 +465,9 @@ function FilmDetail({ data }: { data: AdminFilm }) {
   const publish = usePublishFilm();
   const unpublish = useUnpublishFilm();
   const remove = useDeleteFilm();
-  const [confirm, setConfirm] = useState<"unpublish" | "delete" | null>(null);
+  const [confirm, setConfirm] = useState<"announce" | "publish" | "unpublish" | "delete" | null>(
+    null,
+  );
 
   const released = data.status !== "DRAFT";
   const deletable = !released && data.showtimes.length === 0;
@@ -491,34 +493,22 @@ function FilmDetail({ data }: { data: AdminFilm }) {
             {data.status === "DRAFT" && (
               <Button
                 variant="outline"
-                disabled={!canAnnounce || announce.isPending}
+                disabled={!canAnnounce}
                 title={canAnnounce ? undefined : "Attach the trailer and both posters first"}
-                onClick={() =>
-                  announce.mutate(data.id, {
-                    onSuccess: () => toast.success(`${data.title} is announced as coming soon`),
-                    onError: (error) =>
-                      toast.error(releaseRefusal(toApiError(error).code, "announced")),
-                  })
-                }
+                onClick={() => setConfirm("announce")}
               >
                 <Megaphone data-icon="inline-start" />
-                {announce.isPending ? "Announcing…" : "Announce"}
+                Announce
               </Button>
             )}
             {data.status !== "PUBLISHED" && (
               <Button
-                disabled={!canPublish || publish.isPending}
+                disabled={!canPublish}
                 title={canPublish ? undefined : "Finish the readiness checklist first"}
-                onClick={() =>
-                  publish.mutate(data.id, {
-                    onSuccess: () => toast.success(`${data.title} is published`),
-                    onError: (error) =>
-                      toast.error(releaseRefusal(toApiError(error).code, "published")),
-                  })
-                }
+                onClick={() => setConfirm("publish")}
               >
                 <Rocket data-icon="inline-start" />
-                {publish.isPending ? "Publishing…" : "Publish"}
+                Publish
               </Button>
             )}
             {(released || deletable) && (
@@ -549,7 +539,8 @@ function FilmDetail({ data }: { data: AdminFilm }) {
         <div className="space-y-8">
           <Readiness film={data} />
           <Details film={data} />
-          <Certificate film={data} />
+          {/* Starts afresh from each saved certificate, so the button rests until it's changed */}
+          <Certificate key={`${data.nfvcbCertNumber}|${data.nfvcbCertUrl}`} film={data} />
           <PostersPanel film={data} />
           <MediaPanel film={data} />
           <Showtimes film={data} />
@@ -558,6 +549,40 @@ function FilmDetail({ data }: { data: AdminFilm }) {
         <OnThisPage sections={SECTIONS} />
       </div>
 
+      <ConfirmDialog
+        open={confirm === "announce"}
+        onOpenChange={(open) => !open && setConfirm(null)}
+        title={`Announce ${data.title} as coming soon?`}
+        consequences={[
+          "Its page, posters and trailer go public on the site.",
+          "Nobody can book it until it's published.",
+          "You can take it down at any time.",
+        ]}
+        confirmLabel="Announce"
+        pendingLabel="Announcing…"
+        onConfirm={async () => {
+          await announce.mutateAsync(data.id);
+          toast.success(`${data.title} is announced as coming soon`);
+        }}
+        explainError={(error) => releaseRefusal(error.code, "announced")}
+      />
+      <ConfirmDialog
+        open={confirm === "publish"}
+        onOpenChange={(open) => !open && setConfirm(null)}
+        title={`Publish ${data.title}?`}
+        consequences={[
+          "It goes on sale: you can add screenings and members can book them.",
+          "Once a pass is paid, the producer's share is fixed.",
+          "While paid passes exist for screenings still to come, it can't be taken down.",
+        ]}
+        confirmLabel="Publish"
+        pendingLabel="Publishing…"
+        onConfirm={async () => {
+          await publish.mutateAsync(data.id);
+          toast.success(`${data.title} is published`);
+        }}
+        explainError={(error) => releaseRefusal(error.code, "published")}
+      />
       <ConfirmDialog
         open={confirm === "unpublish"}
         onOpenChange={(open) => !open && setConfirm(null)}

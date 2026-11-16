@@ -70,8 +70,14 @@ export async function markRefunded({ paymentId, note }: { paymentId: string; not
 
 /* Hooks. Each query waits for `enabled` (a member of staff signed in). */
 
+/** In the sidebar on every page (the refunds badge), so a write never waits for it */
 export function useOverview(enabled: boolean) {
-  return useQuery({ queryKey: ["/admin/overview"], queryFn: getOverview, enabled });
+  return useQuery({
+    queryKey: ["/admin/overview"],
+    queryFn: getOverview,
+    enabled,
+    meta: { background: true },
+  });
 }
 
 /** Null while the chosen range can't be asked for */

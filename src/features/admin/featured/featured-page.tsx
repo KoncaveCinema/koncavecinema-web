@@ -1,9 +1,21 @@
 "use client";
 
-import { ArrowDown, ArrowUp, CalendarPlus, Pencil, Sparkles, Trash2 } from "lucide-react";
-import { useState } from "react";
+import {
+  ArrowDown,
+  ArrowUp,
+  CalendarPlus,
+  LoaderCircle,
+  Pencil,
+  Sparkles,
+  Trash2,
+} from "lucide-react";
+import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
+import { useFeatured, useRemovePlacement, useSetFeaturedLineup } from "@/api/admin/featured-api";
+import type { FeaturedPlacement } from "@/api/admin/featured-schemas";
+import { ALL_FILMS, useFilms } from "@/api/admin/films-api";
+import type { AdminFilmListItem } from "@/api/admin/films-schemas";
 import { ConfirmDialog } from "@/components/console/confirm-dialog";
 import { PageHeader } from "@/components/console/page-header";
 import { Panel } from "@/components/console/panel";
@@ -12,10 +24,6 @@ import { DataTable } from "@/components/data-table/data-table";
 import { EmptyState, ErrorState } from "@/components/states/states";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useFeatured, useRemovePlacement, useSetFeaturedLineup } from "@/api/admin/featured-api";
-import type { FeaturedPlacement } from "@/api/admin/featured-schemas";
-import { ALL_FILMS, useFilms } from "@/api/admin/films-api";
-import type { AdminFilmListItem } from "@/api/admin/films-schemas";
 import { formatLagosDateTime } from "@/lib/format";
 
 import { PosterThumb } from "../films/poster-thumb";
@@ -51,12 +59,19 @@ function Lineup({
   const setLineup = useSetFeaturedLineup();
   const [adding, setAdding] = useState("");
   const [removing, setRemoving] = useState<FeaturedPlacement | null>(null);
+  // The button pressed, which spins while the others wait
+  const [pressed, setPressed] = useState<string | null>(null);
   const ids = placements.map((placement) => placement.film.id);
-  const save = (next: string[], done: string) =>
+  const save = (next: string[], done: string, button: string) => {
+    setPressed(button);
     setLineup.mutate(next, {
       onSuccess: () => toast.success(done),
       onError: (error) => toast.error(featuredRefusal(error)),
+      onSettled: () => setPressed(null),
     });
+  };
+  const icon = (button: string, idle: ReactNode) =>
+    pressed === button ? <LoaderCircle className="animate-spin" /> : idle;
   const addable = films.filter((film) => !ids.includes(film.value));
 
   return (
@@ -89,18 +104,30 @@ function Lineup({
                   variant="ghost"
                   aria-label={`Move ${placement.film.title} up`}
                   disabled={index === 0 || setLineup.isPending}
-                  onClick={() => save(moveInLineup(ids, placement.film.id, -1), "Lineup reordered")}
+                  onClick={() =>
+                    save(
+                      moveInLineup(ids, placement.film.id, -1),
+                      "Lineup reordered",
+                      `up:${placement.id}`,
+                    )
+                  }
                 >
-                  <ArrowUp />
+                  {icon(`up:${placement.id}`, <ArrowUp />)}
                 </Button>
                 <Button
                   size="icon"
                   variant="ghost"
                   aria-label={`Move ${placement.film.title} down`}
                   disabled={index === placements.length - 1 || setLineup.isPending}
-                  onClick={() => save(moveInLineup(ids, placement.film.id, 1), "Lineup reordered")}
+                  onClick={() =>
+                    save(
+                      moveInLineup(ids, placement.film.id, 1),
+                      "Lineup reordered",
+                      `down:${placement.id}`,
+                    )
+                  }
                 >
-                  <ArrowDown />
+                  {icon(`down:${placement.id}`, <ArrowDown />)}
                 </Button>
                 <Button
                   size="icon"
@@ -132,11 +159,14 @@ function Lineup({
           <Button
             disabled={!adding || setLineup.isPending}
             onClick={() => {
-              save([...ids, adding], "Added to the lineup");
+              save([...ids, adding], "Added to the lineup", "add");
               setAdding("");
             }}
           >
-            Add to the lineup
+            {pressed === "add" && (
+              <LoaderCircle data-icon="inline-start" className="animate-spin" />
+            )}
+            {pressed === "add" ? "Adding…" : "Add to the lineup"}
           </Button>
         </div>
       )}

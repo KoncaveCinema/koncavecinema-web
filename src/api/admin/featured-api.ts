@@ -1,7 +1,11 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { http } from "../http";
-import { featuredPlacementsSchema, type FeaturedPlacementInput } from "./featured-schemas";
+import {
+  featuredPlacementsSchema,
+  type FeaturedPlacement,
+  type FeaturedPlacementInput,
+} from "./featured-schemas";
 
 /*
  * The home page's featured films (koncavecinema-api docs/phases: phase-05b, §2.4a), each call
@@ -18,7 +22,9 @@ export async function listFeatured() {
 
 /** PUT /admin/featured/lineup: these films, in order, become the everyday lineup; [] clears it */
 export async function setFeaturedLineup(movieIds: string[]) {
-  await http({ url: "/admin/featured/lineup", method: "PUT", data: { movieIds } });
+  return featuredPlacementsSchema.parse(
+    await http({ url: "/admin/featured/lineup", method: "PUT", data: { movieIds } }),
+  );
 }
 
 /** POST /admin/featured */
@@ -48,8 +54,18 @@ export function useFeatured(enabled: boolean) {
   return useQuery({ queryKey: ["/admin/featured"], queryFn: listFeatured, enabled });
 }
 
+/** The reply is the new lineup: it replaces the cached one at once, with no refetch */
 export function useSetFeaturedLineup() {
-  return useMutation({ mutationKey: ["setFeaturedLineup"], mutationFn: setFeaturedLineup });
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationKey: ["setFeaturedLineup"],
+    mutationFn: setFeaturedLineup,
+    onSuccess: (lineup) =>
+      queryClient.setQueryData<FeaturedPlacement[]>(["/admin/featured"], (placements) => [
+        ...lineup,
+        ...(placements ?? []).filter((placement) => placement.kind === "DATED"),
+      ]),
+  });
 }
 
 export function useCreatePlacement() {

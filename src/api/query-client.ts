@@ -1,13 +1,14 @@
-import { environmentManager, MutationCache, QueryClient } from "@tanstack/react-query";
+import { environmentManager, MutationCache, QueryClient, type Query } from "@tanstack/react-query";
+import { toast } from "sonner";
 
-import { isApiError } from "./errors";
 import { refreshCatalog } from "./catalog-actions";
+import { isApiError } from "./errors";
 import { matchesPrefixes, refetchAfter, refreshesCatalog } from "./refetch";
 
 function makeQueryClient(): QueryClient {
   const queryClient: QueryClient = new QueryClient({
     // After a mutation succeeds, refetch what it changed (refetch.ts), found by its key: its
-    // operation name. Mutations of the modules not yet moved have none and refresh themselves.
+    // operation name. It waits only for the changed queries on screen; a failure there says so.
     mutationCache: new MutationCache({
       onSuccess: (_data, _variables, _context, mutation) => {
         const [operation] = mutation.options.mutationKey ?? [];
@@ -17,8 +18,25 @@ function makeQueryClient(): QueryClient {
         }
         const prefixes = typeof operation === "string" ? refetchAfter[operation] : undefined;
         if (!prefixes?.length) return;
-        return queryClient.invalidateQueries({
-          predicate: (query) => matchesPrefixes(query.queryKey, prefixes),
+        const changed = (query: Query) => matchesPrefixes(query.queryKey, prefixes);
+        const onScreen = (query: Query) => changed(query) && query.meta?.background !== true;
+        // Everything changed goes stale: what isn't shown reloads when it next is
+        void queryClient.invalidateQueries({ predicate: changed, refetchType: "none" });
+        // Background queries (the sidebar's badge) catch up without holding the write
+        void queryClient.refetchQueries({
+          predicate: (query) => changed(query) && !onScreen(query),
+          type: "active",
+        });
+        // The write finishes once the screen shows it, so its toast and the change land together
+        const refresh = () =>
+          queryClient.refetchQueries(
+            { predicate: onScreen, type: "active" },
+            { throwOnError: true },
+          );
+        return refresh().catch(() => {
+          toast.error("Saved, but this page couldn't refresh.", {
+            action: { label: "Refresh", onClick: () => void refresh().catch(() => {}) },
+          });
         });
       },
     }),

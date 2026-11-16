@@ -81,7 +81,8 @@ export const refetchAfter: Record<string, readonly string[]> = {
   createFeaturedPlacement: ["/admin/featured", "/movies/featured", "/admin/audit-logs"],
   updateFeaturedPlacement: ["/admin/featured", "/movies/featured", "/admin/audit-logs"],
   removeFeaturedPlacement: ["/admin/featured", "/movies/featured", "/admin/audit-logs"],
-  setFeaturedLineup: ["/admin/featured", "/movies/featured", "/admin/audit-logs"],
+  // Not /admin/featured: its reply is the new lineup, put straight into the cache
+  setFeaturedLineup: ["/movies/featured", "/admin/audit-logs"],
 };
 
 /** Staff writes that change what the public pages show */
