@@ -13,6 +13,9 @@ if (env.API_DEV_PROXY_URL && env.VERCEL_ENV) {
 }
 
 const dev = process.env.NODE_ENV === "development";
+// Vercel's feedback toolbar, which Vercel adds to staging and preview deployments, never production
+const toolbar = (...hosts: string[]) =>
+  env.VERCEL_ENV === "preview" ? ` ${["https://vercel.live", ...hosts].join(" ")}` : "";
 
 // Where the pages may load from. Scripts allow inline code because Next.js bootstraps each page
 // inline; nonces would force every page to render per request and lose the static shells.
@@ -21,10 +24,10 @@ const dev = process.env.NODE_ENV === "development";
 // F7 adds the chat (Socket.IO) and voice (LiveKit) hosts.
 const contentSecurityPolicy = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${dev ? " 'unsafe-eval'" : ""}`,
-  "style-src 'self' 'unsafe-inline'",
-  `img-src 'self' data: blob: ${IMAGE_HOSTS.map((host) => `https://${host}`).join(" ")}`,
-  "font-src 'self'",
+  `script-src 'self' 'unsafe-inline'${dev ? " 'unsafe-eval'" : ""}${toolbar()}`,
+  `style-src 'self' 'unsafe-inline'${toolbar()}`,
+  `img-src 'self' data: blob: ${IMAGE_HOSTS.map((host) => `https://${host}`).join(" ")}${toolbar("https://vercel.com")}`,
+  `font-src 'self'${toolbar("https://assets.vercel.com")}`,
   "media-src 'self' blob: https://*.mux.com https://*.streamable.com",
   [
     "connect-src 'self'",
@@ -32,12 +35,13 @@ const contentSecurityPolicy = [
     "https://*.mux.com https://*.litix.io https://storage.googleapis.com",
     // Turbopack's hot reload
     dev ? "ws:" : "",
+    toolbar("wss://ws-us3.pusher.com").trim(),
   ]
     .filter(Boolean)
     .join(" "),
   "worker-src 'self' blob:",
   // Streamable teasers play in their own frame
-  "frame-src https://streamable.com",
+  `frame-src https://streamable.com${toolbar()}`,
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
