@@ -58,9 +58,10 @@ export function IdentityCheck({ onVerified }: { onVerified: () => void }) {
     control,
     handleSubmit,
     resetField,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isValid },
   } = useForm<VerifyIdentityValues>({
     resolver: zodResolver(verifyIdentitySchema),
+    mode: "onTouched",
     defaultValues: { otp: "", legalFullName: "", publicScreenAlias: alias ? undefined : "" },
   });
 
@@ -269,7 +270,7 @@ export function IdentityCheck({ onVerified }: { onVerified: () => void }) {
           )}
         </div>
         {failure && <FormAlert>{failure}</FormAlert>}
-        <Button type="submit" size="xl" disabled={!sentTo || isSubmitting}>
+        <Button type="submit" size="xl" disabled={!sentTo || !isValid || isSubmitting}>
           {isSubmitting ? "Verifying…" : "Verify and continue"}
           {!isSubmitting && <ArrowRight data-icon="inline-end" />}
         </Button>

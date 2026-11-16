@@ -43,11 +43,12 @@ export function ScreenAliasForm({
   const { register, handleSubmit, setError, control } = useForm({
     resolver: zodResolver(aliasForm),
     defaultValues: { publicScreenAlias: saved },
+    mode: "onTouched",
   });
   // Explicit subscriptions rather than the form's "dirty" flag, which went stale after a save
   // (the form could not be sent again until a reload): the button compares the typed alias
   // with the saved one, so it wakes as soon as the member edits it
-  const { errors, isSubmitting } = useFormState({ control });
+  const { errors, isSubmitting, isValid } = useFormState({ control });
   const typed = useWatch({ control, name: "publicScreenAlias" });
   const unchanged = typed.trim() === saved;
 
@@ -101,7 +102,7 @@ export function ScreenAliasForm({
             type="submit"
             size="lg"
             className="h-12 shrink-0"
-            disabled={locked || isSubmitting || unchanged}
+            disabled={locked || !isValid || isSubmitting || unchanged}
           >
             {isSubmitting ? pendingLabel : submitLabel}
           </Button>

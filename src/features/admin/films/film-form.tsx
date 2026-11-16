@@ -89,9 +89,10 @@ export function FilmForm({
     register,
     control,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isValid, isDirty },
   } = useForm<FilmFormInput, unknown, FilmValues>({
     resolver: zodResolver(filmSchema),
+    mode: "onTouched",
     defaultValues: initial,
   });
 
@@ -227,7 +228,11 @@ export function FilmForm({
             Cancel
           </Button>
         )}
-        <Button type="submit" disabled={isSubmitting}>
+        {/* Editing a saved film, there is nothing to save until something changes */}
+        <Button
+          type="submit"
+          disabled={!isValid || isSubmitting || (initial !== FILM_DEFAULTS && !isDirty)}
+        >
           {isSubmitting ? pendingLabel : submitLabel}
         </Button>
       </div>

@@ -254,9 +254,10 @@ function Certificate({ film }: { film: AdminFilm }) {
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting, isDirty },
+    formState: { errors, isSubmitting, isDirty, isValid },
   } = useForm<CertificateValues>({
     resolver: zodResolver(certificateSchema),
+    mode: "onTouched",
     defaultValues: {
       nfvcbCertNumber: film.nfvcbCertNumber ?? "",
       nfvcbCertUrl: film.nfvcbCertUrl ?? "",
@@ -322,7 +323,7 @@ function Certificate({ film }: { film: AdminFilm }) {
           </div>
         )}
         <div className="flex justify-end sm:col-span-2">
-          <Button type="submit" disabled={isSubmitting || !isDirty}>
+          <Button type="submit" disabled={!isValid || isSubmitting || !isDirty}>
             {isSubmitting
               ? "Saving…"
               : film.nfvcbCertNumber
