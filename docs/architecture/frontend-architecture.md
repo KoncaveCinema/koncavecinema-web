@@ -21,8 +21,8 @@ decision depends on the backend, the API document that drives it is linked.
 | Toasts             | Sonner                                                  | The shadcn standard; accessible, stackable.                                                                                                                                |
 | Dates & countdowns | date-fns v4                                             | Tree-shakable; showtime and countdown formatting in the viewer's timezone.                                                                                                 |
 | Environment        | `@t3-oss/env-nextjs` + Zod                              | Build fails on a missing or malformed variable, mirroring the API's validated environment.                                                                                 |
-| Unit tests         | Vitest + Testing Library                                | Fast, ESM-native, Vite-compatible.                                                                                                                                         |
-| End-to-end tests   | Playwright                                              | Real browsers, including WebKit for Safari / FairPlay behaviour.                                                                                                           |
+| Unit tests         | Vitest + Testing Library                                | Our own logic, and each schema checked against a reply recorded from staging. No MSW, no faker, no generated client.                                                       |
+| End-to-end tests   | Playwright                                              | A few journeys against staging, run on demand (see section 8).                                                                                                             |
 | Quality gates      | ESLint (flat), Prettier, Husky, lint-staged, Commitlint | Same rules and commit conventions as the API repository.                                                                                                                   |
 
 Libraries added only in the phase that needs them (and loaded only on those routes):
@@ -42,27 +42,44 @@ duplicate user storage. The web app therefore uses a thin session layer of its o
   to `localStorage`, `sessionStorage` or a readable cookie, so injected scripts cannot lift it from
   storage.
 - On load, the app calls `POST /api/auth/refresh` once; the browser sends the refresh cookie and
-  the API returns a fresh access token. A `401` on any request triggers one shared refresh (all
-  concurrent requests wait on the same promise) and a single retry; a failed refresh signs the
-  user out.
-- Route protection: signed-in areas render a client guard that waits for the bootstrap refresh.
-  Server-side gating (Next.js `proxy.ts`) cannot read the API's cookie, so a non-sensitive
-  `kc_signed_in=1` hint cookie set by the web app is used only to choose a redirect early, never
-  as proof of identity.
+  the API returns a fresh access token. A dropped connection or a server error retries the
+  restore (after 2, 5 and 10 seconds); only a `401` signs the member out. A `401` on any
+  request triggers one shared refresh (all concurrent requests wait on the same promise) and a
+  single retry.
+- Route protection: signed-in areas render a client guard that waits for the session restore,
+  and the sign-in pages send a signed-in member on. The server can't read the API's cookie, so
+  nothing is gated there; `proxy.ts` only runs staging's password gate.
 - Social login is out of scope for the MVP ([PRD 2.2](https://github.com/KoncaveCinema/koncavecinema-api/blob/main/docs/specifications/prd.md)).
 
 ## 3. Talking to the API
 
 - **Topology**: the browser calls the API directly at `NEXT_PUBLIC_API_URL` with
   `withCredentials: true`. In production the API lives on `api.koncavecinema.com`, the same site
-  as `koncavecinema.com`, so the `SameSite=Strict` refresh cookie is sent. Locally the web app runs
-  on `http://localhost:3001` and the API on `http://localhost:3000`; add
-  `http://localhost:3001` to the API's `CORS_ORIGIN`.
-- Calling the API directly (instead of proxying through Next.js) keeps the viewer's real IP
-  address visible to the API, which the geo-velocity check in Phase 5 depends on, and keeps
-  heartbeats one hop.
-- Server Components fetch public data (catalog, film pages) with the same client on the server,
-  without credentials, and cache with `revalidate`.
+  as `koncavecinema.com`, so the `SameSite=Strict` refresh cookie is sent. Calling the API
+  directly keeps the viewer's real IP address visible to the API, which its location check
+  depends on, and keeps heartbeats one hop.
+- **Local development** runs on `http://localhost:8000`. Against a local API, add that origin to
+  the API's `CORS_ORIGIN`. Against staging, the refresh cookie wouldn't cross from localhost, so
+  `NEXT_PUBLIC_API_URL` is `http://localhost:8000/api` and a dev-only rewrite forwards it to
+  `API_DEV_PROXY_URL` (refused on any Vercel environment).
+- **The layer lives in `src/api/`**, written by hand after the API's `openapi.json` (read as the
+  reference; nothing is generated from it):
+  - the core: `client.ts` (the axios instance, token and refresh), `http.ts` (every browser
+    request), `http-server.ts` (anonymous, server-only, public reads), the envelope, `ApiError`,
+    the server clock and idempotency keys;
+  - one folder per API area (`auth/`, `movies/`, `showtimes/`, `tickets/`, `payments/`,
+    `stream-security/`, `admin/`), each with `*-schemas.ts` (Zod, only the fields its screens
+    use) and `*-api.ts` (requests that parse every reply, and their TanStack Query hooks);
+  - query keys start with the API path (`["/admin/movies", query]`); mutation keys are the API's
+    operation names (`["publishMovie"]`).
+- **After a write**, `refetch.ts` lists what each operation changes. A save waits only for the
+  changed queries on screen, so its toast and the new data land together; the rest refresh in the
+  background (a query marked `meta.background`, like the sidebar's refunds badge, never holds a
+  save). If the screen can't refresh, a toast says so with a Refresh action.
+- **Public pages** read through `http-server.ts` inside `"use cache"` loaders tagged
+  `catalog`, shared between visitors and refreshed about every minute. A staff change that
+  shows on the site (`refreshesCatalog` in `refetch.ts`) calls the `refreshCatalog` server
+  action, which expires the tag so the next visitor sees it.
 - **Envelope**: successful responses are `{ statusCode, success, data, meta?, timestamp }`; the
   client returns `data` (and `meta` for paginated lists).
 - **Errors**: `{ statusCode, code, message, error, timestamp, path }`; the client throws
@@ -101,9 +118,9 @@ network) are in [performance.md](./performance.md).
 - **Routes stay thin.** A route's `page.tsx` (default export `Page`) sets its metadata and
   renders one component from its feature. The code lives outside `app/`, one of the layouts the
   Next.js project-organisation guide describes.
-- **Feature code** lives in `src/features/<feature>/`: `api-types.ts` (the API's shapes),
-  `service.ts` (the calls, and the sample data's stand-in), `queries.ts` (TanStack Query hooks),
-  `schemas.ts` (Zod), `demo.ts` (sample data), and the components.
+- **Feature code** lives in `src/features/<feature>/`: the screens, their components and their
+  own logic (form schemas, view mapping, the room's clock). They import their data hooks from
+  `src/api/<area>`; nothing in `features/` calls the API itself.
 - **Page components end in `-page.tsx`.** The component a route renders is
   `<name>-page.tsx`, exporting `<Name>Page`, for example `films-page.tsx` (`FilmsPage`) for
   `/admin/films` and `film-details-page.tsx` (`FilmDetailsPage`) for `/admin/films/[id]`. A file
@@ -123,3 +140,18 @@ network) are in [performance.md](./performance.md).
   server clock), and `src/lib/` (helpers with no React).
 - **Lists** page by number (`?page=`, `?pageSize=` of 10, 20, 50 or 100, the API's 20 by
   default), or by the API's cursor for a list too large to count (the audit log).
+
+## 8. End-to-End Journeys
+
+A few Playwright journeys (`npm run test:e2e`) run against staging through the dev server, on
+demand rather than on every commit: guards, sign-in, booking up to Paystack's checkout, the
+screening room, and one admin flow that deletes what it creates. They read staging as it stands
+(the next pass, the first open screening) instead of expecting fixed data.
+
+- **Accounts** come from `.env.e2e.local` (ignored by git): `E2E_MEMBER_EMAIL`,
+  `E2E_MEMBER_PASSWORD`, `E2E_ADMIN_EMAIL`, `E2E_ADMIN_PASSWORD`. A journey whose account is
+  missing is skipped.
+- **One worker.** Each journey signs in afresh. Refresh tokens are single-use, so parallel
+  journeys sharing a session would trip the API's reuse check and end every session.
+- **Left to manual checks:** paying (each run would leave a paid pass and a refund), uploads to
+  Mux, and playback to the end of a screening.

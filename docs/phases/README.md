@@ -5,11 +5,12 @@ start depends on the matching backend phase being delivered
 ([API roadmap](https://github.com/KoncaveCinema/koncavecinema-api/blob/main/docs/phases/README.md)).
 
 Backend status (November 2026): API Phases 1–5 and the Phase 5.5 admin module delivered, and
-staging is hosted at `staging-api.koncavecinema.com`; Phases 6–8 not started.
+staging is hosted at `staging-api.koncavecinema.com`; Phase 6 (chat and voice) under way, 7–8
+not started.
 
-Web status (November 2026): every screen through F6 is built on sample data
-(`NEXT_PUBLIC_DATA_SOURCE=fixtures`), typed to the API's real responses. Connecting each one to
-the API is the next step.
+Web status (16 November 2026): every screen through F6 reads and writes the live API, with no
+sample data left. Each reply is checked against a schema in `src/api/`, and the whole path from
+preparing a film to watching it was tested on staging. F7 (chat and voice, API Phase 6) is next.
 
 ```txt
 [F0 Foundation & Tooling]
@@ -35,18 +36,16 @@ the API is the next step.
 [F9 Hardening, Observability & Launch]                       (API 8)
 ```
 
-"Demo": built and reviewed on sample data; the API connection is still to do.
-
 | Phase                                           | Title                               | Depends on API | Status  |
 | :---------------------------------------------- | :---------------------------------- | :------------- | :------ |
 | [F0](./phase-00-foundation-and-tooling.md)      | Foundation & Tooling                | none           | Done    |
 | [F1](./phase-01-design-system-and-app-shell.md) | Design System & App Shell           | none           | Done    |
-| [F2](./phase-02-accounts-sessions-and-kyc.md)   | Accounts, Sessions & KYC            | Phase 1        | Demo    |
-| [F3](./phase-03-catalog-film-pages-and-seo.md)  | Catalog, Film Pages & SEO           | Phase 2        | Demo    |
-| [F4](./phase-04-ticketing-and-checkout.md)      | Ticketing, Checkout & Dashboard     | Phases 3, 4    | Demo    |
-| [F5](./phase-05-lobby-and-secure-playback.md)   | Lobby & Secure Playback             | Phase 5        | Demo    |
-| [F6](./phase-06-studio-producer-and-admin.md)   | Admin Console (producers later)     | Phases 2, 5.5  | Demo    |
-| [F7](./phase-07-chat-and-voice-rooms.md)        | Communal Chat & Private Suite Voice | Phase 6        | Blocked |
+| [F2](./phase-02-accounts-sessions-and-kyc.md)   | Accounts, Sessions & KYC            | Phase 1        | Done    |
+| [F3](./phase-03-catalog-film-pages-and-seo.md)  | Catalog, Film Pages & SEO           | Phase 2        | Done    |
+| [F4](./phase-04-ticketing-and-checkout.md)      | Ticketing, Checkout & Dashboard     | Phases 3, 4    | Done    |
+| [F5](./phase-05-lobby-and-secure-playback.md)   | Lobby & Secure Playback             | Phase 5        | Done    |
+| [F6](./phase-06-studio-producer-and-admin.md)   | Admin Console (producers later)     | Phases 2, 5.5  | Done    |
+| [F7](./phase-07-chat-and-voice-rooms.md)        | Communal Chat & Private Suite Voice | Phase 6        | Next    |
 | [F8](./phase-08-concessions-and-delivery.md)    | Concessions & Delivery Tracking     | Phase 7        | Blocked |
 | [F9](./phase-09-hardening-and-launch.md)        | Hardening, Observability & Launch   | Phase 8        | Later   |
 

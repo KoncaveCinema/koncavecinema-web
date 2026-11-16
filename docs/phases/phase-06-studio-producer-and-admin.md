@@ -1,10 +1,11 @@
 # Phase F6: Admin Console (producer studio later)
 
-## As built (November 2026, sample data)
+## As built (November 2026)
 
 Built against the API's Phase 5.5 admin module, for `ADMIN` and `SUPER_ADMIN`. Producers have no
-console yet. Code in `src/features/admin/`, one folder per area; one demo store
-(`demo-store.ts`) stands in for the database, seeded from the sample catalogue.
+console yet. Screens in `src/features/admin/`, one folder per area; requests, schemas and hooks
+in `src/api/admin/`. Tested on staging end to end (15 November), from a new draft to a published
+film with a sold and watched screening.
 
 | Route                           | Screen                                                          | Access                      |
 | :------------------------------ | :-------------------------------------------------------------- | :-------------------------- |
@@ -12,6 +13,7 @@ console yet. Code in `src/features/admin/`, one folder per area; one demo store
 | `/admin`                        | Overview: screenings, refunds waiting, sales, drafts to finish  | staff                       |
 | `/admin/films`, `/new`, `/[id]` | Films; a film's readiness, details, certificate, posters, media | staff                       |
 | `/admin/showtimes`, `/[id]`     | Schedule, rooms, suites, revenue; change or cancel              | staff                       |
+| `/admin/featured`               | Home page hero: everyday lineup and dated placements            | staff                       |
 | `/admin/sales`                  | Sales report with CSV export                                    | staff                       |
 | `/admin/refunds`                | Refunds queue; recording a refund                               | super admin records         |
 | `/admin/payments`               | Payments search with the settlement split                       | staff                       |
