@@ -31,7 +31,7 @@ export interface PaymentsQuery {
 }
 
 export interface RefundsQuery {
-  state: "pending" | "done";
+  state: "pending" | "in_progress" | "done";
   page?: number;
   /** 20 when absent (the API's default), at most 100 */
   pageSize?: number;
@@ -55,6 +55,16 @@ export async function listPayments(query: PaymentsQuery) {
 /** GET /admin/refunds */
 export async function listRefunds(query: RefundsQuery) {
   return adminPaymentPageSchema.parse(await http({ url: "/admin/refunds", params: query }));
+}
+
+/**
+ * POST /admin/refunds/:paymentId/refund: sends a full refund through Paystack (super admin). The
+ * payment is IN_PROGRESS until Paystack's webhook settles it.
+ */
+export async function sendRefund(paymentId: string) {
+  return adminPaymentSchema.parse(
+    await http({ url: `/admin/refunds/${encodeURIComponent(paymentId)}/refund`, method: "POST" }),
+  );
 }
 
 /** POST /admin/refunds/:paymentId/mark-refunded: a refund already made in Paystack (super admin) */
@@ -106,6 +116,10 @@ export function useRefunds(query: RefundsQuery, enabled: boolean) {
     enabled,
     placeholderData: (previous) => previous,
   });
+}
+
+export function useSendRefund() {
+  return useMutation({ mutationKey: ["sendRefund"], mutationFn: sendRefund });
 }
 
 export function useMarkRefunded() {

@@ -7,7 +7,7 @@ import { ticketStatusSchema } from "../tickets/tickets-schemas";
 
 /*
  * The admin money replies the console reads (overview, sales, payments, refunds), checked
- * against koncavecinema-api's openapi.json (dev, 258ce4f).
+ * against koncavecinema-api's openapi.json (dev, a479963).
  */
 
 /** Kept revenue over a period: settled payments not owed back, one per paid pass */
@@ -60,6 +60,13 @@ export const refundReasonSchema = z.enum([
 ]);
 export type RefundReason = z.infer<typeof refundReasonSchema>;
 
+/**
+ * Where a refund stands: owed and not sent (PENDING), sent through Paystack and waiting for its
+ * outcome (IN_PROGRESS), or settled (DONE)
+ */
+export const refundStateSchema = z.enum(["PENDING", "IN_PROGRESS", "DONE"]);
+export type RefundState = z.infer<typeof refundStateSchema>;
+
 const salesTotalsShape = {
   payments: z.number(),
   gross: z.number(),
@@ -104,8 +111,14 @@ export const adminPaymentSchema = z.object({
   refund: z
     .object({
       reason: refundReasonSchema.nullable(),
+      state: refundStateSchema,
       requiredAt: z.iso.datetime(),
+      /** When it was last sent through Paystack */
+      sentAt: z.iso.datetime().nullable(),
       refundedAt: z.iso.datetime().nullable(),
+      /** The last attempt through Paystack failed: it is owed again, with Paystack's reason */
+      failedAt: z.iso.datetime().nullable(),
+      failureReason: z.string().nullable(),
       note: z.string().nullable(),
     })
     .nullable(),

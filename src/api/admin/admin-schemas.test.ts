@@ -142,7 +142,7 @@ describe("admin schemas", () => {
     expect(adminOverviewSchema.parse(overview).refundsWaiting.count).toBe(2);
   });
 
-  it("accept a showtime row, a payment that requires a refund, a member and a staff account", () => {
+  it("accept a showtime row, owed and failed refunds, a member and a staff account", () => {
     adminShowtimePageSchema.parse({
       items: [
         {
@@ -161,35 +161,41 @@ describe("admin schemas", () => {
       ],
       meta,
     });
-    adminPaymentPageSchema.parse({
-      items: [
-        {
-          id: "p1",
-          reference: "KNV-4E099A5C-1793904609359",
-          status: "SUCCESS",
-          amount: 5177.67,
-          currency: "NGN",
-          createdAt: at,
-          refund: {
-            reason: "DUPLICATE_PAYMENT_FOR_CONFIRMED_PASS",
-            requiredAt: at,
-            refundedAt: null,
-            note: null,
-          },
-          settlement: null,
-          member: { id: "u1", email: "member@koncavecinema.com" },
-          ticket: {
-            id: "t1",
-            tier: "INDIVIDUAL",
-            seatIdentifier: "PASS-000007",
-            status: "CONFIRMED",
-          },
-          showtime: { id: "s1", startTime: at, movie: { id: "f1", title: "House of Amina" } },
-        },
-      ],
-      meta,
-    });
-    adminMemberSchema.parse({
+    const owed = {
+      id: "p1",
+      reference: "KNV-4E099A5C-1793904609359",
+      status: "SUCCESS",
+      amount: 5177.67,
+      currency: "NGN",
+      createdAt: at,
+      refund: {
+        reason: "DUPLICATE_PAYMENT_FOR_CONFIRMED_PASS",
+        state: "PENDING",
+        requiredAt: at,
+        sentAt: null,
+        refundedAt: null,
+        failedAt: null,
+        failureReason: null,
+        note: null,
+      },
+      settlement: null,
+      member: { id: "u1", email: "member@koncavecinema.com" },
+      ticket: {
+        id: "t1",
+        tier: "INDIVIDUAL",
+        seatIdentifier: "PASS-000007",
+        status: "CONFIRMED",
+      },
+      showtime: { id: "s1", startTime: at, movie: { id: "f1", title: "House of Amina" } },
+    };
+    // Owed again after Paystack refused an attempt, with its reason
+    const failed = {
+      ...owed,
+      refund: { ...owed.refund, sentAt: at, failedAt: at, failureReason: "Insufficient balance" },
+    };
+    const page = adminPaymentPageSchema.parse({ items: [owed, failed], meta });
+    expect(page.items[1]?.refund?.failureReason).toBe("Insufficient balance");
+    const member = adminMemberSchema.parse({
       id: "u1",
       email: "member@koncavecinema.com",
       publicScreenAlias: "Ada_Watches",
@@ -203,7 +209,7 @@ describe("admin schemas", () => {
           id: "t1",
           tier: "INDIVIDUAL",
           seatIdentifier: "PASS-000001",
-          status: "CHECKED_IN",
+          status: "CANCELLED",
           purchasePrice: 5177.67,
           currency: "NGN",
           movie: { title: "Ember & Ash", slug: "ember-and-ash" },
@@ -211,13 +217,26 @@ describe("admin schemas", () => {
           endTime: at,
           cancellable: false,
           createdAt: at,
-          payments: [],
+          payments: [
+            {
+              id: "p1",
+              reference: "KNV-7D606088-1794389459681",
+              status: "SUCCESS",
+              amount: 5177.67,
+              currency: "NGN",
+              refundReason: "SHOWTIME_CANCELLED",
+              refundState: "IN_PROGRESS",
+              refundedAt: null,
+              createdAt: at,
+            },
+          ],
         },
       ],
       recentSignIns: [
         { action: "USER_LOGIN_SUCCESS", ipAddress: "100.64.0.12", userAgent: null, timestamp: at },
       ],
     });
+    expect(member.passes[0]?.payments[0]?.refundState).toBe("IN_PROGRESS");
     expect(
       staffMemberSchema.parse({
         id: "a1",
