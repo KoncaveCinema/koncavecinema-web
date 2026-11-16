@@ -64,9 +64,10 @@ export function ContactForm() {
     handleSubmit,
     control,
     reset,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isValid },
   } = useForm<ContactValues>({
     resolver: zodResolver(contactSchema),
+    mode: "onTouched",
     defaultValues: { topic: topicFromParam(searchParams.get("topic")) },
   });
   const topic = useWatch({ control, name: "topic" });
@@ -212,7 +213,12 @@ export function ContactForm() {
         </p>
       )}
 
-      <Button type="submit" size="xl" disabled={isSubmitting} className="w-full sm:w-auto">
+      <Button
+        type="submit"
+        size="xl"
+        disabled={!isValid || isSubmitting}
+        className="w-full sm:w-auto"
+      >
         {isSubmitting ? "Sending…" : "Send message"}
         {!isSubmitting && <ArrowRight data-icon="inline-end" />}
       </Button>

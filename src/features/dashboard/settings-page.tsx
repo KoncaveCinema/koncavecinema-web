@@ -76,9 +76,10 @@ function PasswordForm() {
     setError,
     reset,
     control,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isValid },
   } = useForm({
     resolver: zodResolver(passwordSchema),
+    mode: "onTouched",
     defaultValues: { currentPassword: "", newPassword: "", confirmPassword: "" },
   });
   const password = useWatch({ control, name: "newPassword" });
@@ -145,7 +146,7 @@ function PasswordForm() {
       </div>
       {problem && <FormAlert>{problem}</FormAlert>}
       <div className="flex flex-wrap items-center gap-3">
-        <Button type="submit" size="lg" disabled={isSubmitting}>
+        <Button type="submit" size="lg" disabled={!isValid || isSubmitting}>
           {isSubmitting ? "Changing…" : "Change password"}
         </Button>
         <p className="text-xs text-white/45">Your other devices will be signed out.</p>

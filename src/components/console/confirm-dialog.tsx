@@ -229,7 +229,7 @@ export function ConfirmDialog({
           </AlertDialogCancel>
           <Button
             variant={tone === "danger" ? "destructive" : "default"}
-            disabled={pending || !typedOk || !canConfirm || (touched && Boolean(problem))}
+            disabled={!ready}
             onClick={() => void confirm()}
             // Solid brand red in dark mode too, where the kit's destructive style is a faint tint
             className={cn(

@@ -41,6 +41,7 @@ export function StaffSignInForm() {
     reset,
     formState: { errors, isSubmitting },
   } = useForm<SignInValues>({
+    // Checked on press, with the button enabled: see the member sign-in form
     resolver: zodResolver(signInSchema),
     defaultValues: { email: "", password: "" },
   });

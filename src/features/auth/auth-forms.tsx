@@ -58,6 +58,8 @@ export function SignInForm() {
     reset,
     formState: { errors, isSubmitting },
   } = useForm<SignInValues>({
+    // Checked on press, and the button stays enabled: a password manager fills the fields
+    // without telling the page, so a button waiting for valid fields would look stuck
     resolver: zodResolver(signInSchema),
     defaultValues: { email: "", password: "" },
   });
@@ -157,8 +159,8 @@ export function RegisterForm() {
     register: field,
     handleSubmit,
     control,
-    formState: { errors, isSubmitting },
-  } = useForm<RegisterValues>({ resolver: zodResolver(registerSchema) });
+    formState: { errors, isSubmitting, isValid },
+  } = useForm<RegisterValues>({ resolver: zodResolver(registerSchema), mode: "onTouched" });
   const password = useWatch({ control, name: "password" }) ?? "";
 
   const onSubmit = async (values: RegisterValues) => {
@@ -241,7 +243,7 @@ export function RegisterForm() {
         </div>
         <FieldError message={errors.acceptTerms?.message} />
         {failure && <FormAlert>{failure}</FormAlert>}
-        <Button type="submit" size="xl" disabled={isSubmitting} className="w-full">
+        <Button type="submit" size="xl" disabled={!isValid || isSubmitting} className="w-full">
           {isSubmitting ? "Creating your account…" : "Create account"}
           {!isSubmitting && <ArrowRight data-icon="inline-end" />}
         </Button>
@@ -265,8 +267,11 @@ export function ForgotPasswordForm() {
   const {
     register: field,
     handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<ForgotPasswordValues>({ resolver: zodResolver(forgotPasswordSchema) });
+    formState: { errors, isSubmitting, isValid },
+  } = useForm<ForgotPasswordValues>({
+    resolver: zodResolver(forgotPasswordSchema),
+    mode: "onTouched",
+  });
 
   const onSubmit = async (values: ForgotPasswordValues) => {
     setFailure(null);
@@ -327,7 +332,7 @@ export function ForgotPasswordForm() {
           <FieldError message={errors.email?.message} />
         </div>
         {failure && <FormAlert>{failure}</FormAlert>}
-        <Button type="submit" size="xl" disabled={isSubmitting} className="w-full">
+        <Button type="submit" size="xl" disabled={!isValid || isSubmitting} className="w-full">
           {isSubmitting ? "Sending…" : "Send reset link"}
         </Button>
       </form>
@@ -360,8 +365,11 @@ export function ResetPasswordForm() {
     register: field,
     handleSubmit,
     control,
-    formState: { errors, isSubmitting },
-  } = useForm<ResetPasswordValues>({ resolver: zodResolver(resetPasswordSchema) });
+    formState: { errors, isSubmitting, isValid },
+  } = useForm<ResetPasswordValues>({
+    resolver: zodResolver(resetPasswordSchema),
+    mode: "onTouched",
+  });
   const password = useWatch({ control, name: "newPassword" }) ?? "";
 
   const onSubmit = async (values: ResetPasswordValues) => {
@@ -437,7 +445,7 @@ export function ResetPasswordForm() {
           <FieldError message={errors.confirmPassword?.message} />
         </div>
         {failure && <FormAlert>{failure}</FormAlert>}
-        <Button type="submit" size="xl" disabled={isSubmitting} className="w-full">
+        <Button type="submit" size="xl" disabled={!isValid || isSubmitting} className="w-full">
           {isSubmitting ? "Saving…" : "Save password"}
         </Button>
       </form>
