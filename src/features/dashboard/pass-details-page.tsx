@@ -25,7 +25,7 @@ import { AUDITORIUMS } from "@/features/home/auditoriums/halls";
 import { SUPPORT_EMAIL } from "@/features/support/content";
 import { formatCountdown, formatMoney } from "@/lib/format";
 
-import { useServerNow } from "@/hooks/use-now";
+import { useServerNow, useViewerTimeZone } from "@/hooks/use-now";
 import { downloadIcs, googleCalendarUrl, type CalendarEvent } from "@/lib/ics";
 
 import { useGetSuiteGuests, useGetTicket, useReleaseTicket } from "@/api/tickets/tickets-api";
@@ -403,7 +403,8 @@ export function PassDetailsPage({ params }: { params: Promise<{ ticketId: string
 
 function PassDetail({ detail }: { detail: TicketDetail }) {
   const now = useServerNow();
-  const view = ticketView(detail, now ?? 0);
+  const timeZone = useViewerTimeZone();
+  const view = ticketView(detail, now ?? 0, timeZone);
   const passHref = `/dashboard/tickets/${detail.id}`;
   const primary = view.action && view.action.href !== passHref ? view.action : null;
   const active = detail.status === "CONFIRMED" || detail.status === "CHECKED_IN";

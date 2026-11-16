@@ -24,13 +24,13 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSession } from "@/features/auth/session";
 import type { TicketDetail } from "@/api/tickets/tickets-schemas";
-import { formatCountdown, formatElapsed } from "@/lib/format";
+import { formatClock, formatCountdown, formatElapsed } from "@/lib/format";
 
 import { useGetMyTickets } from "@/api/tickets/tickets-api";
 import { useSignedIn } from "@/features/auth/require-session";
 import { roomName, TicketCard, TicketCardSkeleton } from "./ticket-card";
 import { ticketView } from "./pass-state";
-import { useServerNow } from "@/hooks/use-now";
+import { useServerNow, useViewerTimeZone } from "@/hooks/use-now";
 
 const SHORTCUTS = [
   {
@@ -50,10 +50,19 @@ const SHORTCUTS = [
 ];
 
 /** The big clock on the hero: what happens next, and how long until it does. */
-function heroClock(ticket: TicketDetail, now: number | null) {
+function heroClock(ticket: TicketDetail, now: number | null, timeZone?: string) {
   if (now === null) return { label: "Starts", value: null, live: false, lobby: false };
   const start = Date.parse(ticket.startTime);
   const lobby = Date.parse(ticket.lobbyOpensAt);
+  // The film is over, but the pass stays open a while (an hour for Individual Watch)
+  if (now >= Date.parse(ticket.endTime)) {
+    return {
+      label: "Film ended · open until",
+      value: formatClock(ticket.accessEndsAt, timeZone),
+      live: false,
+      lobby: false,
+    };
+  }
   if (now >= start) {
     return {
       label: "Live now",
@@ -112,8 +121,9 @@ function HoldBanner({ ticket, now }: { ticket: TicketDetail; now: number | null 
 
 /** The next screening, as the film page opens: the still across the stage, and the way in. */
 function NextScreening({ ticket, now }: { ticket: TicketDetail; now: number | null }) {
-  const view = ticketView(ticket, now ?? 0);
-  const clock = heroClock(ticket, now);
+  const timeZone = useViewerTimeZone();
+  const view = ticketView(ticket, now ?? 0, timeZone);
+  const clock = heroClock(ticket, now, timeZone);
   const passHref = `/dashboard/tickets/${ticket.id}`;
   return (
     <section

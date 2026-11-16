@@ -1,5 +1,6 @@
 import type { StatusKind } from "@/components/console/status-badge";
 import type { TicketDetail } from "@/api/tickets/tickets-schemas";
+import { formatClock } from "@/lib/format";
 
 /* What a pass is right now, and the one thing to do next with it. One function, so the
    dashboard home, the tickets list and the pass page always agree. */
@@ -56,7 +57,8 @@ export function cancellationText(ticket: TicketDetail): string {
   }
 }
 
-export function ticketView(ticket: TicketDetail, now: number): TicketView {
+/** `timeZone` is the viewer's, for the time a pass stays open after its film ends */
+export function ticketView(ticket: TicketDetail, now: number, timeZone?: string): TicketView {
   const pass = `/dashboard/tickets/${ticket.id}`;
   const watch = `/watch/${ticket.id}`;
   const start = Date.parse(ticket.startTime);
@@ -130,9 +132,17 @@ export function ticketView(ticket: TicketDetail, now: number): TicketView {
     };
   }
   if (now >= start) {
+    // After the film ends the pass stays open a while (an hour for Individual Watch): not live
+    const over = now >= Date.parse(ticket.endTime);
     return {
       phase: "live",
-      badge: { kind: "showtime", status: "LIVE", label: "Live now" },
+      badge: over
+        ? {
+            kind: "ticket",
+            status: "CONFIRMED",
+            label: `Access until ${formatClock(ticket.accessEndsAt, timeZone)}`,
+          }
+        : { kind: "showtime", status: "LIVE", label: "Live now" },
       action: { label: "Watch now", href: watch },
       watchable: true,
       note: refundNote(ticket),

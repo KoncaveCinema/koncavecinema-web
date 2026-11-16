@@ -12,8 +12,39 @@ if (env.API_DEV_PROXY_URL && env.VERCEL_ENV) {
   );
 }
 
-// Applied to every route. The Content Security Policy is added with the player (Phase F5),
-// once the Mux stream, licence and image hosts are known.
+const dev = process.env.NODE_ENV === "development";
+
+// Where the pages may load from. Scripts allow inline code because Next.js bootstraps each page
+// inline; nonces would force every page to render per request and lose the static shells.
+// Mux serves the stream, the DRM licence and the storyboards; litix.io is Mux's playback
+// analytics; storage.googleapis.com receives the console's video uploads.
+// F7 adds the chat (Socket.IO) and voice (LiveKit) hosts.
+const contentSecurityPolicy = [
+  "default-src 'self'",
+  `script-src 'self' 'unsafe-inline'${dev ? " 'unsafe-eval'" : ""}`,
+  "style-src 'self' 'unsafe-inline'",
+  `img-src 'self' data: blob: ${IMAGE_HOSTS.map((host) => `https://${host}`).join(" ")}`,
+  "font-src 'self'",
+  "media-src 'self' blob: https://*.mux.com https://*.streamable.com",
+  [
+    "connect-src 'self'",
+    new URL(env.NEXT_PUBLIC_API_URL).origin,
+    "https://*.mux.com https://*.litix.io https://storage.googleapis.com",
+    // Turbopack's hot reload
+    dev ? "ws:" : "",
+  ]
+    .filter(Boolean)
+    .join(" "),
+  "worker-src 'self' blob:",
+  // Streamable teasers play in their own frame
+  "frame-src https://streamable.com",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+].join("; ");
+
+// Applied to every route
 const securityHeaders = [
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
   { key: "X-Content-Type-Options", value: "nosniff" },
@@ -23,6 +54,9 @@ const securityHeaders = [
     key: "Permissions-Policy",
     value: "camera=(), geolocation=(), payment=(self), microphone=(self)",
   },
+  // Report-only for now: a breach is logged in the browser console, never blocked. Once a day
+  // of staging use logs nothing, this becomes Content-Security-Policy
+  { key: "Content-Security-Policy-Report-Only", value: contentSecurityPolicy },
 ];
 
 const nextConfig: NextConfig = {
