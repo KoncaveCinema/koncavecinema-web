@@ -231,7 +231,11 @@ export function ConfirmDialog({
             variant={tone === "danger" ? "destructive" : "default"}
             disabled={pending || !typedOk || !canConfirm || (touched && Boolean(problem))}
             onClick={() => void confirm()}
-            className={cn(tone === "danger" && "bg-brand text-white hover:bg-[#e8101f]")}
+            // Solid brand red in dark mode too, where the kit's destructive style is a faint tint
+            className={cn(
+              tone === "danger" &&
+                "bg-brand text-white hover:bg-[#e8101f] dark:bg-brand dark:hover:bg-[#e8101f]",
+            )}
           >
             {pending ? pendingLabel : confirmLabel}
           </Button>
