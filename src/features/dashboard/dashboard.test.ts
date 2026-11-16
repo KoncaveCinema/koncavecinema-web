@@ -67,8 +67,11 @@ describe("ticketView", () => {
 
   it("keeps an Individual pass watchable for an hour after the end", () => {
     const pass = ticket();
-    expect(ticketView(pass, start + 148 * MINUTE)).toMatchObject({
+    expect(ticketView(pass, start + 60 * MINUTE).badge.label).toBe("Live now");
+    // The film has ended: still open, but no longer live
+    expect(ticketView(pass, start + 148 * MINUTE, "Africa/Lagos")).toMatchObject({
       phase: "live",
+      badge: { label: "Access until 9:58 pm" },
       action: { label: "Watch now" },
     });
     expect(ticketView(pass, start + 178 * MINUTE).phase).toBe("ended");

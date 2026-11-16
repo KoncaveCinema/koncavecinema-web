@@ -14,7 +14,7 @@ import { AUDITORIUMS } from "@/features/home/auditoriums/halls";
 import { formatCountdown } from "@/lib/format";
 
 import { ticketView } from "./pass-state";
-import { useServerNow } from "@/hooks/use-now";
+import { useServerNow, useViewerTimeZone } from "@/hooks/use-now";
 
 export function roomName(tier: TicketDetail["tier"]): string {
   return AUDITORIUMS.find((hall) => hall.tier === tier)?.kind ?? tier;
@@ -30,7 +30,8 @@ const NOTCHES =
  */
 export function TicketCard({ ticket }: { ticket: TicketDetail }) {
   const now = useServerNow();
-  const view = ticketView(ticket, now ?? Date.parse(ticket.createdAt));
+  const timeZone = useViewerTimeZone();
+  const view = ticketView(ticket, now ?? Date.parse(ticket.createdAt), timeZone);
   const holdLeft =
     view.phase === "hold" && now !== null && ticket.lockExpiresAt
       ? Date.parse(ticket.lockExpiresAt) - now
