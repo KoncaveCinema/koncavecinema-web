@@ -15,10 +15,11 @@ import { DatePicker, SearchSelect, filmOptions } from "@/components/console/pick
 import { formatLagosDateTime, formatMoney } from "@/lib/format";
 
 import { PosterThumb } from "../films/poster-thumb";
-import { useFilms } from "../films/queries";
-import type { AdminShowtimeListItem, ShowtimeFilter } from "./api-types";
-import { useShowtimes } from "./queries";
+import { ALL_FILMS, useFilms } from "@/api/admin/films-api";
+import type { AdminShowtimeListItem, ShowtimeFilter } from "@/api/admin/showtimes-schemas";
+import { useShowtimes } from "@/api/admin/showtimes-api";
 import { ShowtimeDialog } from "./showtime-dialog";
+import { useStaffSignedIn } from "../require-staff";
 
 const STATES = ["upcoming", "live", "past", "cancelled"] as const;
 const TABS = [
@@ -80,7 +81,7 @@ export function ShowtimesPage() {
     to: parseAsString.withDefault(""),
   });
   const [adding, setAdding] = useState(false);
-  const films = useFilms({});
+  const films = useFilms(ALL_FILMS, useStaffSignedIn());
 
   const span =
     filters.from && filters.to ? (Date.parse(filters.to) - Date.parse(filters.from)) / DAY : 0;
@@ -91,13 +92,16 @@ export function ShowtimesPage() {
         ? `Choose at most ${MAX_SPAN_DAYS} days at a time.`
         : null;
 
-  const showtimes = useShowtimes({
-    status: status as ShowtimeFilter,
-    movieId: filters.film || undefined,
-    from: rangeProblem ? undefined : filters.from || undefined,
-    to: rangeProblem ? undefined : filters.to || undefined,
-    ...pagination.query,
-  });
+  const showtimes = useShowtimes(
+    {
+      status: status as ShowtimeFilter,
+      movieId: filters.film || undefined,
+      from: rangeProblem ? undefined : filters.from || undefined,
+      to: rangeProblem ? undefined : filters.to || undefined,
+      ...pagination.query,
+    },
+    useStaffSignedIn(),
+  );
   const filtered = Boolean(filters.film || filters.from || filters.to);
 
   const setFilter = (next: Partial<typeof filters>) => {

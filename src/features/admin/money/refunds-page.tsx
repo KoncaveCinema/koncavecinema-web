@@ -17,9 +17,10 @@ import { useSession } from "@/features/auth/session";
 import { ErrorCode } from "@/api";
 import { formatLagosDate, formatLagosDateTime, formatMoney } from "@/lib/format";
 
-import type { AdminPayment } from "./api-types";
-import { useMarkRefunded, useRefunds } from "./queries";
+import type { AdminPayment } from "@/api/admin/money-schemas";
+import { useMarkRefunded, useRefunds } from "@/api/admin/money-api";
 import { refundReasonLabel } from "./sales";
+import { useStaffSignedIn } from "../require-staff";
 
 const TABS = [
   { value: "pending", label: "Waiting" },
@@ -30,7 +31,7 @@ const TABS = [
 export function RefundsPage() {
   const [state] = useTabParam("state", ["pending", "done"] as const, "pending");
   const pagination = usePagination();
-  const refunds = useRefunds(state, pagination.query);
+  const refunds = useRefunds({ state, ...pagination.query }, useStaffSignedIn());
   const mark = useMarkRefunded();
   const role = useSession((session) => session.user?.role);
   const canRecord = isSuperAdmin(role);
@@ -122,7 +123,7 @@ export function RefundsPage() {
       <PageHeader
         eyebrow="Money"
         title="Refunds"
-        description="Payments owed back to members. Refunds are made in the Paystack dashboard, then recorded here."
+        description="Payments that require a refund. Refunds are made in the Paystack dashboard, then recorded here."
       />
       {!canRecord && (
         <p className="mb-6 flex items-start gap-2.5 rounded-xl border border-sky-400/25 bg-sky-400/5 px-4 py-3 text-sm text-sky-100/80">
@@ -145,7 +146,7 @@ export function RefundsPage() {
             state === "pending"
               ? {
                   icon: CheckCircle2,
-                  title: "Nothing owed back",
+                  title: "No refunds required",
                   hint: "Cancelled screenings and passes add their payments here.",
                 }
               : { icon: Undo2, title: "No refunds recorded yet" }

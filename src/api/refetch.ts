@@ -10,7 +10,8 @@
  * Every write the web app sends is listed by that name; an empty list refreshes nothing.
  *
  * Signing in and out clears the whole cache instead (a person's data never outlives them).
- * Public pages rendered on the server are refreshed separately, with revalidateTag("catalog").
+ * Public pages rendered on the server are refreshed separately: the writes in
+ * `refreshesCatalog` also expire the server's "catalog" cache (catalog-actions.ts).
  */
 
 const ADMIN_FILM = ["/admin/movies", "/admin/overview", "/admin/audit-logs"];
@@ -75,7 +76,31 @@ export const refetchAfter: Record<string, readonly string[]> = {
   inviteStaff: ["/admin/staff", "/admin/audit-logs"],
   changeStaffRole: ["/admin/staff", "/admin/audit-logs"],
   removeStaff: ["/admin/staff", "/admin/audit-logs"],
+
+  // Admin: the home page's featured films
+  createFeaturedPlacement: ["/admin/featured", "/movies/featured", "/admin/audit-logs"],
+  updateFeaturedPlacement: ["/admin/featured", "/movies/featured", "/admin/audit-logs"],
+  removeFeaturedPlacement: ["/admin/featured", "/movies/featured", "/admin/audit-logs"],
+  // Not /admin/featured: its reply is the new lineup, put straight into the cache
+  setFeaturedLineup: ["/movies/featured", "/admin/audit-logs"],
 };
+
+/** Staff writes that change what the public pages show */
+export const refreshesCatalog: ReadonlySet<string> = new Set([
+  "updateMovie",
+  "announceMovie",
+  "publishMovie",
+  "unpublishMovie",
+  "attachTrailer",
+  "completeImageUpload",
+  "createShowtime",
+  "updateShowtime",
+  "cancelShowtime",
+  "createFeaturedPlacement",
+  "updateFeaturedPlacement",
+  "removeFeaturedPlacement",
+  "setFeaturedLineup",
+]);
 
 /** True when a cached query's key belongs under one of the prefixes */
 export function matchesPrefixes(

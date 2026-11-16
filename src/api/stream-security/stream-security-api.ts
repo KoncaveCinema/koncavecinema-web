@@ -80,11 +80,35 @@ export async function refreshDrmToken(ticketId: string, sessionId: string): Prom
  * the page, and sends text/plain without an Authorization header, which the API accepts here.
  */
 export function secureStop(ticketId: string, sessionId: string) {
-  writePlaybackSession(ticketId, null);
+  // Only this session's id is forgotten: a late stop never wipes a newer session's
+  if (readPlaybackSession(ticketId) === sessionId) writePlaybackSession(ticketId, null);
   navigator.sendBeacon(
     `${env.NEXT_PUBLIC_API_URL}/stream-security/secure-stop`,
     JSON.stringify({ ticketId, sessionId }),
   );
+}
+
+/* Leaving the room unmounts the player, and so does React re-mounting it (Strict Mode in
+   development). The stop waits a tick, and a player holding the same session again cancels it,
+   so only really leaving gives the lease back. */
+
+const pendingStops = new Map<string, ReturnType<typeof setTimeout>>();
+
+/** Secure Stop on the next tick, unless the same session is held again first */
+export function scheduleSecureStop(ticketId: string, sessionId: string) {
+  pendingStops.set(
+    sessionId,
+    setTimeout(() => {
+      pendingStops.delete(sessionId);
+      secureStop(ticketId, sessionId);
+    }, 0),
+  );
+}
+
+/** A player holds this session: a stop scheduled by its previous mount is cancelled */
+export function holdSession(sessionId: string) {
+  clearTimeout(pendingStops.get(sessionId));
+  pendingStops.delete(sessionId);
 }
 
 /** POST /stream-security/location-verification/send-code: emails a code, valid 5 minutes */

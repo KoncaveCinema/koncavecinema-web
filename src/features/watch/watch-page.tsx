@@ -72,6 +72,7 @@ export function WatchPage({ params }: { params: Promise<{ ticketId: string }> })
   const now = useServerNow();
   const [attempt, setAttempt] = useState(0);
   const [ended, setEnded] = useState<PlaybackEnd | null>(null);
+  const [picture, setPicture] = useState(false);
 
   const pass = ticket.data;
   const phase = pass && now !== null ? screeningPhase(pass, now) : null;
@@ -214,12 +215,15 @@ export function WatchPage({ params }: { params: Promise<{ ticketId: string }> })
           ownPace={ownPace}
           idle={idle}
           authorization={authorization}
-          onEnd={setEnded}
+          // An ended session is asked for again at once (the API resumes it when it can);
+          // only authorize-playback's own refusal says another device has the pass
+          onPictureChange={setPicture}
+          onEnd={(reason) => (reason === "session-ended" ? retry() : setEnded(reason))}
         />
       );
     }
     if (ended === "closed") return endedScreen;
-    if (ended) return anotherDevice("This pass is playing on another device");
+    if (ended === "another-device") return anotherDevice("This pass is playing on another device");
     if (!playback.error || toApiError(playback.error).is(ErrorCode.STREAM_NOT_OPEN)) {
       return <RoomMessage icon={Loader} tone="lobby" title="Opening the doors…" />;
     }
@@ -283,8 +287,11 @@ export function WatchPage({ params }: { params: Promise<{ ticketId: string }> })
         : null;
 
   return (
-    <div className="relative isolate flex min-h-svh flex-col bg-black">
-      {pass && !playing && (
+    // Clipped so the scaled, blurred poster can't widen the page; clip (not hidden) keeps the
+    // header sticky
+    <div className="relative isolate flex min-h-svh flex-col overflow-clip bg-black">
+      {/* The poster stays behind the room until the film's picture shows */}
+      {pass && !(playing && picture) && (
         <Image
           src={pass.posterLandscape}
           alt=""

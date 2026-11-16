@@ -152,8 +152,14 @@ export function formatElapsed(ms: number): string {
 /* Console times: staff and support work from anywhere, so the console always shows Lagos time
    and names it. Lagos is UTC+1 all year (no daylight saving), so the WAT label is always right. */
 
-/** "Fri 7 Nov, 7:00 pm WAT", or with the year: "Fri 7 Nov 2026, 7:00 pm WAT" */
-export function formatLagosDateTime(iso: string, options: { year?: boolean } = {}): string {
+/**
+ * "Fri 7 Nov, 7:00 pm WAT", with the year: "Fri 7 Nov 2026, 7:00 pm WAT", or with an end on
+ * the same day: "Fri 7 Nov, 7:00 pm to 9:00 pm WAT"
+ */
+export function formatLagosDateTime(
+  iso: string,
+  options: { year?: boolean; until?: string } = {},
+): string {
   // Assembled from parts: en-GB adds a comma after the weekday only when the year is shown
   const parts = new Intl.DateTimeFormat("en-GB", {
     weekday: "short",
@@ -167,13 +173,15 @@ export function formatLagosDateTime(iso: string, options: { year?: boolean } = {
   const date = [part("weekday"), part("day"), part("month"), options.year ? part("year") : ""]
     .filter(Boolean)
     .join(" ");
-  const time = new Intl.DateTimeFormat("en-GB", {
+  const clock = new Intl.DateTimeFormat("en-GB", {
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
     timeZone: HOME_TIME_ZONE,
-  }).format(new Date(iso));
-  return `${date}, ${time} WAT`;
+  });
+  const time = clock.format(new Date(iso));
+  const end = options.until ? ` to ${clock.format(new Date(options.until))}` : "";
+  return `${date}, ${time}${end} WAT`;
 }
 
 /** "7 Nov 2026" */

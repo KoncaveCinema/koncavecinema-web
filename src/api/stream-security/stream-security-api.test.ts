@@ -1,7 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { http } from "../http";
-import { authorizePlayback, secureStop } from "./stream-security-api";
+import {
+  authorizePlayback,
+  holdSession,
+  scheduleSecureStop,
+  secureStop,
+} from "./stream-security-api";
 import { drmTokenSchema, playbackAuthorizationSchema } from "./stream-security-schemas";
 
 vi.mock("../http", () => ({ http: vi.fn() }));
@@ -88,5 +93,40 @@ describe("the playback session", () => {
 
     await authorizePlayback("t1");
     expect(httpMock.mock.calls[1]![0].data).toEqual({ ticketId: "t1", sessionId: undefined });
+  });
+
+  it("is kept when a late stop names an older session", async () => {
+    httpMock.mockResolvedValue(authorization);
+    Object.defineProperty(navigator, "sendBeacon", {
+      value: vi.fn(() => true),
+      configurable: true,
+    });
+
+    await authorizePlayback("t1");
+    secureStop("t1", "an-older-session");
+
+    await authorizePlayback("t1");
+    expect(httpMock.mock.calls[1]![0].data).toEqual({
+      ticketId: "t1",
+      sessionId: authorization.sessionId,
+    });
+  });
+
+  it("isn't stopped when the player mounts again straight away, only when it's left", () => {
+    vi.useFakeTimers();
+    const beacon = vi.fn(() => true);
+    Object.defineProperty(navigator, "sendBeacon", { value: beacon, configurable: true });
+
+    // React re-mounting the player: the stop is cancelled before it goes
+    scheduleSecureStop("t1", "s1");
+    holdSession("s1");
+    vi.runAllTimers();
+    expect(beacon).not.toHaveBeenCalled();
+
+    // Leaving the room: nothing holds the session again, so the stop goes
+    scheduleSecureStop("t1", "s1");
+    vi.runAllTimers();
+    expect(beacon).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
   });
 });

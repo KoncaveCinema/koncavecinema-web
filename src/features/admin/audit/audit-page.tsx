@@ -13,8 +13,10 @@ import { useCursorPagination } from "@/hooks/use-cursor-pagination";
 import { formatLagosDateTime } from "@/lib/format";
 import { browserSummary } from "@/lib/user-agent";
 
-import type { AuditEntry } from "./api-types";
-import { useAudit } from "./queries";
+import type { AuditEntry } from "@/api/admin/staff-schemas";
+import { useAudit } from "@/api/admin/staff-api";
+import { useSuperAdminSignedIn } from "../require-staff";
+import { auditActionLabel } from "./actions";
 
 const PRESETS = [
   { value: "ADMIN_", label: "Staff actions" },
@@ -23,32 +25,13 @@ const PRESETS = [
   { value: "USER_", label: "Accounts" },
 ];
 
-/** Plain words for the actions people look for; anything else shows its code */
-const ACTIONS: Record<string, string> = {
-  USER_LOGIN_SUCCESS: "Signed in",
-  USER_LOGIN_FAILED: "Failed sign-in",
-  PAYMENT_SUCCESS: "Payment received",
-  PAYMENT_FAILED: "Payment failed",
-  PAYMENT_REQUIRES_REFUND: "Payment owed back",
-  ADMIN_MOVIE_UNPUBLISHED: "Film unpublished",
-  ADMIN_MOVIE_DELETED: "Draft deleted",
-  ADMIN_POSTER_UPLOADED: "Poster uploaded",
-  ADMIN_SHOWTIME_CANCELLED: "Screening cancelled",
-  ADMIN_REFUND_RECORDED: "Refund recorded",
-  ADMIN_PASS_CANCELLED: "Pass cancelled",
-  ADMIN_CONFIRMATION_RESENT: "Booking email resent",
-  ADMIN_LEGAL_NAME_REVEALED: "Legal name revealed",
-  ADMIN_STAFF_INVITED: "Staff invited",
-  ADMIN_STAFF_ROLE_CHANGED: "Staff role changed",
-};
-
 const COLUMNS: Column<AuditEntry>[] = [
   {
     id: "action",
     header: "What happened",
     cell: (entry) => (
       <span className="block min-w-0">
-        <span className="block">{ACTIONS[entry.action] ?? entry.action}</span>
+        <span className="block">{auditActionLabel(entry.action)}</span>
         <span className="block truncate text-xs font-normal text-white/45">
           {entry.user ? entry.user.email : "No account"} · {entry.ipAddress ?? "Unknown address"} ·{" "}
           {browserSummary(entry.userAgent)}
@@ -98,11 +81,14 @@ export function AuditPage() {
   };
   // The API takes capital letters and underscores only; anything else isn't asked for
   const actionValid = !filters.action || /^[A-Z_]+$/.test(filters.action);
-  const audit = useAudit({
-    userId: filters.userId || undefined,
-    action: actionValid ? filters.action || undefined : undefined,
-    ...pagination.query,
-  });
+  const audit = useAudit(
+    {
+      userId: filters.userId || undefined,
+      action: actionValid ? filters.action || undefined : undefined,
+      ...pagination.query,
+    },
+    useSuperAdminSignedIn(),
+  );
 
   return (
     <>

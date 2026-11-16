@@ -12,9 +12,10 @@ import { Button } from "@/components/ui/button";
 import { usePagination } from "@/hooks/use-pagination";
 import { formatLagosDateTime } from "@/lib/format";
 
-import type { AdminFilmListItem } from "./api-types";
+import type { AdminFilmListItem } from "@/api/admin/films-schemas";
 import { PosterThumb } from "./poster-thumb";
-import { useFilms } from "./queries";
+import { useFilms } from "@/api/admin/films-api";
+import { useStaffSignedIn } from "../require-staff";
 
 const STATUS_TABS = [
   { value: "all", label: "All films" },
@@ -105,11 +106,14 @@ export function FilmsPage() {
   const [status] = useTabParam("status", ["all", "draft", "published"] as const, "all");
   const [q, setQ] = useSearchParam();
   const pagination = usePagination();
-  const films = useFilms({
-    status: status === "all" ? undefined : status,
-    q: q || undefined,
-    ...pagination.query,
-  });
+  const films = useFilms(
+    {
+      status: status === "all" ? undefined : status,
+      q: q || undefined,
+      ...pagination.query,
+    },
+    useStaffSignedIn(),
+  );
 
   return (
     <>

@@ -6,15 +6,21 @@ import { cn } from "cn";
 import { Clock, Play, Radio } from "lucide-react";
 import { useEffect, useEffectEvent, useRef, useState, type ComponentRef } from "react";
 
-import { LogoMark } from "@/components/brand/logo";
-import { Button } from "@/components/ui/button";
-import { useServerNow } from "@/hooks/use-now";
 import { ErrorCode, serverOffset, toApiError } from "@/api";
-import { heartbeat, refreshDrmToken, secureStop } from "@/api/stream-security/stream-security-api";
+import {
+  heartbeat,
+  holdSession,
+  refreshDrmToken,
+  scheduleSecureStop,
+  secureStop,
+} from "@/api/stream-security/stream-security-api";
 import type {
   PlaybackAuthorization,
   Watermark as WatermarkInfo,
 } from "@/api/stream-security/stream-security-schemas";
+import { LogoMark } from "@/components/brand/logo";
+import { Button } from "@/components/ui/button";
+import { useServerNow } from "@/hooks/use-now";
 import { formatClock, formatCountdown } from "@/lib/format";
 
 import {
@@ -36,7 +42,11 @@ import {
  * other page carries it.
  */
 
-export type PlaybackEnd = "another-device" | "closed";
+/**
+ * "session-ended": the API ended this session (asked again at once); "another-device": another
+ * device took the pass while this one was away; "closed": the screening is over
+ */
+export type PlaybackEnd = "session-ended" | "another-device" | "closed";
 
 type PlayerElement = ComponentRef<typeof MuxPlayer>;
 
@@ -97,6 +107,7 @@ export default function Player({
   idle,
   authorization,
   onEnd,
+  onPictureChange,
 }: {
   ticketId: string;
   title: string;
@@ -106,6 +117,8 @@ export default function Player({
   idle: boolean;
   authorization: PlaybackAuthorization;
   onEnd: (reason: PlaybackEnd) => void;
+  /** Whether the film's picture is on screen; until it is, the page keeps the poster behind */
+  onPictureChange: (showing: boolean) => void;
 }) {
   const ref = useRef<PlayerElement>(null);
   const [drmToken, setDrmToken] = useState(authorization.drmToken);
@@ -114,9 +127,29 @@ export default function Player({
   const [needsTap, setNeedsTap] = useState(false);
   const [shortOfTime, setShortOfTime] = useState(false);
   const { schedule, sessionId } = authorization;
+  // The API has ended this session: there is no lease left to give back
+  const sessionLost = useRef(false);
+  const loseSession = (reason: PlaybackEnd) => {
+    sessionLost.current = true;
+    onEnd(reason);
+  };
+  /** The API's answer to a heartbeat or a DRM renewal that refuses this session */
+  const refused = (error: unknown) => {
+    const apiError = toApiError(error);
+    if (apiError.is(ErrorCode.STREAM_SESSION_INVALID)) loseSession("session-ended");
+    else if (apiError.is(ErrorCode.STREAM_IN_USE_ON_ANOTHER_DEVICE)) loseSession("another-device");
+    else if (apiError.is(ErrorCode.STREAM_CLOSED)) onEnd("closed");
+  };
   const startsAt = Date.parse(schedule.startTime);
   const started = now !== null && now >= startsAt;
   const endsAt = formatClock(schedule.hardCutoff);
+  // The picture shows once the film has started and is playing (no tap still wanted)
+  const showing = started && !needsTap;
+  const onShowing = useEffectEvent(onPictureChange);
+  useEffect(() => {
+    onShowing(showing);
+    return () => onShowing(false);
+  }, [showing]);
 
   /** Where the room is now */
   const roomPosition = () => targetPosition(schedule.startTime, Date.now() + serverOffset());
@@ -179,13 +212,10 @@ export default function Player({
     return () => clearInterval(check);
   }, [started]);
 
-  // The lease: renewed on the API's interval. A refusal stops playback; a network blip doesn't
+  // The lease: renewed on the API's interval. An ended session is asked for again; a pass taken
+  // by another device or a closed screening stops playback; a network blip changes nothing
   const onBeat = useEffectEvent(() => {
-    heartbeat(ticketId, sessionId).catch((error) => {
-      const apiError = toApiError(error);
-      if (apiError.is(ErrorCode.STREAM_SESSION_INVALID)) onEnd("another-device");
-      else if (apiError.is(ErrorCode.STREAM_CLOSED)) onEnd("closed");
-    });
+    heartbeat(ticketId, sessionId).catch(refused);
   });
   const beatEvery = authorization.heartbeatIntervalSeconds * 1000;
   useEffect(() => {
@@ -195,12 +225,7 @@ export default function Player({
 
   // DRM licence tokens last 5 minutes: renew every 4, while this device holds the lease
   const onRenewDrm = useEffectEvent(() => {
-    refreshDrmToken(ticketId, sessionId).then(
-      (renewed) => setDrmToken(renewed.drmToken),
-      (error) => {
-        if (toApiError(error).is(ErrorCode.STREAM_SESSION_INVALID)) onEnd("another-device");
-      },
-    );
+    refreshDrmToken(ticketId, sessionId).then((renewed) => setDrmToken(renewed.drmToken), refused);
   });
   const drmProtected = authorization.drmProtected;
   useEffect(() => {
@@ -209,18 +234,42 @@ export default function Player({
     return () => clearInterval(timer);
   }, [drmProtected, sessionId]);
 
-  // Secure Stop: give the lease back when the page closes or the viewer leaves the room
+  // Full screen takes the whole stage, so the watermark and the mark go with the picture. Mux
+  // applies `fullscreenElement` only if its controls exist when the attribute is set, which this
+  // lazily loaded player misses: set it on the controls once they do
   useEffect(() => {
-    const release = () => secureStop(ticketId, sessionId);
+    const player = ref.current;
+    if (!player) return;
+    const attach = () => {
+      const stage = document.getElementById(STAGE_ID);
+      if (player.mediaController && stage) player.mediaController.fullscreenElement = stage;
+    };
+    attach();
+    player.addEventListener("loadedmetadata", attach);
+    return () => player.removeEventListener("loadedmetadata", attach);
+  }, []);
+
+  // Secure Stop: give the lease back when the page closes or the viewer leaves the room, never
+  // when React only re-mounts the player, and never for a session the API has already ended
+  useEffect(() => {
+    holdSession(sessionId);
+    const release = () => {
+      if (!sessionLost.current) secureStop(ticketId, sessionId);
+    };
     window.addEventListener("pagehide", release);
     return () => {
       window.removeEventListener("pagehide", release);
-      release();
+      if (!sessionLost.current) scheduleSecureStop(ticketId, sessionId);
     };
   }, [ticketId, sessionId]);
 
   return (
-    <div id={STAGE_ID} className="relative aspect-video w-full overflow-hidden bg-black">
+    // Until the picture shows (the lobby, or a tap wanted for sound) the stage is clear and the
+    // player hidden but loading, so the room sits on the same poster as its other screens
+    <div
+      id={STAGE_ID}
+      className={cn("relative aspect-video w-full overflow-hidden", showing && "bg-black")}
+    >
       <MuxPlayer
         ref={ref}
         playbackId={authorization.playbackId}
@@ -258,6 +307,7 @@ export default function Player({
           // The theme sets their colours on the menus themselves, so only its exported part reaches
           "[&::part(menu)]:border-white/10 [&::part(menu)]:bg-black/90 [&::part(menu)]:text-white",
           !started && "pointer-events-none",
+          !showing && "invisible",
         )}
       />
 
@@ -267,7 +317,7 @@ export default function Player({
       <LogoMark className="pointer-events-none absolute right-4 bottom-10 z-10 size-9 opacity-30 select-none sm:right-6 sm:size-12" />
 
       {!started && (
-        <div className="absolute inset-0 z-20 grid place-items-center bg-black/65 text-center">
+        <div className="absolute inset-0 z-20 grid place-items-center text-center">
           <div>
             <p className="text-[0.7rem] font-bold tracking-[0.3em] text-lobby uppercase">
               Lobby open · starts in
@@ -285,7 +335,7 @@ export default function Player({
       )}
 
       {needsTap && (
-        <div className="absolute inset-0 z-20 grid place-items-center bg-black/60">
+        <div className="absolute inset-0 z-20 grid place-items-center">
           <Button size="xl" onClick={() => play()}>
             <Play data-icon="inline-start" />
             Start watching

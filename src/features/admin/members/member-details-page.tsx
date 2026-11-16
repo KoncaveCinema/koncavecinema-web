@@ -21,8 +21,14 @@ import { formatLagosDate, formatLagosDateTime, formatMoney } from "@/lib/format"
 import { browserSummary } from "@/lib/user-agent";
 
 import { refundReasonLabel } from "../money/sales";
-import type { AdminMember, AdminMemberPass } from "./api-types";
-import { useCancelPass, useMember, useResendConfirmation, useRevealLegalName } from "./queries";
+import type { AdminMember, AdminMemberPass } from "@/api/admin/members-schemas";
+import {
+  useCancelPass,
+  useMember,
+  useResendConfirmation,
+  useRevealLegalName,
+} from "@/api/admin/members-api";
+import { useStaffSignedIn } from "../require-staff";
 
 const CRUMBS = [{ href: "/admin/members", label: "Members" }];
 const PAID = ["CONFIRMED", "CHECKED_IN"];
@@ -107,15 +113,15 @@ function PassRow({
 }) {
   const resend = useResendConfirmation();
   const paid = PAID.includes(pass.status);
-  const open = paid || pass.status === "RESERVED";
+  const actions = paid || pass.cancellable;
   return (
     <li className="space-y-3 px-6 py-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="font-semibold">{pass.movie.title}</p>
           <p className="mt-0.5 text-sm text-white/55">
-            {formatLagosDateTime(pass.startTime)} · {roomLabel(pass.tier)} ·{" "}
-            <span className="font-mono">{pass.seatIdentifier}</span>
+            {formatLagosDateTime(pass.startTime, { until: pass.endTime })} · {roomLabel(pass.tier)}{" "}
+            · <span className="font-mono">{pass.seatIdentifier}</span>
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -145,7 +151,7 @@ function PassRow({
           ))}
         </ul>
       )}
-      {open && (
+      {actions && (
         <div className="flex flex-wrap gap-2">
           {paid && (
             <Button
@@ -168,10 +174,12 @@ function PassRow({
               {resend.isPending ? "Sending…" : "Resend booking email"}
             </Button>
           )}
-          <Button size="sm" variant="ghost" onClick={() => onCancel(pass)}>
-            <XCircle data-icon="inline-start" />
-            Cancel pass
-          </Button>
+          {pass.cancellable && (
+            <Button size="sm" variant="ghost" onClick={() => onCancel(pass)}>
+              <XCircle data-icon="inline-start" />
+              Cancel pass
+            </Button>
+          )}
         </div>
       )}
     </li>
@@ -181,7 +189,7 @@ function PassRow({
 /** /admin/members/[id]: one member's account, passes and payments, and fixing a booking. */
 export function MemberDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const member = useMember(id);
+  const member = useMember(id, useStaffSignedIn());
   return (
     <QueryView
       query={member}
@@ -275,7 +283,7 @@ function MemberDetail({ data }: { data: AdminMember }) {
         consequences={[
           paidPass
             ? "Its payment goes on the refunds queue."
-            : "It was never paid for, so nothing is owed back.",
+            : "It was never paid for, so there is nothing to refund.",
           "The member is emailed your reason.",
           "This can't be undone.",
         ]}

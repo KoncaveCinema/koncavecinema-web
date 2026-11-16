@@ -22,9 +22,10 @@ import {
 } from "@/components/console/pickers";
 import { formatLagosDateTime, fromLagosInputs, lagosInputs } from "@/lib/format";
 
-import { useFilm, useFilms } from "../films/queries";
-import type { AdminShowtime } from "./api-types";
-import { useCreateShowtime, useUpdateShowtime } from "./queries";
+import { ALL_FILMS, useFilm, useFilms } from "@/api/admin/films-api";
+import type { AdminShowtime } from "@/api/admin/showtimes-schemas";
+import { useCreateShowtime, useUpdateShowtime } from "@/api/admin/showtimes-api";
+import { useStaffSignedIn } from "../require-staff";
 
 const CURRENCIES = ["NGN", "USD", "GBP", "EUR"];
 const MINUTE = 60_000;
@@ -41,6 +42,10 @@ function refusal(code: string | undefined): string {
       return "Passes have sold at this price, so it can't change now. The time still can.";
     case ErrorCode.SHOWTIME_COMPLETED:
       return "This screening has finished and can't be changed.";
+    case ErrorCode.SHOWTIME_ALREADY_STARTED:
+      return "This screening has started, so it can't be changed now.";
+    case ErrorCode.SHOWTIME_CANCELLED:
+      return "This screening was cancelled, so it can't be changed.";
     default:
       return "The showtime couldn't be saved. Try again.";
   }
@@ -95,7 +100,7 @@ function ShowtimeForm({
   onPendingChange: (pending: boolean) => void;
   onDone: () => void;
 }) {
-  const films = useFilms({ status: "published" });
+  const films = useFilms({ ...ALL_FILMS, status: "published" }, useStaffSignedIn());
   const create = useCreateShowtime();
   const update = useUpdateShowtime();
   const start = showtime ? lagosInputs(showtime.startTime) : { date: "", time: "20:00" };
@@ -105,18 +110,33 @@ function ShowtimeForm({
   const [price, setPrice] = useState(String(showtime?.basePrice ?? 5000));
   const [currency, setCurrency] = useState(showtime?.currency ?? "NGN");
   const [failure, setFailure] = useState<string | null>(null);
+  // Moving a screening with paid passes emails every holder: asked once before saving
+  const [confirmingMove, setConfirmingMove] = useState(false);
 
   const pending = create.isPending || update.isPending;
-  const chosen = useFilm(showtime ? "" : movieId);
+  const chosen = useFilm(showtime ? "" : movieId, useStaffSignedIn());
   const startsAt = date && time ? fromLagosInputs(date, time) : null;
   const runtime = showtime
     ? (Date.parse(showtime.endTime) - Date.parse(showtime.startTime)) / MINUTE
     : chosen.data?.durationMinutes;
   const amount = Number(price);
   const complete = Boolean(movieId && startsAt && amount > 0);
+  const paidPasses = showtime?.tiers.reduce((sum, tier) => sum + tier.sold, 0) ?? 0;
+  const moved =
+    showtime !== undefined &&
+    startsAt !== null &&
+    Date.parse(startsAt) !== Date.parse(showtime.startTime);
+  const changeTime = (change: () => void) => {
+    change();
+    setConfirmingMove(false);
+  };
 
   async function save() {
     if (!complete || !startsAt) return;
+    if (moved && paidPasses > 0 && !confirmingMove) {
+      setConfirmingMove(true);
+      return;
+    }
     setFailure(null);
     onPendingChange(true);
     try {
@@ -174,7 +194,7 @@ function ShowtimeForm({
             <DatePicker
               id="st-date"
               value={date}
-              onChange={setDate}
+              onChange={(next) => changeTime(() => setDate(next))}
               disabled={{ before: new Date() }}
               className="mt-2"
             />
@@ -183,7 +203,12 @@ function ShowtimeForm({
             <label htmlFor="st-time" className={labelClass}>
               Starts (WAT)
             </label>
-            <TimeSelect id="st-time" value={time} onChange={setTime} className="mt-2" />
+            <TimeSelect
+              id="st-time"
+              value={time}
+              onChange={(next) => changeTime(() => setTime(next))}
+              className="mt-2"
+            />
           </div>
         </div>
         <div className="grid grid-cols-[minmax(0,1fr)_7rem] gap-4">
@@ -223,15 +248,34 @@ function ShowtimeForm({
             {formatLagosDateTime(new Date(Date.parse(startsAt) + runtime * MINUTE).toISOString())}
           </p>
         )}
+        {confirmingMove && (
+          <p
+            role="alert"
+            className="rounded-lg border border-gold/30 bg-gold/8 px-3 py-2.5 text-xs text-white/80"
+          >
+            {paidPasses === 1 ? "One member holds" : `${paidPasses} members hold`} a paid pass. Each
+            is emailed the new time, and their pass stays valid.
+          </p>
+        )}
         {failure && <FormAlert>{failure}</FormAlert>}
       </form>
 
       <DialogFooter>
-        <Button variant="outline" onClick={onDone} disabled={pending}>
-          Cancel
+        <Button
+          variant="outline"
+          onClick={confirmingMove ? () => setConfirmingMove(false) : onDone}
+          disabled={pending}
+        >
+          {confirmingMove ? "Back" : "Cancel"}
         </Button>
         <Button type="submit" form="showtime-form" disabled={!complete || pending}>
-          {pending ? "Saving…" : showtime ? "Save changes" : "Add showtime"}
+          {pending
+            ? "Saving…"
+            : confirmingMove
+              ? "Move it and email them"
+              : showtime
+                ? "Save changes"
+                : "Add showtime"}
         </Button>
       </DialogFooter>
     </>

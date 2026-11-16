@@ -8,6 +8,7 @@ import {
   ReceiptText,
   ScrollText,
   ShieldCheck,
+  Sparkles,
   Undo2,
   Users,
 } from "lucide-react";
@@ -22,7 +23,8 @@ import { SidebarNav } from "@/components/console/sidebar";
 import { isStaff } from "@/features/auth/roles";
 import { useSession } from "@/features/auth/session";
 
-import { useOverview } from "./overview/queries";
+import { useOverview } from "@/api/admin/money-api";
+import { useStaffSignedIn } from "./require-staff";
 
 /* The admin console's navigation, for the shared console shell. */
 
@@ -32,6 +34,7 @@ const HOME = "/admin";
 const overview: NavItem = { href: HOME, label: "Overview", icon: LayoutGrid, exact: true };
 const films: NavItem = { href: "/admin/films", label: "Films", icon: Clapperboard };
 const showtimes: NavItem = { href: "/admin/showtimes", label: "Showtimes", icon: ReceiptText };
+const featured: NavItem = { href: "/admin/featured", label: "Featured", icon: Sparkles };
 const sales: NavItem = { href: "/admin/sales", label: "Sales", icon: BadgePercent };
 const refunds: NavItem = { href: "/admin/refunds", label: "Refunds", icon: Undo2 };
 const payments: NavItem = { href: "/admin/payments", label: "Payments", icon: CreditCard };
@@ -52,10 +55,10 @@ const audit: NavItem = {
 /** Every section, with the refunds still waiting beside Refunds. A member account sees none. */
 function useSections(): NavSection[] {
   const { status, user } = useSession();
-  const waiting = useOverview().data?.refundsWaiting.count;
+  const waiting = useOverview(useStaffSignedIn()).data?.refundsWaiting.count;
   if (status === "signed-in" && !isStaff(user?.role)) return [];
   return [
-    { title: "Catalogue", items: [overview, films, showtimes] },
+    { title: "Catalogue", items: [overview, films, showtimes, featured] },
     { title: "Money", items: [sales, { ...refunds, badge: waiting }, payments] },
     { title: "Support", items: [members] },
     { title: "Super admin", items: [staff, audit] },

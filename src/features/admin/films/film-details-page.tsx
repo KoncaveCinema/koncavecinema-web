@@ -7,6 +7,7 @@ import {
   Check,
   Circle,
   ExternalLink,
+  Megaphone,
   MoreHorizontal,
   Pencil,
   Rocket,
@@ -43,19 +44,21 @@ import {
 } from "@/lib/format";
 
 import { ShowtimeDialog } from "../showtimes/showtime-dialog";
-import type { AdminFilm } from "./api-types";
+import type { AdminFilm } from "@/api/admin/films-schemas";
 import { FilmForm } from "./film-form";
 import { MediaPanel } from "./media-panel";
 import { PostersPanel } from "./posters-panel";
 import {
+  useAnnounceFilm,
   useDeleteFilm,
   useFilm,
   usePublishFilm,
   useSetCertificate,
   useUnpublishFilm,
   useUpdateFilm,
-} from "./queries";
+} from "@/api/admin/films-api";
 import { certificateSchema, type CertificateValues } from "./schemas";
+import { useStaffSignedIn } from "../require-staff";
 
 const CRUMBS = [{ href: "/admin/films", label: "Films" }];
 
@@ -69,17 +72,55 @@ const SECTIONS = [
   { id: "revenue", label: "Revenue" },
 ];
 
-/** What publishing needs, as the API checks it (posters are set at creation in the API) */
-function readinessItems(film: AdminFilm) {
+/**
+ * What the API checks, in two steps: announcing (coming soon) needs the trailer and both posters;
+ * publishing needs those and the certificate and master. The buttons follow the API's own
+ * canAnnounce and canPublish; these only say what is missing.
+ */
+export function readinessGroups(film: Pick<AdminFilm, "readiness">) {
+  const { readiness } = film;
   return [
-    { done: film.readiness.certified, label: "NFVCB certificate", href: "#certificate" },
-    { done: film.readiness.masterAttached, label: "Master video attached", href: "#media" },
-    { done: film.readiness.trailer, label: "Trailer attached", href: "#media" },
-    { done: film.readiness.posters, label: "Landscape and portrait posters", href: "#posters" },
+    {
+      title: "To announce",
+      hint: "Coming soon: a public page and trailer, no screenings yet.",
+      items: [
+        { done: readiness.trailer, label: "Trailer attached", href: "#media" },
+        { done: readiness.posters, label: "Landscape and portrait posters", href: "#posters" },
+      ],
+    },
+    {
+      title: "Also to publish",
+      hint: "On sale: screenings can be added and booked.",
+      items: [
+        { done: readiness.certified, label: "NFVCB certificate", href: "#certificate" },
+        { done: readiness.masterAttached, label: "Master video attached", href: "#media" },
+      ],
+    },
   ];
 }
 
-function publishRefusal(code: string | undefined) {
+/** Where the film stands, in one line under the checklist's title */
+export function readinessSummary(film: Pick<AdminFilm, "status" | "readiness">): string {
+  const left = (index: number) =>
+    readinessGroups(film)
+      .slice(0, index + 1)
+      .flatMap((group) => group.items)
+      .filter((item) => !item.done).length;
+  const things = (count: number) => `${count} ${count === 1 ? "thing" : "things"}`;
+  if (film.status === "PUBLISHED") return "Published and on sale.";
+  if (film.readiness.canPublish) {
+    return film.status === "COMING_SOON"
+      ? "Announced, and everything's in place to publish."
+      : "Everything's in place. Announce it or publish it when you're ready.";
+  }
+  if (film.status === "COMING_SOON")
+    return `Announced as coming soon. ${things(left(1))} to do before publishing.`;
+  if (film.readiness.canAnnounce) return `Ready to announce. ${things(left(1))} more to publish.`;
+  return `${things(left(0))} to do before announcing.`;
+}
+
+/** The API's refusal of an announce or a publish, in words */
+function releaseRefusal(code: string | undefined, action: "announced" | "published") {
   switch (code) {
     case ErrorCode.MOVIE_NOT_CERTIFIED:
       return "Add the NFVCB certificate first.";
@@ -87,50 +128,54 @@ function publishRefusal(code: string | undefined) {
       return "Attach a processed master video first.";
     case ErrorCode.MOVIE_MISSING_TRAILER:
       return "Attach a trailer first.";
+    case ErrorCode.MOVIE_MISSING_POSTERS:
+      return "Upload both posters first.";
     default:
-      return "The film couldn't be published. Try again.";
+      return `The film couldn't be ${action}. Try again.`;
   }
 }
 
 function Readiness({ film }: { film: AdminFilm }) {
-  const items = readinessItems(film);
-  const left = items.filter((item) => !item.done).length;
   return (
-    <Panel
-      id="readiness"
-      title="Readiness"
-      description={
-        film.isPublished
-          ? "Published and on sale."
-          : left === 0
-            ? "Everything's in place. Publish when you're ready."
-            : `${left} ${left === 1 ? "thing" : "things"} to do before publishing.`
-      }
-    >
-      <ul className="grid gap-2 sm:grid-cols-2">
-        {items.map((item) => (
-          <li key={item.label}>
-            <a
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 rounded-xl border px-4 py-3 text-sm transition-colors",
-                item.done
-                  ? "border-lobby/20 bg-lobby/5 text-white/80"
-                  : "border-gold/25 bg-gold/5 hover:border-gold/45",
-              )}
-            >
-              {item.done ? (
-                <Check aria-hidden="true" className="size-4 shrink-0 text-lobby" />
-              ) : (
-                <Circle aria-hidden="true" className="size-4 shrink-0 text-gold" />
-              )}
-              <span className="flex-1">{item.label}</span>
-              <span className="sr-only">{item.done ? "done" : "to do"}</span>
-            </a>
-          </li>
+    <Panel id="readiness" title="Readiness" description={readinessSummary(film)}>
+      <div className="space-y-5">
+        {readinessGroups(film).map((group) => (
+          <section key={group.title} aria-label={group.title}>
+            <p className="text-xs font-semibold tracking-wide text-white/70">{group.title}</p>
+            <p className="mt-0.5 text-xs text-white/45">{group.hint}</p>
+            <ReadinessList items={group.items} />
+          </section>
         ))}
-      </ul>
+      </div>
     </Panel>
+  );
+}
+
+function ReadinessList({ items }: { items: { done: boolean; label: string; href: string }[] }) {
+  return (
+    <ul className="mt-2.5 grid gap-2 sm:grid-cols-2">
+      {items.map((item) => (
+        <li key={item.label}>
+          <a
+            href={item.href}
+            className={cn(
+              "flex items-center gap-3 rounded-xl border px-4 py-3 text-sm transition-colors",
+              item.done
+                ? "border-lobby/20 bg-lobby/5 text-white/80"
+                : "border-gold/25 bg-gold/5 hover:border-gold/45",
+            )}
+          >
+            {item.done ? (
+              <Check aria-hidden="true" className="size-4 shrink-0 text-lobby" />
+            ) : (
+              <Circle aria-hidden="true" className="size-4 shrink-0 text-gold" />
+            )}
+            <span className="flex-1">{item.label}</span>
+            <span className="sr-only">{item.done ? "done" : "to do"}</span>
+          </a>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -179,6 +224,7 @@ function Details({ film }: { film: AdminFilm }) {
             producerRevenueSplit: Number(film.producerRevenueSplit),
             watermarkMode: film.watermarkMode,
           }}
+          splitLocked={film.producerSplitLocked}
           submitLabel="Save details"
           pendingLabel="Saving…"
           onCancel={() => setEditing(false)}
@@ -297,7 +343,7 @@ function Showtimes({ film }: { film: AdminFilm }) {
       flush
       title="Showtimes"
       actions={
-        film.isPublished && (
+        film.status === "PUBLISHED" && (
           <Button size="sm" variant="outline" onClick={() => setAdding(true)}>
             <CalendarPlus data-icon="inline-start" />
             Add showtime
@@ -313,9 +359,10 @@ function Showtimes({ film }: { film: AdminFilm }) {
         empty={{
           icon: CalendarPlus,
           title: "Not scheduled yet",
-          hint: film.isPublished
-            ? "Add the first showtime to put this film on sale."
-            : "Showtimes are added once the film is published.",
+          hint:
+            film.status === "PUBLISHED"
+              ? "Add the first showtime to put this film on sale."
+              : "Showtimes are added once the film is published.",
         }}
         columns={[
           {
@@ -355,7 +402,7 @@ function Revenue({ film }: { film: AdminFilm }) {
     <Panel
       id="revenue"
       title="Revenue"
-      description="Kept revenue to date; payments owed back are left out."
+      description="Kept revenue to date; payments that require a refund are left out."
     >
       <dl className="grid grid-cols-2 gap-6 lg:grid-cols-4">
         {figures.map((figure) => (
@@ -385,7 +432,7 @@ function FilmSkeleton() {
 /** /admin/films/[id]: one film, from readiness to revenue, edited where it's shown. */
 export function FilmDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const film = useFilm(id);
+  const film = useFilm(id, useStaffSignedIn());
   return (
     <QueryView
       query={film}
@@ -414,13 +461,17 @@ export function FilmDetailsPage({ params }: { params: Promise<{ id: string }> })
 
 function FilmDetail({ data }: { data: AdminFilm }) {
   const router = useRouter();
+  const announce = useAnnounceFilm();
   const publish = usePublishFilm();
   const unpublish = useUnpublishFilm();
   const remove = useDeleteFilm();
-  const [confirm, setConfirm] = useState<"unpublish" | "delete" | null>(null);
+  const [confirm, setConfirm] = useState<"announce" | "publish" | "unpublish" | "delete" | null>(
+    null,
+  );
 
-  const ready = readinessItems(data).every((item) => item.done);
-  const deletable = !data.isPublished && data.showtimes.length === 0;
+  const released = data.status !== "DRAFT";
+  const deletable = !released && data.showtimes.length === 0;
+  const { canAnnounce, canPublish } = data.readiness;
 
   return (
     <>
@@ -431,29 +482,36 @@ function FilmDetail({ data }: { data: AdminFilm }) {
         description={`${data.producerName} · ${formatRuntime(data.durationMinutes)} · ${ratingLabel(data.ageRating)}`}
         actions={
           <>
-            {data.isPublished ? (
+            {released && (
               <Button asChild variant="outline">
                 <Link href={`/movies/${data.slug}`} target="_blank">
                   <ExternalLink data-icon="inline-start" />
                   View on site
                 </Link>
               </Button>
-            ) : (
+            )}
+            {data.status === "DRAFT" && (
               <Button
-                disabled={!ready || publish.isPending}
-                title={ready ? undefined : "Finish the readiness checklist first"}
-                onClick={() =>
-                  publish.mutate(data.id, {
-                    onSuccess: () => toast.success(`${data.title} is published`),
-                    onError: (error) => toast.error(publishRefusal(toApiError(error).code)),
-                  })
-                }
+                variant="outline"
+                disabled={!canAnnounce}
+                title={canAnnounce ? undefined : "Attach the trailer and both posters first"}
+                onClick={() => setConfirm("announce")}
               >
-                <Rocket data-icon="inline-start" />
-                {publish.isPending ? "Publishing…" : "Publish"}
+                <Megaphone data-icon="inline-start" />
+                Announce
               </Button>
             )}
-            {(data.isPublished || deletable) && (
+            {data.status !== "PUBLISHED" && (
+              <Button
+                disabled={!canPublish}
+                title={canPublish ? undefined : "Finish the readiness checklist first"}
+                onClick={() => setConfirm("publish")}
+              >
+                <Rocket data-icon="inline-start" />
+                Publish
+              </Button>
+            )}
+            {(released || deletable) && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="icon" aria-label="More actions">
@@ -461,9 +519,9 @@ function FilmDetail({ data }: { data: AdminFilm }) {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  {data.isPublished ? (
+                  {released ? (
                     <DropdownMenuItem onSelect={() => setConfirm("unpublish")}>
-                      Unpublish
+                      Take down
                     </DropdownMenuItem>
                   ) : (
                     <DropdownMenuItem variant="destructive" onSelect={() => setConfirm("delete")}>
@@ -481,7 +539,8 @@ function FilmDetail({ data }: { data: AdminFilm }) {
         <div className="space-y-8">
           <Readiness film={data} />
           <Details film={data} />
-          <Certificate film={data} />
+          {/* Starts afresh from each saved certificate, so the button rests until it's changed */}
+          <Certificate key={`${data.nfvcbCertNumber}|${data.nfvcbCertUrl}`} film={data} />
           <PostersPanel film={data} />
           <MediaPanel film={data} />
           <Showtimes film={data} />
@@ -491,19 +550,57 @@ function FilmDetail({ data }: { data: AdminFilm }) {
       </div>
 
       <ConfirmDialog
+        open={confirm === "announce"}
+        onOpenChange={(open) => !open && setConfirm(null)}
+        title={`Announce ${data.title} as coming soon?`}
+        consequences={[
+          "Its page, posters and trailer go public on the site.",
+          "Nobody can book it until it's published.",
+          "You can take it down at any time.",
+        ]}
+        confirmLabel="Announce"
+        pendingLabel="Announcing…"
+        onConfirm={async () => {
+          await announce.mutateAsync(data.id);
+          toast.success(`${data.title} is announced as coming soon`);
+        }}
+        explainError={(error) => releaseRefusal(error.code, "announced")}
+      />
+      <ConfirmDialog
+        open={confirm === "publish"}
+        onOpenChange={(open) => !open && setConfirm(null)}
+        title={`Publish ${data.title}?`}
+        consequences={[
+          "It goes on sale: you can add screenings and members can book them.",
+          "Once a pass is paid, the producer's share is fixed.",
+          "While paid passes exist for screenings still to come, it can't be taken down.",
+        ]}
+        confirmLabel="Publish"
+        pendingLabel="Publishing…"
+        onConfirm={async () => {
+          await publish.mutateAsync(data.id);
+          toast.success(`${data.title} is published`);
+        }}
+        explainError={(error) => releaseRefusal(error.code, "published")}
+      />
+      <ConfirmDialog
         open={confirm === "unpublish"}
         onOpenChange={(open) => !open && setConfirm(null)}
-        title={`Unpublish ${data.title}?`}
-        description="It leaves the catalogue: nobody can find or book it until it's published again."
+        title={`Take ${data.title} down?`}
+        description={
+          data.status === "PUBLISHED"
+            ? "It leaves the catalogue and goes back to draft: nobody can find or book it."
+            : "Its coming-soon page goes, and it goes back to draft."
+        }
         consequences={[
           "Past screenings and their sales are kept.",
-          "You can publish it again at any time.",
+          "You can announce or publish it again at any time.",
         ]}
-        confirmLabel="Unpublish"
-        pendingLabel="Unpublishing…"
+        confirmLabel="Take down"
+        pendingLabel="Taking down…"
         onConfirm={async () => {
           await unpublish.mutateAsync(data.id);
-          toast.success(`${data.title} is unpublished`);
+          toast.success(`${data.title} is back to draft`);
         }}
         explainError={(error) =>
           error.is(ErrorCode.MOVIE_HAS_ACTIVE_SALES) ? (

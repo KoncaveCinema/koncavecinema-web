@@ -4,20 +4,21 @@ import { Ban, CalendarClock, Pencil } from "lucide-react";
 import Link from "next/link";
 import { use, useState } from "react";
 
+import { ErrorCode } from "@/api";
 import { ConfirmDialog } from "@/components/console/confirm-dialog";
-import { DataTable } from "@/components/data-table/data-table";
 import { PageHeader } from "@/components/console/page-header";
 import { Panel } from "@/components/console/panel";
-import { QueryView } from "@/components/states/query-view";
 import { StatusBadge } from "@/components/console/status-badge";
+import { DataTable } from "@/components/data-table/data-table";
+import { QueryView } from "@/components/states/query-view";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { roomLabel } from "@/features/admin/rooms";
-import { ErrorCode } from "@/api";
 import { formatLagosDateTime, formatMoney } from "@/lib/format";
 
-import type { AdminShowtime, ShowtimeCancellation } from "./api-types";
-import { useCancelShowtime, useShowtime } from "./queries";
+import { useCancelShowtime, useShowtime } from "@/api/admin/showtimes-api";
+import type { AdminShowtime, ShowtimeCancellation } from "@/api/admin/showtimes-schemas";
+import { useStaffSignedIn } from "../require-staff";
 import { ShowtimeDialog } from "./showtime-dialog";
 
 const CRUMBS = [{ href: "/admin/showtimes", label: "Showtimes" }];
@@ -25,7 +26,8 @@ const CRUMBS = [{ href: "/admin/showtimes", label: "Showtimes" }];
 /** /admin/showtimes/[id]: one screening's rooms, suites and money; change or cancel it. */
 export function ShowtimeDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const showtime = useShowtime(id);
+  const showtime = useShowtime(id, useStaffSignedIn());
+
   return (
     <QueryView
       query={showtime}
@@ -201,7 +203,10 @@ function ShowtimeDetail({
           />
         </Panel>
 
-        <Panel title="Revenue" description="Kept revenue; payments owed back are left out.">
+        <Panel
+          title="Revenue"
+          description="Kept revenue; payments that require a refund are left out."
+        >
           <dl className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-5">
             {revenue.map((figure) => (
               <div key={figure.label}>

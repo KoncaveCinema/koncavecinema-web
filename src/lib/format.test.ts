@@ -9,6 +9,9 @@ describe("console formats", () => {
   it("names Lagos time, whatever the viewer's zone", () => {
     expect(formatLagosDateTime(iso)).toBe("Fri 6 Nov, 7:00 pm WAT");
     expect(formatLagosDateTime(iso, { year: true })).toBe("Fri 6 Nov 2026, 7:00 pm WAT");
+    expect(formatLagosDateTime(iso, { until: "2026-11-06T19:58:00.000Z" })).toBe(
+      "Fri 6 Nov, 7:00 pm to 8:58 pm WAT",
+    );
   });
   it("uses the Lagos calendar day near midnight", () => {
     // 23:30 UTC on the 6th is 00:30 on the 7th in Lagos

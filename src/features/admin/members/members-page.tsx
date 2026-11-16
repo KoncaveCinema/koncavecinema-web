@@ -12,8 +12,9 @@ import { usePagination } from "@/hooks/use-pagination";
 import { OptionSelect } from "@/components/console/pickers";
 import { formatLagosDate, formatLagosDateTime } from "@/lib/format";
 
-import type { AdminMemberListItem } from "./api-types";
-import { useMembers } from "./queries";
+import type { AdminMemberListItem } from "@/api/admin/members-schemas";
+import { useMembers } from "@/api/admin/members-api";
+import { useStaffSignedIn } from "../require-staff";
 
 const ROLES = ["VIEWER", "PRODUCER", "ADMIN", "SUPER_ADMIN"] as const;
 const ROLE_LABEL = {
@@ -80,11 +81,14 @@ export function MembersPage() {
   const [q, setQ] = useSearchParam();
   const [role, setRole] = useQueryState("role", parseAsStringLiteral(ROLES));
   const pagination = usePagination();
-  const members = useMembers({
-    q: q || undefined,
-    role: role ?? undefined,
-    ...pagination.query,
-  });
+  const members = useMembers(
+    {
+      q: q || undefined,
+      role: role ?? undefined,
+      ...pagination.query,
+    },
+    useStaffSignedIn(),
+  );
 
   return (
     <>

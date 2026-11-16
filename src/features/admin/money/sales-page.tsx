@@ -15,10 +15,11 @@ import { useServerNow } from "@/hooks/use-now";
 import { downloadFile } from "@/lib/download";
 import { formatLagosDateTime, formatMoney } from "@/lib/format";
 
-import { useFilms } from "../films/queries";
-import type { SalesReport as Report, SalesTotals } from "./api-types";
-import { useSalesReport } from "./queries";
+import { ALL_FILMS, useFilms } from "@/api/admin/films-api";
+import type { SalesReport as Report, SalesTotals } from "@/api/admin/money-schemas";
+import { useSalesReport } from "@/api/admin/money-api";
 import { SALES_PRESETS, TIERS, presetRange, rangeProblem, salesCsv } from "./sales";
+import { useStaffSignedIn } from "../require-staff";
 
 function Figures({ totals, currency }: { totals: SalesTotals; currency: string }) {
   const rows = [
@@ -171,7 +172,7 @@ export function SalesPage() {
     to: parseAsString.withDefault(""),
     film: parseAsString.withDefault(""),
   });
-  const films = useFilms({});
+  const films = useFilms(ALL_FILMS, useStaffSignedIn());
   // No days in the address: the last 30, once the clock is known
   const fallback = now === null ? null : presetRange("30d", now);
   const from = range.from || fallback?.from || "";
@@ -179,6 +180,7 @@ export function SalesPage() {
   const problem = from && to ? rangeProblem(from, to) : null;
   const report = useSalesReport(
     from && to && !problem ? { from, to, movieId: range.film || undefined } : null,
+    useStaffSignedIn(),
   );
   const data = report.data;
   const activePreset =

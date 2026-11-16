@@ -3,7 +3,7 @@ import { toCsv } from "@/lib/csv";
 import { dayKey, formatLagosDateTime } from "@/lib/format";
 import type { TicketTier } from "@/types/domain";
 
-import type { RefundReason, SalesReport } from "./api-types";
+import type { RefundReason, SalesReport } from "@/api/admin/money-schemas";
 
 /* The money screens' rules: report ranges in Lagos days, the CSV accountants take away, and
    plain words for why a payment is owed back. */
