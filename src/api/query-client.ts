@@ -33,7 +33,9 @@ function makeQueryClient(): QueryClient {
             { predicate: onScreen, type: "active" },
             { throwOnError: true },
           );
-        return refresh().catch(() => {
+        return refresh().catch((error: unknown) => {
+          // Not found: the write removed what the page showed (a deleted draft), not a failure
+          if (isApiError(error) && error.status === 404) return;
           toast.error("Saved, but this page couldn't refresh.", {
             action: { label: "Refresh", onClick: () => void refresh().catch(() => {}) },
           });
