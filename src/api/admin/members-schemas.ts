@@ -5,7 +5,7 @@ import { pageSchema } from "../page-schema";
 import { paymentStatusSchema } from "../payments/payments-schemas";
 import { ticketTierSchema } from "../showtimes/showtimes-schemas";
 import { ticketStatusSchema } from "../tickets/tickets-schemas";
-import { refundReasonSchema } from "./money-schemas";
+import { refundReasonSchema, refundStateSchema } from "./money-schemas";
 
 /*
  * The member support replies the console reads, checked against koncavecinema-api's
@@ -47,6 +47,8 @@ const memberPassSchema = z.object({
       amount: z.number(),
       currency: z.string(),
       refundReason: refundReasonSchema.nullable(),
+      /** As on the refunds queue; null when no refund is owed (dev, 3da4808) */
+      refundState: refundStateSchema.nullable(),
       refundedAt: z.iso.datetime().nullable(),
       createdAt: z.iso.datetime(),
     }),

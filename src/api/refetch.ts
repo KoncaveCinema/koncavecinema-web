@@ -70,6 +70,7 @@ export const refetchAfter: Record<string, readonly string[]> = {
   cancelShowtime: ["/admin/showtimes", ...ADMIN_FILM, ...CATALOGUE, "/tickets", ...ADMIN_MONEY],
 
   // Admin: money, members and staff
+  sendRefund: [...ADMIN_MONEY, "/admin/audit-logs"],
   markRefunded: [...ADMIN_MONEY, "/admin/audit-logs"],
   resendConfirmation: ["/admin/audit-logs"],
   cancelPass: [...ADMIN_MONEY, "/admin/showtimes", "/admin/audit-logs", "/tickets"],

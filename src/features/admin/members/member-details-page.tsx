@@ -138,12 +138,15 @@ function PassRow({
               <span className="font-mono text-white/60">{payment.reference}</span>
               <span className="flex flex-wrap items-center gap-2">
                 <StatusBadge kind="payment" status={payment.status} />
-                {payment.refundReason && (
+                {/* Where the refund stands is the API's word, as on the refunds queue */}
+                {payment.refundState && (
                   <span className="text-white/55">
                     {refundReasonLabel(payment.refundReason)}
-                    {payment.refundedAt
-                      ? `, refunded ${formatLagosDate(payment.refundedAt)}`
-                      : ", refund due"}
+                    {payment.refundState === "DONE"
+                      ? `, refunded${payment.refundedAt ? ` ${formatLagosDate(payment.refundedAt)}` : ""}`
+                      : payment.refundState === "IN_PROGRESS"
+                        ? ", refund in progress"
+                        : ", refund due"}
                   </span>
                 )}
               </span>
