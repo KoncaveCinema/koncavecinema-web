@@ -1,6 +1,6 @@
 # Phase F5: Lobby & Secure Playback
 
-## As built (November 2026, sample data)
+## As built (November 2026)
 
 - Route `/watch/[ticketId]` (`src/app/(watch)`), signed in, never indexed. Code in
   `src/features/watch/`; Mux Player loads on this route only.
@@ -21,9 +21,12 @@
   box in fullscreen.
 - Every refusal has its own screen: another device, unusual location (emailed code), film not
   ready, unpaid pass, ended, cancelled. DB-IP attribution under the player.
-- Demo: the client's public teaser stands in for the film; a demo-only switcher triggers each
-  refusal and falling behind. `/tickets/verify-access` is not used: the pass's own times decide
-  the countdown, and authorize-playback is the real check.
+- Tested on staging (15 November) with a real Mux master: lobby, start, watermark, heartbeat
+  lease and Secure Stop at the end. `/tickets/verify-access` is not used: the pass's own times
+  decide the countdown, and authorize-playback is the real check.
+- A refused heartbeat rejoins quietly when the API has only ended the session; the
+  another-device screen shows only for `STREAM_IN_USE_ON_ANOTHER_DEVICE`. Secure Stop goes out
+  when the viewer leaves the room, never when the player only remounts.
 - The stage fits the window (16:9 under the header); the Koncave mark sits faint in the corner,
   and the settings menus are black. The speed button is hidden: the sync check sets the rate.
 
@@ -42,10 +45,8 @@ A cinema keeps each auditorium together, not every auditorium, so the clock is p
 - The cutoff is the API's, per pass, and the web never works it out from `endTime`: the pass's
   `accessEndsAt` (my-tickets, `GET /tickets/:id`) drives "Watch now", "Ended" and the room's
   door; the player reads `schedule.hardCutoff` (authorize-playback) and the heartbeat's
-  `hardCutoff`, which equal it. The tabs come from `when=upcoming|past`. Sample data serves the
-  same fields from the rule in `src/lib/screening-window.ts` and `admin/showtimes/state.ts`.
-- Open with the backend: the admin film page's showtimes (`GET /admin/movies/:id`) carry no
-  `state`, so that column still works it out from `endTime` until they do.
+  `hardCutoff`, which equal it. The tabs come from `when=upcoming|past`.
+- The admin film page's showtimes carry the API's own `state` too.
 - Suites move to a host-controlled clock (pause for everyone, a pause allowance added to the
   cutoff) with the realtime layer in Phase 6.
 - Still to confirm with the client (a producer): that pausing outside the hall, and the extra
