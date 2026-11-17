@@ -65,6 +65,10 @@ export const ErrorCode = {
   ROOM_NOT_FOR_TIER: "ROOM_NOT_FOR_TIER", // 403, Individual Watch has no room
   ROOM_NOT_JOINED: "ROOM_NOT_JOINED", // 403, a room event before join_room
   MESSAGE_BLOCKED: "MESSAGE_BLOCKED", // 400, nothing left once links and numbers were removed
+  SUITE_HOST_ONLY: "SUITE_HOST_ONLY", // 403, a host action from a guest
+  SUITE_NOT_ADMITTED: "SUITE_NOT_ADMITTED", // 403, a voice token before the host let them in
+  SUITE_PAUSE_ALLOWANCE_USED: "SUITE_PAUSE_ALLOWANCE_USED", // 409, the 30 minutes are spent
+  VOICE_NOT_AVAILABLE: "VOICE_NOT_AVAILABLE", // 502, LiveKit refused or is unreachable
 
   // Admin console
   IMAGE_PROVIDER_ERROR: "IMAGE_PROVIDER_ERROR", // 502

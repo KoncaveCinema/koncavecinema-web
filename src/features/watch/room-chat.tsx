@@ -5,7 +5,10 @@ import { cn } from "cn";
 import { ArrowDown, Loader, MessageSquareOff, SendHorizontal, WifiOff } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
+import { toast } from "sonner";
+
 import { ErrorCode } from "@/api";
+import { getQueryClient } from "@/api/query-client";
 import { connectToRoom, type RoomConnection, type RoomHandlers } from "@/api/rooms/rooms-socket";
 import {
   MESSAGE_MAX_LENGTH,
@@ -26,11 +29,26 @@ import {
   useRoom,
   withMessages,
 } from "./room-store";
+import { setMicLocked, voiceLeft } from "./suite-voice";
 
 /** Asking again after "the room isn't open yet" (a clock a few seconds apart from the API's) */
 const REJOIN_MS = 15_000;
 
 const myAlias = () => useSession.getState().user?.publicScreenAlias ?? undefined;
+
+/** The host's controls, whose refusals show as a toast rather than in the chat */
+const HOST_ACTIONS = new Set(["admit", "deny", "kick", "mute", "unmute", "mute_all", "playback"]);
+const knockToast = (ticketId: string) => `knock-${ticketId}`;
+
+function hostRefusal(code: string, event: string): string {
+  if (code === ErrorCode.SUITE_PAUSE_ALLOWANCE_USED) {
+    return "No pause time left: the film keeps playing.";
+  }
+  if (code === ErrorCode.CONFLICT && event === "playback")
+    return "Pause first, then move the film.";
+  // Out of date (a guest who already left, a second tab): the next suite_state puts it right
+  return "That didn't go through. Your suite's list is up to date again.";
+}
 
 /**
  * Connects to the room's chat while `enabled` (a Public or suite pass with its doors open) and
@@ -82,8 +100,47 @@ export function useRoomChat(ticketId: string, enabled: boolean) {
         set({ inFlight: false });
         later(sendNext, waitMs);
       },
+      onSuiteState: (suite) => {
+        // A knock that's no longer waiting (let in, turned away, gone) needs no prompt
+        for (const guest of useRoom.getState().suite?.waiting ?? []) {
+          if (!suite.waiting.some((knock) => knock.ticketId === guest.ticketId)) {
+            toast.dismiss(knockToast(guest.ticketId));
+          }
+        }
+        set({ suite, admission: null });
+      },
+      onWaiting: () => set({ admission: "waiting" }),
+      onAdmitted: (clock) =>
+        set((state) => ({ admission: null, suite: state.suite && { ...state.suite, clock } })),
+      onDenied: (seconds) => set({ admission: "denied", knockAfter: Date.now() + seconds * 1000 }),
+      onKicked: () => {
+        resetRoom();
+        set({ admission: "kicked", connection: connection ?? null });
+      },
+      onAdmissionRequest: ({ ticketId: guest, alias }) =>
+        toast(`${alias} is knocking`, {
+          id: knockToast(guest),
+          description: "They'd like to join your suite.",
+          duration: Infinity,
+          action: { label: "Let in", onClick: () => connection?.guest("admit", guest) },
+          cancel: { label: "Not now", onClick: () => connection?.guest("deny", guest) },
+        }),
+      onGuestMuted: (guest, muted) => {
+        set((state) => ({ muted: { ...state.muted, [guest]: muted } }));
+        if (guest === ticketId) setMicLocked(muted);
+      },
+      onClock: (clock) => {
+        const wasPaused = useRoom.getState().suite?.clock.isPaused;
+        set((state) => ({ suite: state.suite && { ...state.suite, clock } }));
+        // A pause moves the pass's end of access later: read it again rather than keep the old
+        if (wasPaused && !clock.isPaused) {
+          void getQueryClient().invalidateQueries({ queryKey: [`/tickets/${ticketId}`] });
+        }
+      },
+      onVoiceLeft: voiceLeft,
       onRefused: ({ code, event }) => {
         if (code === ErrorCode.STREAM_CLOSED) return set({ status: "closed", inFlight: false });
+        if (event && HOST_ACTIONS.has(event)) return toast.error(hostRefusal(code, event));
         if (event === "send_reaction") return;
         if (event === "send_message") {
           // Nothing left once links and numbers were removed: back in the box to rewrite

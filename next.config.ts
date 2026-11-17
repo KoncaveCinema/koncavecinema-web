@@ -21,7 +21,8 @@ const toolbar = (...hosts: string[]) =>
 // inline; nonces would force every page to render per request and lose the static shells.
 // Mux serves the stream, the DRM licence and the storyboards; litix.io is Mux's playback
 // analytics; storage.googleapis.com receives the console's video uploads.
-// The API's websocket carries the rooms' chat; F7 part two adds LiveKit for suite voice.
+// The API's websocket carries the rooms' chat; LiveKit Cloud carries suite voice (its audio
+// itself goes over WebRTC, which the policy doesn't govern).
 const contentSecurityPolicy = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${dev ? " 'unsafe-eval'" : ""}${toolbar()}`,
@@ -34,6 +35,8 @@ const contentSecurityPolicy = [
     new URL(env.NEXT_PUBLIC_API_URL).origin,
     // The rooms' chat (Socket.IO), on the API's own server
     new URL(env.NEXT_PUBLIC_API_URL).origin.replace(/^http/, "ws"),
+    // Suite voice: LiveKit's signalling and its region lookup
+    "wss://*.livekit.cloud https://*.livekit.cloud",
     "https://*.mux.com https://*.litix.io https://storage.googleapis.com",
     // Turbopack's hot reload
     dev ? "ws:" : "",
