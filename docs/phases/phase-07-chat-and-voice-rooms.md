@@ -60,10 +60,43 @@ the spoiler shield), this section is right.
     meaningfully ahead.
   - A virtualised list: 200 messages at most stay light without one.
 
-### Part two (next)
+### Part two: suites, the shared clock and voice
 
-Suite admission, the host's controls, the shared playback clock and LiveKit voice: see
-`implementation_plan.md` (F7, part two).
+Built against the API's PR #32 (`5f0ce91`, with `6df4769` and `00a535f`).
+
+- **Admission** (`suite-door.tsx`):
+  - A suite guest joins over the same socket and gets `waiting`.
+  - The film doesn't load until the host lets them in: playback is asked for only once inside.
+  - `denied` shows **Knock again** after the wait and keeps listening, since `admitted` can still
+    arrive during it.
+  - `kicked` keeps the socket down (no automatic reconnect) until the guest knocks again.
+- **The host's controls** (`suite-panel.tsx`):
+  - Each knock gets a toast with **Let in** and **Not now**, and the waiting list in
+    `suite_state` is the source of truth.
+  - Guests can be muted, unmuted or removed (behind a confirmation), or all muted at once.
+  - Refusals show as a toast.
+  - `suite_state` carries no muted flag, so the mute icons follow `guest_muted` events since the
+    page opened.
+- **The shared clock** (`suite-clock.ts`):
+  - The player follows the API's clock instead of the schedule: running, `position` plus the
+    time since `serverTime`; paused, held on `position`.
+  - A pause that runs out of allowance resumes locally at that moment, as the API does without
+    an event.
+  - **Host:** Pause for everyone; while paused, Resume and ±10 s (seek works only while
+    paused). The allowance counts down and pause is disabled at zero.
+  - **Everyone:** sees "Paused by the host" over the film, in full screen too.
+  - After each resume the pass is read again, because pausing moves its end of access. The
+    player leaves a suite's end to the API's heartbeat, since the authorization's cutoff
+    doesn't move.
+- **Voice** (`suite-voice.ts`, `livekit-client` 2.23.0, about 140 KB gzipped, loaded only inside
+  a suite):
+  - Joins with `POST /rooms/voice-token` as a listener; `simulated` shows "Voice isn't
+    available".
+  - The microphone turns on only on its owner's tap; the camera is never asked for.
+  - Speaking rings come from LiveKit's active speakers, matched by `identity` (the ticket id).
+  - A muted guest's button is locked, by `guest_muted` or LiveKit's own permission change.
+  - Voice leaves on a kick, a dropped connection or leaving the page.
+- **Security policy:** `connect-src` allows `wss://*.livekit.cloud` and `https://*.livekit.cloud`.
 
 ## Deliverables (original plan)
 

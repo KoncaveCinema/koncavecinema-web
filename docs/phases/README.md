@@ -10,8 +10,7 @@ started.
 
 Web status (16 November 2026): every screen through F6 reads and writes the live API, with no
 sample data left. Each reply is checked against a schema in `src/api/`, and the whole path from
-preparing a film to watching it was tested on staging. F7 part one (room chat) is built; part two
-(suites, the shared clock and voice) is next.
+preparing a film to watching it was tested on staging. F7 (room chat, suites and voice) is built.
 
 ```txt
 [F0 Foundation & Tooling]
@@ -37,18 +36,18 @@ preparing a film to watching it was tested on staging. F7 part one (room chat) i
 [F9 Hardening, Observability & Launch]                       (API 8)
 ```
 
-| Phase                                           | Title                               | Depends on API | Status         |
-| :---------------------------------------------- | :---------------------------------- | :------------- | :------------- |
-| [F0](./phase-00-foundation-and-tooling.md)      | Foundation & Tooling                | none           | Done           |
-| [F1](./phase-01-design-system-and-app-shell.md) | Design System & App Shell           | none           | Done           |
-| [F2](./phase-02-accounts-sessions-and-kyc.md)   | Accounts, Sessions & KYC            | Phase 1        | Done           |
-| [F3](./phase-03-catalog-film-pages-and-seo.md)  | Catalog, Film Pages & SEO           | Phase 2        | Done           |
-| [F4](./phase-04-ticketing-and-checkout.md)      | Ticketing, Checkout & Dashboard     | Phases 3, 4    | Done           |
-| [F5](./phase-05-lobby-and-secure-playback.md)   | Lobby & Secure Playback             | Phase 5        | Done           |
-| [F6](./phase-06-studio-producer-and-admin.md)   | Admin Console (producers later)     | Phases 2, 5.5  | Done           |
-| [F7](./phase-07-chat-and-voice-rooms.md)        | Communal Chat & Private Suite Voice | Phase 6        | Part one built |
-| [F8](./phase-08-concessions-and-delivery.md)    | Concessions & Delivery Tracking     | Phase 7        | Blocked        |
-| [F9](./phase-09-hardening-and-launch.md)        | Hardening, Observability & Launch   | Phase 8        | Later          |
+| Phase                                           | Title                               | Depends on API | Status  |
+| :---------------------------------------------- | :---------------------------------- | :------------- | :------ |
+| [F0](./phase-00-foundation-and-tooling.md)      | Foundation & Tooling                | none           | Done    |
+| [F1](./phase-01-design-system-and-app-shell.md) | Design System & App Shell           | none           | Done    |
+| [F2](./phase-02-accounts-sessions-and-kyc.md)   | Accounts, Sessions & KYC            | Phase 1        | Done    |
+| [F3](./phase-03-catalog-film-pages-and-seo.md)  | Catalog, Film Pages & SEO           | Phase 2        | Done    |
+| [F4](./phase-04-ticketing-and-checkout.md)      | Ticketing, Checkout & Dashboard     | Phases 3, 4    | Done    |
+| [F5](./phase-05-lobby-and-secure-playback.md)   | Lobby & Secure Playback             | Phase 5        | Done    |
+| [F6](./phase-06-studio-producer-and-admin.md)   | Admin Console (producers later)     | Phases 2, 5.5  | Done    |
+| [F7](./phase-07-chat-and-voice-rooms.md)        | Communal Chat & Private Suite Voice | Phase 6        | Built   |
+| [F8](./phase-08-concessions-and-delivery.md)    | Concessions & Delivery Tracking     | Phase 7        | Blocked |
+| [F9](./phase-09-hardening-and-launch.md)        | Hardening, Observability & Launch   | Phase 8        | Later   |
 
 Every phase ends with: typecheck, lint and unit tests green; Playwright journeys for the phase's
 happy path and its main error codes; an accessibility pass (keyboard, focus, contrast); and a
