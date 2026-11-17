@@ -73,6 +73,8 @@ export const refetchAfter: Record<string, readonly string[]> = {
   sendRefund: [...ADMIN_MONEY, "/admin/audit-logs"],
   markRefunded: [...ADMIN_MONEY, "/admin/audit-logs"],
   resendConfirmation: ["/admin/audit-logs"],
+  shadowBan: ["/admin/users", "/admin/audit-logs"],
+  liftShadowBan: ["/admin/users", "/admin/audit-logs"],
   cancelPass: [...ADMIN_MONEY, "/admin/showtimes", "/admin/audit-logs", "/tickets"],
   inviteStaff: ["/admin/staff", "/admin/audit-logs"],
   changeStaffRole: ["/admin/staff", "/admin/audit-logs"],

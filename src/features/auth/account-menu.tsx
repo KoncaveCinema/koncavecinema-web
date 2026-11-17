@@ -80,7 +80,7 @@ export function useSignOut() {
   const setUser = useSession((state) => state.setUser);
   return async () => {
     await signOut().catch(() => undefined);
-    setUser(null);
+    setUser(null, true);
   };
 }
 

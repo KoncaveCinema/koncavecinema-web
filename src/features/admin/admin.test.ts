@@ -6,7 +6,7 @@ import { browserSummary } from "@/lib/user-agent";
 
 import type { FeaturedPlacement } from "@/api/admin/featured-schemas";
 
-import { auditActionLabel } from "./audit/actions";
+import { auditActionLabel, auditSummary } from "./audit/actions";
 import { hiddenText, moveInLineup } from "./featured/featured";
 import { readinessGroups, readinessSummary } from "./films/film-details-page";
 import { posterProblem } from "./films/schemas";
@@ -166,5 +166,16 @@ describe("audit actions", () => {
     expect(auditActionLabel("PAYMENT_REQUIRES_REFUND")).toBe("Payment requires refund");
     expect(auditActionLabel("ADMIN_MOVIE_ANNOUNCED")).toBe("Movie announced");
     expect(auditActionLabel("KYC_OTP_DISPATCHED")).toBe("KYC OTP dispatched");
+  });
+
+  it("reads the chat moderation summary as counts, and nothing else", () => {
+    const flagged = { showtimeId: "s1", flagged: { u1: 3, u2: 1 } };
+    expect(auditSummary("CHAT_MODERATION_SUMMARY", flagged)).toBe(
+      "4 filtered messages from 2 members",
+    );
+    expect(auditSummary("CHAT_MODERATION_SUMMARY", { flagged: { u1: 1 } })).toBe(
+      "1 filtered message from 1 member",
+    );
+    expect(auditSummary("ADMIN_CHAT_SHADOW_BAN", flagged)).toBeNull();
   });
 });

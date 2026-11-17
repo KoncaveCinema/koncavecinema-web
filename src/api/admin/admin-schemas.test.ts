@@ -204,6 +204,7 @@ describe("admin schemas", () => {
       termsVersion: "2026-10-28",
       createdAt: at,
       lastSignInAt: null,
+      chatShadowBannedAt: null,
       passes: [
         {
           id: "t1",

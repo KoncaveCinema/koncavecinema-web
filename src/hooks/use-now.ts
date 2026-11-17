@@ -83,3 +83,16 @@ export function useServerNow(): number | null {
   const now = useNow();
   return now === null ? null : now + serverOffset();
 }
+
+/**
+ * Something worked out from the server's clock, re-rendering only when it changes: a screening's
+ * phase moves a few times an evening, so the page around it needn't render every second the way
+ * a countdown does. `read` gets null before the page is interactive; return a primitive.
+ */
+export function useServerClock<T>(read: (serverNow: number | null) => T): T {
+  return useSyncExternalStore(
+    subscribe,
+    () => read(now === null ? null : now + serverOffset()),
+    () => read(null),
+  );
+}

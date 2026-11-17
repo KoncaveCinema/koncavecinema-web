@@ -16,7 +16,7 @@ import { browserSummary } from "@/lib/user-agent";
 import type { AuditEntry } from "@/api/admin/staff-schemas";
 import { useAudit } from "@/api/admin/staff-api";
 import { useSuperAdminSignedIn } from "../require-staff";
-import { auditActionLabel } from "./actions";
+import { auditActionLabel, auditSummary } from "./actions";
 
 const PRESETS = [
   { value: "ADMIN_", label: "Staff actions" },
@@ -33,8 +33,9 @@ const COLUMNS: Column<AuditEntry>[] = [
       <span className="block min-w-0">
         <span className="block">{auditActionLabel(entry.action)}</span>
         <span className="block truncate text-xs font-normal text-white/45">
-          {entry.user ? entry.user.email : "No account"} · {entry.ipAddress ?? "Unknown address"} ·{" "}
-          {browserSummary(entry.userAgent)}
+          {auditSummary(entry.action, entry.metadata) ??
+            (entry.user ? entry.user.email : "No account")}{" "}
+          · {entry.ipAddress ?? "Unknown address"} · {browserSummary(entry.userAgent)}
         </span>
       </span>
     ),

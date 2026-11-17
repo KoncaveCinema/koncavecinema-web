@@ -52,6 +52,16 @@ export async function cancelPass({ ticketId, reason }: { ticketId: string; reaso
   );
 }
 
+/** POST /admin/users/:id/chat-shadow-ban: their chat reaches nobody else, and they aren't told */
+export async function shadowBan(id: string) {
+  await http({ url: `${member(id)}/chat-shadow-ban`, method: "POST" });
+}
+
+/** DELETE /admin/users/:id/chat-shadow-ban */
+export async function liftShadowBan(id: string) {
+  await http({ url: `${member(id)}/chat-shadow-ban`, method: "DELETE" });
+}
+
 /* Hooks. Each query waits for `enabled` (a member of staff signed in). */
 
 export function useMembers(query: MembersQuery, enabled: boolean) {
@@ -88,6 +98,14 @@ export function useRevealLegalName() {
 
 export function useResendConfirmation() {
   return useMutation({ mutationKey: ["resendConfirmation"], mutationFn: resendConfirmation });
+}
+
+export function useShadowBan() {
+  return useMutation({ mutationKey: ["shadowBan"], mutationFn: shadowBan });
+}
+
+export function useLiftShadowBan() {
+  return useMutation({ mutationKey: ["liftShadowBan"], mutationFn: liftShadowBan });
 }
 
 export function useCancelPass() {

@@ -66,6 +66,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en-NG"
+      // Smooth scrolling is turned off while Next.js changes page, so a new page starts at the top
+      data-scroll-behavior="smooth"
       className={`${fontSans.variable} ${fontDisplay.variable} ${fontMono.variable} dark h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">

@@ -85,6 +85,7 @@
   --animate-accordion-up: accordion-up 180ms var(--ease-cinema);
   --animate-rise: rise 800ms var(--ease-cinema) both;
   --animate-ken-burns: ken-burns 16s cubic-bezier(0.25, 0.6, 0.3, 1) both;
+  --animate-float-up: float-up 3.5s var(--ease-cinema) both;
 }
 
 /* Dark is the only theme for now; `.dark` is kept so shadcn's dark variants still apply */
@@ -434,6 +435,22 @@
   100% {
     opacity: 0;
     transform: translate3d(var(--dust-x, 12px), -90px, 0);
+  }
+}
+
+/* A hall reaction rising over the film, fading as it goes */
+@keyframes float-up {
+  0% {
+    transform: translate3d(0, 0, 0) scale(0.6);
+    opacity: 0;
+  }
+  15% {
+    transform: translate3d(0, -20px, 0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(var(--float-x, 0), -240px, 0) scale(1.1);
+    opacity: 0;
   }
 }
 

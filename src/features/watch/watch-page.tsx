@@ -7,6 +7,8 @@ import {
   CreditCard,
   Hourglass,
   Loader,
+  MessageSquare,
+  MessageSquareOff,
   MonitorSmartphone,
   RotateCw,
   SearchX,
@@ -25,12 +27,13 @@ import { useGetTicket } from "@/api/tickets/tickets-api";
 import { useSignedIn } from "@/features/auth/require-session";
 import { roomName } from "@/features/dashboard/ticket-card";
 import { SUPPORT_EMAIL } from "@/features/support/content";
-import { useServerNow } from "@/hooks/use-now";
+import { useServerClock } from "@/hooks/use-now";
 import { ErrorCode, toApiError } from "@/api";
 import { formatClock } from "@/lib/format";
 import { screeningPhase, watchesAtOwnPace } from "@/lib/screening-window";
 
 import type { PlaybackEnd } from "./player";
+import { FloatingReactions, RoomChat, useRoomChat } from "./room-chat";
 import { LobbyCountdown, LocationCheck, RoomMessage } from "./screens";
 
 // Mux Player loads on this page only, and only in the browser
@@ -61,6 +64,28 @@ function useIdle(active: boolean): boolean {
   return active && idle;
 }
 
+const CHAT_HIDDEN_KEY = "koncave:chat-hidden";
+
+/** Whether the viewer put the chat away, remembered on this device (never required) */
+function useChatHidden() {
+  const [hidden, setHidden] = useState(() => {
+    try {
+      return typeof window !== "undefined" && localStorage.getItem(CHAT_HIDDEN_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
+  const change = (next: boolean) => {
+    setHidden(next);
+    try {
+      localStorage.setItem(CHAT_HIDDEN_KEY, next ? "1" : "0");
+    } catch {
+      // Storage blocked (a private window): it simply isn't remembered
+    }
+  };
+  return [hidden, change] as const;
+}
+
 /**
  * /watch/[ticketId]: the screening room. Counts down to the lobby, asks the API for playback
  * once the doors open, then plays the room's moment. Every refusal has its own screen with the
@@ -69,14 +94,16 @@ function useIdle(active: boolean): boolean {
 export function WatchPage({ params }: { params: Promise<{ ticketId: string }> }) {
   const { ticketId } = use(params);
   const ticket = useGetTicket(ticketId, useSignedIn());
-  const now = useServerNow();
   const [attempt, setAttempt] = useState(0);
   const [ended, setEnded] = useState<PlaybackEnd | null>(null);
   const [picture, setPicture] = useState(false);
 
   const pass = ticket.data;
-  const phase = pass && now !== null ? screeningPhase(pass, now) : null;
-  const over = pass && now !== null && now >= Date.parse(pass.accessEndsAt);
+  // Each changes a few times an evening, so the room re-renders then, not every second
+  const phase = useServerClock((now) => (pass && now !== null ? screeningPhase(pass, now) : null));
+  const over = useServerClock(
+    (now) => pass !== undefined && now !== null && now >= Date.parse(pass.accessEndsAt),
+  );
   const paid = pass?.status === "CONFIRMED" || pass?.status === "CHECKED_IN";
   const doorsOpen = paid && !over && (phase === "lobby" || phase === "live" || phase === "ended");
 
@@ -86,6 +113,12 @@ export function WatchPage({ params }: { params: Promise<{ ticketId: string }> })
   const playing = authorization !== undefined;
   const ownPace = pass !== undefined && watchesAtOwnPace(pass.tier);
   const idle = useIdle(playing);
+
+  // Public and suite passes share the room's chat, from the lobby to the end of access
+  const chatOn = doorsOpen && pass !== undefined && !ownPace;
+  useRoomChat(ticketId, chatOn);
+  const [chatHidden, setChatHidden] = useChatHidden();
+  const showChat = chatOn && !chatHidden;
 
   const retry = () => {
     setEnded(null);
@@ -218,6 +251,7 @@ export function WatchPage({ params }: { params: Promise<{ ticketId: string }> })
           // An ended session is asked for again at once (the API resumes it when it can);
           // only authorize-playback's own refusal says another device has the pass
           onPictureChange={setPicture}
+          overlay={chatOn ? <FloatingReactions /> : undefined}
           onEnd={(reason) => (reason === "session-ended" ? retry() : setEnded(reason))}
         />
       );
@@ -279,17 +313,25 @@ export function WatchPage({ params }: { params: Promise<{ ticketId: string }> })
     }
   }
 
+  // Live while the film plays: a film shorter than its slot ends before the schedule says so
   const status =
-    pass && phase === "live" && !over
+    pass && phase === "live" && !over && ended === null
       ? { label: "Live", tone: "live" as const }
       : pass && phase === "lobby"
         ? { label: "Lobby open", tone: "lobby" as const }
         : null;
+  // The chat's column is held while the pass loads, so the film doesn't shift when it opens
+  const chatColumn = showChat || (ticket.isPending && !chatHidden);
 
   return (
     // Clipped so the scaled, blurred poster can't widen the page; clip (not hidden) keeps the
-    // header sticky
-    <div className="relative isolate flex min-h-svh flex-col overflow-clip bg-black">
+    // header sticky. With the chat beside it, the room is exactly one screen high
+    <div
+      className={cn(
+        "relative isolate flex min-h-svh flex-col overflow-clip bg-black",
+        chatColumn && "lg:h-svh",
+      )}
+    >
       {/* The poster stays behind the room until the film's picture shows */}
       {pass && !(playing && picture) && (
         <Image
@@ -325,6 +367,22 @@ export function WatchPage({ params }: { params: Promise<{ ticketId: string }> })
             </p>
           )}
         </div>
+        {chatOn && (
+          <Button
+            size="sm"
+            variant="ghost"
+            aria-pressed={!chatHidden}
+            className="shrink-0"
+            onClick={() => setChatHidden(!chatHidden)}
+          >
+            {chatHidden ? (
+              <MessageSquare data-icon="inline-start" />
+            ) : (
+              <MessageSquareOff data-icon="inline-start" />
+            )}
+            {chatHidden ? "Show chat" : "Hide chat"}
+          </Button>
+        )}
         {status && (
           <span className="flex shrink-0 items-center gap-2 rounded-full border border-white/12 bg-black/60 px-3 py-1 text-xs font-semibold">
             <LiveDot tone={status.tone} />
@@ -333,17 +391,38 @@ export function WatchPage({ params }: { params: Promise<{ ticketId: string }> })
         )}
       </header>
 
-      <main id="main" className="flex flex-1 flex-col justify-center">
-        {/* Playing, the 16:9 stage fits the screen under the header and above the credit line,
-            so nothing scrolls; full screen is the player's own button */}
-        <div
-          className={cn(
-            "mx-auto w-full",
-            playing ? "max-w-[min(100%,calc((100svh-7rem)*16/9))]" : "max-w-5xl",
-          )}
-        >
-          {stage()}
+      <main
+        id="main"
+        className={cn(
+          "flex flex-1 flex-col justify-center",
+          // Wide screens: the chat against the right edge, the film centred in the rest
+          chatColumn && "gap-4 px-4 lg:min-h-0 lg:flex-row lg:items-stretch lg:gap-6 lg:pl-0",
+        )}
+      >
+        <div className={cn("flex min-w-0 flex-col justify-center", chatColumn && "lg:flex-1")}>
+          {/* Playing, the 16:9 stage fits the screen under the header and above the credit
+              line, so nothing scrolls; full screen is the player's own button */}
+          <div
+            className={cn(
+              "mx-auto w-full",
+              !playing
+                ? "max-w-5xl"
+                : chatColumn
+                  ? "max-w-[min(100%,calc((100svh-9rem)*16/9))]"
+                  : "max-w-[min(100%,calc((100svh-7rem)*16/9))]",
+            )}
+          >
+            {stage()}
+          </div>
         </div>
+        {showChat ? (
+          <RoomChat
+            closing={phase === "ended" || ended !== null}
+            className="h-[55svh] lg:h-auto lg:w-88 lg:shrink-0"
+          />
+        ) : (
+          chatColumn && <div aria-hidden="true" className="hidden lg:block lg:w-88 lg:shrink-0" />
+        )}
       </main>
 
       <footer className="flex flex-col items-center gap-4 px-4 py-6 text-center text-xs text-white/40">
