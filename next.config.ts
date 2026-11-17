@@ -21,7 +21,7 @@ const toolbar = (...hosts: string[]) =>
 // inline; nonces would force every page to render per request and lose the static shells.
 // Mux serves the stream, the DRM licence and the storyboards; litix.io is Mux's playback
 // analytics; storage.googleapis.com receives the console's video uploads.
-// F7 adds the chat (Socket.IO) and voice (LiveKit) hosts.
+// The API's websocket carries the rooms' chat; F7 part two adds LiveKit for suite voice.
 const contentSecurityPolicy = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${dev ? " 'unsafe-eval'" : ""}${toolbar()}`,
@@ -32,6 +32,8 @@ const contentSecurityPolicy = [
   [
     "connect-src 'self'",
     new URL(env.NEXT_PUBLIC_API_URL).origin,
+    // The rooms' chat (Socket.IO), on the API's own server
+    new URL(env.NEXT_PUBLIC_API_URL).origin.replace(/^http/, "ws"),
     "https://*.mux.com https://*.litix.io https://storage.googleapis.com",
     // Turbopack's hot reload
     dev ? "ws:" : "",
@@ -76,6 +78,9 @@ const nextConfig: NextConfig = {
 
   poweredByHeader: false,
   reactStrictMode: true,
+  // Local development only: Socket.IO asks for /socket.io/ with its slash, which the forward to
+  // the API (rewrites below) needs to keep. Deployments never set the proxy
+  skipTrailingSlashRedirect: Boolean(env.API_DEV_PROXY_URL),
 
   compiler: {
     // Keep warnings and errors for error tracking; drop debug logging from production bundles
@@ -114,7 +119,14 @@ const nextConfig: NextConfig = {
   // Local development against a remote API (see API_DEV_PROXY_URL in src/env.ts)
   async rewrites() {
     if (!env.API_DEV_PROXY_URL) return [];
-    return [{ source: "/api/:path*", destination: `${env.API_DEV_PROXY_URL}/:path*` }];
+    return [
+      { source: "/api/:path*", destination: `${env.API_DEV_PROXY_URL}/:path*` },
+      // The rooms' socket sits on the API's origin, outside /api; Next forwards the websocket too
+      {
+        source: "/socket.io/",
+        destination: `${new URL(env.API_DEV_PROXY_URL).origin}/socket.io/`,
+      },
+    ];
   },
 };
 

@@ -61,6 +61,11 @@ export const ErrorCode = {
   STREAM_DRM_NOT_ENABLED: "STREAM_DRM_NOT_ENABLED",
   LOCATION_VERIFICATION_REQUIRED: "LOCATION_VERIFICATION_REQUIRED",
 
+  // Screening rooms (the /rooms socket answers with these codes too, in room_error)
+  ROOM_NOT_FOR_TIER: "ROOM_NOT_FOR_TIER", // 403, Individual Watch has no room
+  ROOM_NOT_JOINED: "ROOM_NOT_JOINED", // 403, a room event before join_room
+  MESSAGE_BLOCKED: "MESSAGE_BLOCKED", // 400, nothing left once links and numbers were removed
+
   // Admin console
   IMAGE_PROVIDER_ERROR: "IMAGE_PROVIDER_ERROR", // 502
   IMAGE_PROVIDER_UNAVAILABLE: "IMAGE_PROVIDER_UNAVAILABLE", // 503

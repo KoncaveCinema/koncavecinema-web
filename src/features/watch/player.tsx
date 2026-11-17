@@ -4,7 +4,14 @@
 import MuxPlayer from "@mux/mux-player-react";
 import { cn } from "cn";
 import { Clock, Play, Radio } from "lucide-react";
-import { useEffect, useEffectEvent, useRef, useState, type ComponentRef } from "react";
+import {
+  useEffect,
+  useEffectEvent,
+  useRef,
+  useState,
+  type ComponentRef,
+  type ReactNode,
+} from "react";
 
 import { ErrorCode, serverOffset, toApiError } from "@/api";
 import {
@@ -20,7 +27,7 @@ import type {
 } from "@/api/stream-security/stream-security-schemas";
 import { LogoMark } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
-import { useServerNow } from "@/hooks/use-now";
+import { useServerClock, useServerNow } from "@/hooks/use-now";
 import { formatClock, formatCountdown } from "@/lib/format";
 
 import {
@@ -112,6 +119,12 @@ function Watermark({ watermark }: { watermark: WatermarkInfo }) {
   );
 }
 
+/** The lobby's countdown: the one part of the player that changes every second */
+function StartsIn({ startsAt }: { startsAt: number }) {
+  const now = useServerNow();
+  return <>{now === null ? "…" : formatCountdown(startsAt - now)}</>;
+}
+
 export default function Player({
   ticketId,
   title,
@@ -120,6 +133,7 @@ export default function Player({
   authorization,
   onEnd,
   onPictureChange,
+  overlay,
 }: {
   ticketId: string;
   title: string;
@@ -131,10 +145,11 @@ export default function Player({
   onEnd: (reason: PlaybackEnd) => void;
   /** Whether the film's picture is on screen; until it is, the page keeps the poster behind */
   onPictureChange: (showing: boolean) => void;
+  /** Drawn over the picture inside the player's frame, so full screen keeps it (hall reactions) */
+  overlay?: ReactNode;
 }) {
   const ref = useRef<PlayerElement>(null);
   const [drmToken, setDrmToken] = useState(authorization.drmToken);
-  const now = useServerNow();
   const [zone, setZone] = useState<SyncZone>("live");
   const [needsTap, setNeedsTap] = useState(false);
   const [shortOfTime, setShortOfTime] = useState(false);
@@ -153,7 +168,8 @@ export default function Player({
     else if (apiError.is(ErrorCode.STREAM_CLOSED)) onEnd("closed");
   };
   const startsAt = Date.parse(schedule.startTime);
-  const started = now !== null && now >= startsAt;
+  // Changes once, at the start; the countdown ticks on its own, so the player doesn't re-render
+  const started = useServerClock((now) => now !== null && now >= startsAt);
   const endsAt = formatClock(schedule.hardCutoff);
   // The picture shows once the film has started and is playing (no tap still wanted)
   const showing = started && !needsTap;
@@ -255,6 +271,8 @@ export default function Player({
     const attach = () => {
       const stage = document.getElementById(STAGE_ID);
       if (player.mediaController && stage) player.mediaController.fullscreenElement = stage;
+      // No picture-in-picture either: its window shows the film without the watermark
+      player.media?.setAttribute("disablepictureinpicture", "");
     };
     attach();
     player.addEventListener("loadedmetadata", attach);
@@ -303,6 +321,14 @@ export default function Player({
             player.currentTime = roomPosition();
           }
         }}
+        // A room plays like a cinema: a pause from outside the controls (a media key, the
+        // system's player) resumes at once, at the room's moment
+        onPause={() => {
+          const player = ref.current;
+          if (!ownPace && started && !needsTap && player && !player.ended) play();
+        }}
+        // Keys can't pause or seek a room; Individual Watch keeps them
+        nohotkeys={!ownPace}
         // No controls in the lobby (nothing to press until the film starts for everyone), nor
         // behind the tap to start
         style={{
@@ -312,6 +338,16 @@ export default function Player({
           // gentle catch-up) every sync check, so a viewer's choice can't hold there, and
           // Individual Watch keeps the same controls. Remove this line to bring it back.
           "--playback-rate-button": "none",
+          "--pip-button": "none",
+          // A room: no pause, no seeking, and a tap on the picture does nothing. Volume,
+          // captions, quality and full screen stay
+          ...(!ownPace && {
+            "--play-button": "none",
+            "--seek-backward-button": "none",
+            "--seek-forward-button": "none",
+            "--time-range": "none",
+            "--media-gesture-receiver-display": "none",
+          }),
           ...((!started || needsTap) && { "--controls": "none" }),
         }}
         className={cn(
@@ -323,7 +359,11 @@ export default function Player({
         )}
       />
 
-      {authorization.watermark && <Watermark watermark={authorization.watermark} />}
+      {/* Over the picture only: in the lobby there is nothing to mark, and it would sit on the
+          countdown */}
+      {authorization.watermark && showing && <Watermark watermark={authorization.watermark} />}
+
+      {overlay}
 
       {/* The cinema's mark, faint in the corner above the controls, in full screen too */}
       <LogoMark className="pointer-events-none absolute right-4 bottom-10 z-10 size-9 opacity-30 select-none sm:right-6 sm:size-12" />
@@ -335,7 +375,7 @@ export default function Player({
               Lobby open · starts in
             </p>
             <p className="mt-3 font-display text-5xl font-black tabular-nums sm:text-7xl">
-              {now === null ? "…" : formatCountdown(startsAt - now)}
+              <StartsIn startsAt={startsAt} />
             </p>
             <p className="mt-3 text-sm text-white/60">
               {ownPace
