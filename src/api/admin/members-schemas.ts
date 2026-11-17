@@ -66,6 +66,8 @@ export const adminMemberSchema = z.object({
   termsVersion: z.string().nullable(),
   createdAt: z.iso.datetime(),
   lastSignInAt: z.iso.datetime().nullable(),
+  /** Set while the member is shadow-banned from room chat (dev 1654026) */
+  chatShadowBannedAt: z.iso.datetime().nullable(),
   legalFullName: z.string().nullable().optional(),
   passes: z.array(memberPassSchema),
   recentSignIns: z.array(

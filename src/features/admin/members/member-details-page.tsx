@@ -1,6 +1,6 @@
 "use client";
 
-import { Eye, MailCheck, ScrollText, Ticket, XCircle } from "lucide-react";
+import { Eye, MailCheck, MessageSquareOff, ScrollText, Ticket, XCircle } from "lucide-react";
 import Link from "next/link";
 import { use, useState } from "react";
 import { toast } from "sonner";
@@ -24,9 +24,11 @@ import { refundReasonLabel } from "../money/sales";
 import type { AdminMember, AdminMemberPass } from "@/api/admin/members-schemas";
 import {
   useCancelPass,
+  useLiftShadowBan,
   useMember,
   useResendConfirmation,
   useRevealLegalName,
+  useShadowBan,
 } from "@/api/admin/members-api";
 import { useStaffSignedIn } from "../require-staff";
 
@@ -89,6 +91,7 @@ function Profile({ member }: { member: AdminMember }) {
             )}
           </dd>
         </div>
+        <ChatModeration member={member} />
       </dl>
       <ConfirmDialog
         open={asking}
@@ -101,6 +104,55 @@ function Profile({ member }: { member: AdminMember }) {
         onConfirm={async () => setLegalName(await reveal.mutateAsync(member.id))}
       />
     </Panel>
+  );
+}
+
+/**
+ * Room chat moderation: a shadow-banned member's messages reach nobody but themselves, and
+ * they aren't told. Either admin role may set or lift it; both are audited.
+ */
+function ChatModeration({ member }: { member: AdminMember }) {
+  const ban = useShadowBan();
+  const lift = useLiftShadowBan();
+  const [asking, setAsking] = useState(false);
+  const bannedAt = member.chatShadowBannedAt;
+  return (
+    <div>
+      <dt className="text-xs text-white/45">Room chat</dt>
+      <dd className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-2">
+        <span>
+          {bannedAt ? `Shadow-banned since ${formatLagosDateTime(bannedAt)}` : "Chats normally"}
+        </span>
+        <Button size="sm" variant="outline" onClick={() => setAsking(true)}>
+          {!bannedAt && <MessageSquareOff data-icon="inline-start" />}
+          {bannedAt ? "Lift shadow-ban" : "Shadow-ban"}
+        </Button>
+      </dd>
+      <ConfirmDialog
+        open={asking}
+        onOpenChange={setAsking}
+        title={bannedAt ? "Lift the chat shadow-ban?" : "Shadow-ban this member from room chat?"}
+        consequences={
+          bannedAt
+            ? [
+                "Their messages reach everyone in the room again.",
+                "This is recorded in the audit log.",
+              ]
+            : [
+                "Their messages reach nobody else. They still see their own, and aren't told.",
+                "You can lift it here at any time.",
+                "This is recorded in the audit log.",
+              ]
+        }
+        confirmLabel={bannedAt ? "Lift shadow-ban" : "Shadow-ban"}
+        pendingLabel={bannedAt ? "Lifting…" : "Shadow-banning…"}
+        tone={bannedAt ? "default" : "danger"}
+        onConfirm={async () => {
+          await (bannedAt ? lift : ban).mutateAsync(member.id);
+          toast.success(bannedAt ? "Shadow-ban lifted." : "Member shadow-banned from room chat.");
+        }}
+      />
+    </div>
   );
 }
 

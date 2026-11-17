@@ -14,3 +14,22 @@ export function auditActionLabel(action: string): string {
   const sentence = words.join(" ");
   return sentence.charAt(0).toUpperCase() + sentence.slice(1);
 }
+
+/**
+ * A one-line reading for an entry whose numbers say more than who acted: the API's chat
+ * moderation summary (`{ showtimeId, flagged: { userId: count } }`, once a minute). Null for
+ * everything else.
+ */
+export function auditSummary(
+  action: string,
+  metadata: Record<string, unknown> | null,
+): string | null {
+  if (action !== "CHAT_MODERATION_SUMMARY") return null;
+  const flagged = metadata?.flagged;
+  if (typeof flagged !== "object" || flagged === null) return null;
+  const counts = Object.values(flagged).filter((count) => typeof count === "number");
+  const total = counts.reduce((sum, count) => sum + count, 0);
+  const messages = total === 1 ? "message" : "messages";
+  const members = counts.length === 1 ? "member" : "members";
+  return `${total} filtered ${messages} from ${counts.length} ${members}`;
+}
