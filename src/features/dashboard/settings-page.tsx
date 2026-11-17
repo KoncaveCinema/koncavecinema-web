@@ -213,7 +213,7 @@ function DeleteAccount() {
         explainError={explainDeleteError}
         onConfirm={async () => {
           await deleteAccount(password);
-          setUser(null);
+          setUser(null, true);
           router.push("/");
           toast.success("Your account has been deleted");
         }}

@@ -28,7 +28,8 @@ export function RequireSession({
 }
 
 /**
- * Sends a signed-out visitor to sign-in, returning here afterwards. Renders nothing, so a layout
+ * Sends a signed-out visitor to sign-in, returning here afterwards (unless they signed out on
+ * purpose: the page was theirs, not the next person's). Renders nothing, so a layout
  * can keep its pages rendering (and prerenderable) while the pages hold their data back until
  * someone is signed in (see `useSignedIn`). The admin console sends staff to its own sign-in.
  */
@@ -37,12 +38,15 @@ export function SignInRedirect({ signInPath = "/sign-in" }: { signInPath?: strin
   const pathname = usePathname();
   const search = useSearchParams().toString();
   const status = useSession((state) => state.status);
+  const byChoice = useSession((state) => state.signedOutByChoice);
 
   useEffect(() => {
     if (status !== "signed-out") return;
+    // Signed out on purpose: the next person to sign in may not be the one this page was for
+    if (byChoice) return router.replace(signInPath);
     const next = search ? `${pathname}?${search}` : pathname;
     router.replace(`${signInPath}?next=${encodeURIComponent(next)}`);
-  }, [status, pathname, search, router, signInPath]);
+  }, [status, byChoice, pathname, search, router, signInPath]);
 
   return null;
 }

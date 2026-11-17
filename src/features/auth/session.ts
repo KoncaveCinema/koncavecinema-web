@@ -19,18 +19,24 @@ type SessionStatus = "loading" | "signed-in" | "signed-out";
 interface SessionState {
   status: SessionStatus;
   user: UserProfile | null;
-  setUser: (user: UserProfile | null) => void;
+  /**
+   * The session ended because the person signed out, not because it expired. Their page is
+   * then no one's to come back to: whoever signs in next may be someone else
+   */
+  signedOutByChoice: boolean;
+  setUser: (user: UserProfile | null, byChoice?: boolean) => void;
 }
 
 export const useSession = create<SessionState>((set, get) => ({
   status: "loading",
   user: null,
-  setUser: (user) => {
+  signedOutByChoice: false,
+  setUser: (user, byChoice = false) => {
     // Signing out, or another person signing in on this device: nothing cached for the previous
     // person (their passes, their admin lists) may outlive their session
     const previous = get().user;
     if (previous && previous.id !== user?.id) getQueryClient().clear();
-    set({ user, status: user ? "signed-in" : "signed-out" });
+    set({ user, status: user ? "signed-in" : "signed-out", signedOutByChoice: !user && byChoice });
   },
 }));
 
