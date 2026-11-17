@@ -30,6 +30,9 @@ import { Button } from "@/components/ui/button";
 import { useServerClock, useServerNow } from "@/hooks/use-now";
 import { formatClock, formatCountdown } from "@/lib/format";
 
+import type { SuiteClock } from "@/api/rooms/rooms-schemas";
+
+import { suiteMoment } from "./suite-clock";
 import {
   CATCH_UP_RATE,
   SYNC_CHECK_MS,
@@ -134,6 +137,7 @@ export default function Player({
   onEnd,
   onPictureChange,
   overlay,
+  suiteClock,
 }: {
   ticketId: string;
   title: string;
@@ -147,6 +151,11 @@ export default function Player({
   onPictureChange: (showing: boolean) => void;
   /** Drawn over the picture inside the player's frame, so full screen keeps it (hall reactions) */
   overlay?: ReactNode;
+  /**
+   * A private suite's film follows its host: the API's clock, or null until it arrives (it starts
+   * on the schedule, like a hall). Undefined everywhere else
+   */
+  suiteClock?: SuiteClock | null;
 }) {
   const ref = useRef<PlayerElement>(null);
   const [drmToken, setDrmToken] = useState(authorization.drmToken);
@@ -179,8 +188,12 @@ export default function Player({
     return () => onShowing(false);
   }, [showing]);
 
-  /** Where the room is now */
-  const roomPosition = () => targetPosition(schedule.startTime, Date.now() + serverOffset());
+  const suite = suiteClock !== undefined;
+  /** The suite's film now, by the host's clock */
+  const suiteNow = () => (suiteClock ? suiteMoment(suiteClock, Date.now() + serverOffset()) : null);
+  /** Where the room is now: the host's clock in a suite, the schedule in a hall */
+  const roomPosition = () =>
+    suiteNow()?.position ?? targetPosition(schedule.startTime, Date.now() + serverOffset());
 
   /** Plays from `from` (Individual Watch) or the room's moment; with neither, carries on */
   const play = (from?: number) => {
@@ -213,7 +226,8 @@ export default function Player({
     const player = ref.current;
     if (!player) return;
     const timeLeft = Date.parse(schedule.hardCutoff) - (Date.now() + serverOffset());
-    if (timeLeft <= 0) {
+    // A suite's end of access moves later with each pause: the API's heartbeat says when it's over
+    if (timeLeft <= 0 && !suite) {
       onEnd("closed");
       return;
     }
@@ -221,6 +235,19 @@ export default function Player({
       savePosition(ticketId, player.currentTime);
       const rest = player.duration - player.currentTime;
       setShortOfTime(Number.isFinite(rest) && rest * 1000 > timeLeft);
+      return;
+    }
+    // The host has the film paused: hold it on their frame
+    const moment = suiteNow();
+    if (moment?.paused) {
+      if (!player.paused) player.pause();
+      if (Math.abs(player.currentTime - moment.position) > 0.5)
+        player.currentTime = moment.position;
+      setZone("live");
+      return;
+    }
+    if (suite && player.paused && !needsTap && !player.ended) {
+      play();
       return;
     }
     const target = roomPosition();
@@ -239,6 +266,10 @@ export default function Player({
     const check = setInterval(onSyncCheck, SYNC_CHECK_MS);
     return () => clearInterval(check);
   }, [started]);
+  // The host paused, resumed or moved the film: follow at once, not at the next check
+  useEffect(() => {
+    if (started && suiteClock) onSyncCheck();
+  }, [started, suiteClock]);
 
   // The lease: renewed on the API's interval. An ended session is asked for again; a pass taken
   // by another device or a closed screening stops playback; a network blip changes nothing
@@ -325,7 +356,9 @@ export default function Player({
         // system's player) resumes at once, at the room's moment
         onPause={() => {
           const player = ref.current;
-          if (!ownPace && started && !needsTap && player && !player.ended) play();
+          if (!ownPace && started && !needsTap && player && !player.ended && !suiteNow()?.paused) {
+            play();
+          }
         }}
         // Keys can't pause or seek a room; Individual Watch keeps them
         nohotkeys={!ownPace}

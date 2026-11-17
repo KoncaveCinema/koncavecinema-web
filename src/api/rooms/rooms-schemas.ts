@@ -60,3 +60,58 @@ export type RoomError = z.infer<typeof roomErrorSchema>;
 
 /** The `data` of a refused handshake (`connect_error`) */
 export const handshakeErrorSchema = z.object({ code: z.string() });
+
+/* Private suites (dev 5f0ce91): admission, the host's controls and the shared playback clock */
+
+/** A guest of the suite: admitted, or knocking */
+export const suiteMemberSchema = z.object({ ticketId: z.string(), alias: z.string() });
+export type SuiteMember = z.infer<typeof suiteMemberSchema>;
+
+/**
+ * The suite's playback clock as the API holds it. Running, the film is at `position` plus the
+ * time since `serverTime`; paused, at `position`. A pause that uses up the allowance resumes on
+ * the API's side at that moment, with no event (see suite-clock.ts)
+ */
+export const suiteClockSchema = z.object({
+  isPaused: z.boolean(),
+  position: z.number(),
+  serverTime: z.iso.datetime(),
+  pauseRemainingSeconds: z.number(),
+});
+export type SuiteClock = z.infer<typeof suiteClockSchema>;
+
+/** `suite_state`, pushed to everyone in the suite whenever anything changes */
+export const suiteStateSchema = z.object({
+  role: z.enum(["host", "guest"]),
+  /** Admitted guests; the host isn't among them */
+  guests: z.array(suiteMemberSchema),
+  /** Knocking guests, for the host only (always empty for guests) */
+  waiting: z.array(suiteMemberSchema),
+  clock: suiteClockSchema,
+  maxCapacity: z.number().int(),
+});
+export type SuiteState = z.infer<typeof suiteStateSchema>;
+
+/** `admitted`: the host let this guest in (the app then joins again) */
+export const admittedSchema = z.object({ clock: suiteClockSchema });
+/** `denied`: not let in; another knock is possible after the wait */
+export const deniedSchema = z.object({ retryAfterSeconds: z.number() });
+/** `admission_request`, to the host on each knock */
+export const admissionRequestSchema = suiteMemberSchema;
+/** `guest_muted`: the host revoked or restored a guest's microphone */
+export const guestMutedSchema = z.object({ ticketId: z.string(), muted: z.boolean() });
+/** `voice_participant_left`: LiveKit saw a member leave voice */
+export const voiceLeftSchema = z.object({ ticketId: z.string() });
+/** Events with nothing in them: `waiting`, `kicked` */
+export const emptyEventSchema = z.object({});
+
+/** POST /rooms/voice-token (dev 5f0ce91): an audio-only LiveKit token for the suite */
+export const voiceTokenSchema = z.object({
+  token: z.string(),
+  url: z.string(),
+  /** The member's identity in the voice room: their ticket id */
+  identity: z.string(),
+  /** True where LiveKit isn't configured (local, tests): there is no room to join */
+  simulated: z.boolean(),
+});
+export type VoiceToken = z.infer<typeof voiceTokenSchema>;

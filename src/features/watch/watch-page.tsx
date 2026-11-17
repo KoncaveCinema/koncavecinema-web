@@ -25,16 +25,21 @@ import { Button } from "@/components/ui/button";
 import { useAuthorizePlayback } from "@/api/stream-security/stream-security-api";
 import { useGetTicket } from "@/api/tickets/tickets-api";
 import { useSignedIn } from "@/features/auth/require-session";
+import { useSession } from "@/features/auth/session";
 import { roomName } from "@/features/dashboard/ticket-card";
 import { SUPPORT_EMAIL } from "@/features/support/content";
 import { useServerClock } from "@/hooks/use-now";
 import { ErrorCode, toApiError } from "@/api";
 import { formatClock } from "@/lib/format";
-import { screeningPhase, watchesAtOwnPace } from "@/lib/screening-window";
+import { isSuite, screeningPhase, watchesAtOwnPace } from "@/lib/screening-window";
 
 import type { PlaybackEnd } from "./player";
 import { FloatingReactions, RoomChat, useRoomChat } from "./room-chat";
+import { useRoom } from "./room-store";
 import { LobbyCountdown, LocationCheck, RoomMessage } from "./screens";
+import { SuiteDoor } from "./suite-door";
+import { SuitePanel, SuitePausedOverlay } from "./suite-panel";
+import { useSuiteVoice } from "./suite-voice";
 
 // Mux Player loads on this page only, and only in the browser
 const Player = dynamic(() => import("./player"), {
@@ -107,18 +112,31 @@ export function WatchPage({ params }: { params: Promise<{ ticketId: string }> })
   const paid = pass?.status === "CONFIRMED" || pass?.status === "CHECKED_IN";
   const doorsOpen = paid && !over && (phase === "lobby" || phase === "live" || phase === "ended");
 
-  // Playback is asked for once the doors open, and again only when the viewer retries
-  const playback = useAuthorizePlayback(ticketId, attempt, doorsOpen);
-  const authorization = ended ? undefined : playback.data;
-  const playing = authorization !== undefined;
   const ownPace = pass !== undefined && watchesAtOwnPace(pass.tier);
-  const idle = useIdle(playing);
+  const suitePass = pass !== undefined && isSuite(pass.tier);
 
-  // Public and suite passes share the room's chat, from the lobby to the end of access
+  // Public and suite passes share the room's chat, from the lobby to the end of access. In a
+  // suite the same connection carries the knock, the host's controls and the shared clock
   const chatOn = doorsOpen && pass !== undefined && !ownPace;
   useRoomChat(ticketId, chatOn);
+  const roomOpen = useRoom((state) => state.status === "open");
+  const admission = useRoom((state) => state.admission);
+  const suiteClock = useRoom((state) => state.suite?.clock ?? null);
+  // A suite guest is in once the host has let them in (the host always is)
+  const inSuite = suitePass && roomOpen && admission === null;
+  useSuiteVoice(ticketId, inSuite);
+
+  // Playback is asked for once the doors open (in a suite, once the member is in), and again
+  // only when the viewer retries
+  const playback = useAuthorizePlayback(ticketId, attempt, doorsOpen && (!suitePass || inSuite));
+  const authorization = ended ? undefined : playback.data;
+  const playing = authorization !== undefined;
+  const idle = useIdle(playing);
+
   const [chatHidden, setChatHidden] = useChatHidden();
-  const showChat = chatOn && !chatHidden;
+  // Outside a suite (knocking, turned away) there is no chat to show
+  const showChat = chatOn && !chatHidden && (!suitePass || inSuite);
+  const alias = useSession((state) => state.user?.publicScreenAlias ?? undefined);
 
   const retry = () => {
     setEnded(null);
@@ -240,6 +258,9 @@ export function WatchPage({ params }: { params: Promise<{ ticketId: string }> })
       );
     }
 
+    // A suite opens to its members only: a guest knocks and the host lets them in
+    if (suitePass && !inSuite) return <SuiteDoor backToPass={backToPass} />;
+
     if (authorization) {
       return (
         <Player
@@ -251,7 +272,8 @@ export function WatchPage({ params }: { params: Promise<{ ticketId: string }> })
           // An ended session is asked for again at once (the API resumes it when it can);
           // only authorize-playback's own refusal says another device has the pass
           onPictureChange={setPicture}
-          overlay={chatOn ? <FloatingReactions /> : undefined}
+          overlay={suitePass ? <SuitePausedOverlay /> : chatOn ? <FloatingReactions /> : undefined}
+          suiteClock={suitePass ? suiteClock : undefined}
           onEnd={(reason) => (reason === "session-ended" ? retry() : setEnded(reason))}
         />
       );
@@ -416,10 +438,13 @@ export function WatchPage({ params }: { params: Promise<{ ticketId: string }> })
           </div>
         </div>
         {showChat ? (
-          <RoomChat
-            closing={phase === "ended" || ended !== null}
-            className="h-[55svh] lg:h-auto lg:w-88 lg:shrink-0"
-          />
+          <div className="flex flex-col gap-4 lg:min-h-0 lg:w-88 lg:shrink-0">
+            {suitePass && <SuitePanel ticketId={ticketId} alias={alias} />}
+            <RoomChat
+              closing={phase === "ended" || ended !== null}
+              className="h-[55svh] lg:h-auto lg:min-h-0 lg:flex-1"
+            />
+          </div>
         ) : (
           chatColumn && <div aria-hidden="true" className="hidden lg:block lg:w-88 lg:shrink-0" />
         )}

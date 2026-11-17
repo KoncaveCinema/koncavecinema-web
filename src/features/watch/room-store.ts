@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
 import type { RoomConnection, RoomConnectionStatus } from "@/api/rooms/rooms-socket";
-import type { ChatMessage, RoomState } from "@/api/rooms/rooms-schemas";
+import type { ChatMessage, RoomState, SuiteState } from "@/api/rooms/rooms-schemas";
 
 /*
  * The room's chat while the screening room is open: what the socket last said, the messages
@@ -17,6 +17,9 @@ export const MAX_FLOATING = 16;
 export const FLOAT_MS = 3_500;
 
 export type RoomStatus = RoomConnectionStatus | "refused" | "closed";
+
+/** A suite guest outside the suite: knocking, turned away for now, or removed by the host */
+export type Admission = "waiting" | "denied" | "kicked";
 
 export interface FloatingReaction {
   id: number;
@@ -43,6 +46,14 @@ interface RoomStore {
   /** Set when the API removed everything in the last message */
   blocked: boolean;
   connection: RoomConnection | null;
+  /** A suite's guests, knocks and playback clock; null in a hall */
+  suite: SuiteState | null;
+  /** Set while a suite guest isn't in the suite; null once they are, and in a hall */
+  admission: Admission | null;
+  /** Local time another knock may go, after a denial */
+  knockAfter: number;
+  /** Guests whose microphone the host has turned off, by ticket id */
+  muted: Record<string, boolean>;
 }
 
 const EMPTY: RoomStore = {
@@ -56,6 +67,10 @@ const EMPTY: RoomStore = {
   draft: "",
   blocked: false,
   connection: null,
+  suite: null,
+  admission: null,
+  knockAfter: 0,
+  muted: {},
 };
 
 export const useRoom = create<RoomStore>(() => EMPTY);

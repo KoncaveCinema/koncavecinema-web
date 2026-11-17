@@ -6,6 +6,17 @@ import { getAccessToken } from "../access-token";
 import { refreshAccessToken } from "../client";
 import { ErrorCode } from "../errors";
 import {
+  admissionRequestSchema,
+  admittedSchema,
+  deniedSchema,
+  emptyEventSchema,
+  guestMutedSchema,
+  suiteClockSchema,
+  suiteStateSchema,
+  voiceLeftSchema,
+  type SuiteClock,
+  type SuiteMember,
+  type SuiteState,
   chatMessageSchema,
   handshakeErrorSchema,
   rateLimitSchema,
@@ -36,13 +47,41 @@ export interface RoomHandlers {
   /** The exact wait before the refused message may go again, in milliseconds */
   onRateLimited: (retryAfterMs: number) => void;
   onRefused: (error: RoomError) => void;
+  // Suites
+  onSuiteState: (state: SuiteState) => void;
+  /** A guest outside the suite, waiting for the host */
+  onWaiting: () => void;
+  /** The host let this guest in; the connection has already asked to join again */
+  onAdmitted: (clock: SuiteClock) => void;
+  onDenied: (retryAfterSeconds: number) => void;
+  /** The host removed this guest; the connection stays closed until they knock again */
+  onKicked: () => void;
+  /** To the host: a guest is knocking */
+  onAdmissionRequest: (guest: SuiteMember) => void;
+  onGuestMuted: (ticketId: string, muted: boolean) => void;
+  /** The host paused, resumed or moved the film */
+  onClock: (clock: SuiteClock) => void;
+  onVoiceLeft: (ticketId: string) => void;
 }
+
+/** The host's controls, each about a guest's pass */
+export type GuestAction = "admit" | "deny" | "kick" | "mute" | "unmute";
+/** The host's playback: a pause without a position freezes the film where the API's clock is */
+export type PlaybackAction =
+  | { action: "pause"; position?: number }
+  | { action: "resume" }
+  | { action: "seek"; position: number };
 
 export interface RoomConnection {
   send: (text: string) => void;
   react: (emoji: Reaction) => void;
   /** Asks to join again, after a refusal that may have passed (the lobby opening) */
   rejoin: () => void;
+  /** A guest removed from a suite asks to come back in: a fresh connection, a fresh knock */
+  knock: () => void;
+  guest: (action: GuestAction, ticketId: string) => void;
+  muteAll: () => void;
+  playback: (action: PlaybackAction) => void;
   close: () => void;
 }
 
@@ -72,6 +111,8 @@ export async function connectToRoom(
   const join = () => socket.emit("join_room", { ticketId });
   // One token refresh per refusal: a second refusal in a row means the session has ended
   let refreshed = false;
+  // Removed from a suite by its host: the API drops the socket, and it stays down
+  let kicked = false;
 
   socket.on("connect", () => {
     refreshed = false;
@@ -94,8 +135,11 @@ export async function connectToRoom(
   socket.on("disconnect", (reason) => {
     if (reason === "io client disconnect") return;
     handlers.onStatus("reconnecting");
-    // The API dropped it (a deploy draining): Socket.IO won't come back by itself
-    if (reason === "io server disconnect") setTimeout(() => socket.connect(), RESTART_DELAY_MS);
+    // The API dropped it (a deploy draining): Socket.IO won't come back by itself. After a
+    // kick it mustn't: the guest knocks again only if they choose to
+    if (reason === "io server disconnect" && !kicked) {
+      setTimeout(() => socket.connect(), RESTART_DELAY_MS);
+    }
   });
   socket.on("server_restarting", () => handlers.onStatus("reconnecting"));
 
@@ -106,6 +150,24 @@ export async function connectToRoom(
   on("rate_limit_exceeded", rateLimitSchema, ({ retryAfterSeconds, retryAfterMs }) =>
     handlers.onRateLimited(retryAfterMs ?? retryAfterSeconds * 1000),
   );
+  on("suite_state", suiteStateSchema, handlers.onSuiteState);
+  on("waiting", emptyEventSchema, () => handlers.onWaiting());
+  on("admitted", admittedSchema, ({ clock }) => {
+    // In now: join again to receive the suite's room_state and suite_state
+    join();
+    handlers.onAdmitted(clock);
+  });
+  on("denied", deniedSchema, ({ retryAfterSeconds }) => handlers.onDenied(retryAfterSeconds));
+  on("kicked", emptyEventSchema, () => {
+    kicked = true;
+    handlers.onKicked();
+  });
+  on("admission_request", admissionRequestSchema, handlers.onAdmissionRequest);
+  on("guest_muted", guestMutedSchema, ({ ticketId, muted }) =>
+    handlers.onGuestMuted(ticketId, muted),
+  );
+  on("room_playback_synced", suiteClockSchema, handlers.onClock);
+  on("voice_participant_left", voiceLeftSchema, ({ ticketId }) => handlers.onVoiceLeft(ticketId));
   on("room_error", roomErrorSchema, (error) => {
     // Sent before the room took us back (a reconnect): join, and the next message goes through
     if (error.code === ErrorCode.ROOM_NOT_JOINED) join();
@@ -116,6 +178,14 @@ export async function connectToRoom(
     send: (text) => socket.emit("send_message", { text }),
     react: (emoji) => socket.emit("send_reaction", { emoji }),
     rejoin: join,
+    knock: () => {
+      kicked = false;
+      if (socket.connected) join();
+      else socket.connect();
+    },
+    guest: (action, guestTicketId) => socket.emit(action, { ticketId: guestTicketId }),
+    muteAll: () => socket.emit("mute_all"),
+    playback: (action) => socket.emit("playback", action),
     close: () => {
       socket.removeAllListeners();
       socket.disconnect();

@@ -13,6 +13,10 @@ function openHall() {
     send: vi.fn(),
     react: vi.fn(),
     rejoin: vi.fn(),
+    knock: vi.fn(),
+    guest: vi.fn(),
+    muteAll: vi.fn(),
+    playback: vi.fn(),
     close: vi.fn(),
   };
   useRoom.setState({

@@ -30,6 +30,11 @@ export function lobbyOpensAt(showtime: { startTime: string }): string {
 }
 
 /** Individual Watch is the member's own film; every other room keeps the room's moment */
+/** A private suite: the host's room, with admission, voice and the host's clock */
+export function isSuite(tier: TicketTier): boolean {
+  return tier === "PRIVATE_5" || tier === "PRIVATE_10";
+}
+
 export function watchesAtOwnPace(tier: TicketTier): boolean {
   return tier === "INDIVIDUAL";
 }
