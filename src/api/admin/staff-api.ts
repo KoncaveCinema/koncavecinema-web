@@ -44,6 +44,16 @@ export async function removeStaff(id: string) {
   return staffMemberSchema.parse(await http({ url: staff(id), method: "DELETE" }));
 }
 
+/**
+ * POST /admin/staff/:id/two-factor/reset: for a lost phone. Their sessions end, and they set it
+ * up again at their next sign-in. The super admin can't reset their own
+ */
+export async function resetStaffTwoFactor(id: string) {
+  return staffMemberSchema.parse(
+    await http({ url: `${staff(id)}/two-factor/reset`, method: "POST", data: {} }),
+  );
+}
+
 /** GET /admin/audit-logs: newest first, on the API's cursor */
 export async function listAudit(query: AuditQuery) {
   return auditEntriesPageSchema.parse(await http({ url: "/admin/audit-logs", params: query }));
@@ -74,6 +84,10 @@ export function useInviteStaff() {
 
 export function useChangeStaffRole() {
   return useMutation({ mutationKey: ["changeStaffRole"], mutationFn: changeStaffRole });
+}
+
+export function useResetStaffTwoFactor() {
+  return useMutation({ mutationKey: ["resetStaffTwoFactor"], mutationFn: resetStaffTwoFactor });
 }
 
 export function useRemoveStaff() {

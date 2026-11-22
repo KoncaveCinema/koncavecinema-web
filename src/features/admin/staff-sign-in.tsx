@@ -4,10 +4,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowRight, Check, LayoutDashboard, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, useTransition, type ReactNode } from "react";
 import { useForm } from "react-hook-form";
 
+import { toast } from "sonner";
 import { signIn } from "@/api/auth/auth-api";
+import type { UserProfile } from "@/api/auth/auth-schemas";
 import { Button } from "@/components/ui/button";
 import {
   FieldError,
@@ -21,6 +23,8 @@ import {
 import { isStaff } from "@/features/auth/roles";
 import { signInSchema, type SignInValues } from "@/features/auth/schemas";
 import { useSession } from "@/features/auth/session";
+import { TwoFactorStep, useCodeStep } from "@/features/auth/two-factor-step";
+import { useClearOnLeave } from "@/hooks/use-clear-on-leave";
 import { cn } from "@/lib/utils";
 
 /**
@@ -35,6 +39,8 @@ export function StaffSignInForm() {
   const afterReset = searchParams.get("reset") === "1";
   const { status, user, setUser } = useSession();
   const [failure, setFailure] = useState<ReactNode>(null);
+  // Staff sign in with password and authenticator code: the code step comes second
+  const codeStep = useCodeStep();
   const {
     register: field,
     handleSubmit,
@@ -47,41 +53,50 @@ export function StaffSignInForm() {
   });
 
   const staff = status === "signed-in" && isStaff(user?.role);
+  const signedIn = (profile: UserProfile) => {
+    // Said at once, while the console loads; a member account is told otherwise below
+    if (isStaff(profile.role)) toast.success("Signed in");
+    setUser(profile);
+  };
+  // What was typed stays on screen while signing in, and is gone by the next visit
+  useClearOnLeave(() => {
+    reset();
+    setFailure(null);
+  });
+  // The console loads while they type, so it opens at once after the code
   useEffect(() => {
-    if (staff) router.replace(next);
+    router.prefetch(next);
+  }, [next, router]);
+  // Signed in as staff: the screen stays as it is, its button working, until the console is up
+  const [, startLeaving] = useTransition();
+  useEffect(() => {
+    if (staff) startLeaving(() => router.replace(next));
   }, [staff, next, router]);
 
   const onSubmit = async (values: SignInValues) => {
     setFailure(null);
     try {
-      const user = await signIn(values.email, values.password);
-      // Next keeps this page alive after leaving it: nothing typed may wait here for the next visit
-      reset();
-      setUser(user);
+      const outcome = await signIn(values.email, values.password);
+      if (outcome.signedIn) signedIn(outcome.user);
+      else codeStep.ask(outcome.challenge);
     } catch (error) {
       setFailure(signInFailure(error));
     }
   };
 
-  if (status === "signed-in" && !staff) {
+  if (status === "signed-in" && !staff) return <NotStaff email={user?.email} />;
+
+  // Kept on screen after the code is accepted, until the console has loaded
+  if (codeStep.challenge) {
     return (
-      <div role="alert" className="space-y-6 text-center">
-        <span className="mx-auto grid size-12 place-items-center rounded-full bg-gold/12 text-gold ring-1 ring-gold/30">
-          <ShieldAlert aria-hidden="true" className="size-5" />
-        </span>
-        <div>
-          <h1 className="font-display text-2xl font-black">This isn&rsquo;t a staff account</h1>
-          <p className="mt-2 text-sm text-white/55">
-            {user?.email} is a member account. Your tickets and settings are in your dashboard.
-          </p>
-        </div>
-        <Button asChild size="lg" className="w-full">
-          <Link href="/dashboard">
-            <LayoutDashboard data-icon="inline-start" />
-            Go to your dashboard
-          </Link>
-        </Button>
-      </div>
+      <TwoFactorStep
+        challenge={codeStep.challenge}
+        onSignedIn={signedIn}
+        onRestart={(reason) => {
+          codeStep.back();
+          setFailure(reason ?? null);
+        }}
+      />
     );
   }
 
@@ -91,7 +106,7 @@ export function StaffSignInForm() {
         <h1 className="font-display text-3xl font-black">Staff sign-in</h1>
         <p className="mt-2 text-sm text-white/55">
           For the Koncave team. Members sign in on the{" "}
-          <Link href="/sign-in" className="underline underline-offset-4 hover:text-foreground">
+          <Link href="/login" className="underline underline-offset-4 hover:text-foreground">
             main site
           </Link>
           .
@@ -150,6 +165,29 @@ export function StaffSignInForm() {
           {!isSubmitting && !staff && <ArrowRight data-icon="inline-end" />}
         </Button>
       </form>
+    </div>
+  );
+}
+
+/** A member account at the staff door: the way to their own dashboard instead */
+function NotStaff({ email }: { email: string | undefined }) {
+  return (
+    <div role="alert" className="space-y-6 text-center">
+      <span className="mx-auto grid size-12 place-items-center rounded-full bg-gold/12 text-gold ring-1 ring-gold/30">
+        <ShieldAlert aria-hidden="true" className="size-5" />
+      </span>
+      <div>
+        <h1 className="font-display text-2xl font-black">This isn&rsquo;t a staff account</h1>
+        <p className="mt-2 text-sm text-white/55">
+          {email} is a member account. Your tickets and settings are in your dashboard.
+        </p>
+      </div>
+      <Button asChild size="lg" className="w-full">
+        <Link href="/dashboard">
+          <LayoutDashboard data-icon="inline-start" />
+          Go to your dashboard
+        </Link>
+      </Button>
     </div>
   );
 }
