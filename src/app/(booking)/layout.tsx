@@ -1,9 +1,11 @@
 import { LifeBuoy, Lock } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 
 import { FilmGrain, ScreenGlow } from "@/components/brand/atmosphere";
 import { Logo } from "@/components/brand/logo";
+import { ConfirmEmailRedirect } from "@/features/auth/confirm-email-redirect";
 
 // Booking pages are personal or short-lived: never indexed (robots.ts disallows them too)
 export const metadata: Metadata = { robots: { index: false, follow: false } };
@@ -35,6 +37,10 @@ export default function BookingLayout({ children }: LayoutProps<"/">) {
           </div>
         </div>
       </header>
+      {/* Booking needs a confirmed address: an unconfirmed member goes to the code step first */}
+      <Suspense>
+        <ConfirmEmailRedirect />
+      </Suspense>
       <main id="main" className="relative isolate flex-1">
         <ScreenGlow className="-z-10" />
         <FilmGrain className="-z-10" />

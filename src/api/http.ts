@@ -11,13 +11,15 @@ import { unwrapEnvelope } from "./envelope";
  * for a paginated list. The module then parses that with its Zod schema.
  */
 
-// Calls that never need a session, so they don't wait for the start-up refresh
+// Calls that never need a session, so they don't wait for the start-up refresh. "/auth/login"
+// covers the two-factor step (/auth/login/two-factor); "/auth/verify-email" covers its resend
 const SESSIONLESS_PATHS = [
   "/auth/login",
   "/auth/register",
   "/auth/refresh",
   "/auth/forgot-password",
   "/auth/reset-password",
+  "/auth/verify-email",
 ];
 
 export async function http(config: AxiosRequestConfig): Promise<unknown> {

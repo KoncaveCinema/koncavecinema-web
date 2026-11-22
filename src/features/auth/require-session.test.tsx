@@ -20,7 +20,7 @@ describe("the sign-in redirect", () => {
   it("brings someone whose session expired back to the page they were on", () => {
     render(<SignInRedirect />);
     act(() => useSession.getState().setUser(null));
-    expect(replace).toHaveBeenCalledWith("/sign-in?next=%2Fdashboard%2Ftickets%2Ft1");
+    expect(replace).toHaveBeenCalledWith("/login?next=%2Fdashboard%2Ftickets%2Ft1");
   });
 
   it("forgets the page after a deliberate sign-out: the next person may be someone else", () => {
