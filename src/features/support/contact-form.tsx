@@ -8,6 +8,7 @@ import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
+import { useClearOnLeave } from "@/hooks/use-clear-on-leave";
 import { api, ErrorCode, toApiError } from "@/api";
 import { cn } from "@/lib/utils";
 
@@ -71,6 +72,12 @@ export function ContactForm() {
     defaultValues: { topic: topicFromParam(searchParams.get("topic")) },
   });
   const topic = useWatch({ control, name: "topic" });
+  // A message, its sender and the "sent" note: gone by the next visit
+  useClearOnLeave(() => {
+    reset({ topic: topicFromParam(null) });
+    setSentTo(null);
+    setFailure(null);
+  });
 
   const onSubmit = async (values: ContactValues) => {
     setFailure(null);

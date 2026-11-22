@@ -1,9 +1,11 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowRight, Check, MailCheck, ShieldCheck } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { Controller, useForm } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
+import { useClearOnLeave } from "@/hooks/use-clear-on-leave";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { ErrorCode, toApiError } from "@/api";
 import { sendIdentityCode, verifyIdentity } from "@/api/auth/auth-api";
@@ -58,11 +60,21 @@ export function IdentityCheck({ onVerified }: { onVerified: () => void }) {
     control,
     handleSubmit,
     resetField,
+    reset,
     formState: { errors, isSubmitting, isValid },
   } = useForm<VerifyIdentityValues>({
     resolver: zodResolver(verifyIdentitySchema),
     mode: "onTouched",
     defaultValues: { otp: "", legalFullName: "", publicScreenAlias: alias ? undefined : "" },
+  });
+  // A phone number, a legal name, a code: none of it waits for the next visit
+  useClearOnLeave(() => {
+    reset();
+    setPhone("");
+    setPhoneError(null);
+    setSentTo(null);
+    setSending(false);
+    setFailure(null);
   });
 
   async function sendCode() {
@@ -89,6 +101,7 @@ export function IdentityCheck({ onVerified }: { onVerified: () => void }) {
     setFailure(null);
     try {
       setUser(await verifyIdentity(values));
+      toast.success("Identity verified");
       onVerified();
     } catch (error) {
       const apiError = toApiError(error);
