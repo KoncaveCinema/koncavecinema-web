@@ -93,7 +93,7 @@ export function MobileNav() {
             </>
           ) : (
             <Button asChild size="lg" className="w-full">
-              <Link href="/sign-in" prefetch={false} onClick={() => setOpen(false)}>
+              <Link href="/login" prefetch={false} onClick={() => setOpen(false)}>
                 Sign in
               </Link>
             </Button>

@@ -120,7 +120,7 @@ export function AccountMenu({
     if (variant === "header" && status === "signed-out") {
       return (
         <Button asChild className="hidden sm:inline-flex">
-          <Link href="/sign-in" prefetch={false}>
+          <Link href="/login" prefetch={false}>
             Sign in
           </Link>
         </Button>

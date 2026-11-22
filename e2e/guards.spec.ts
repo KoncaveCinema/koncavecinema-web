@@ -6,7 +6,7 @@ import { needs, signIn } from "./helpers";
 
 test("signed out, the dashboard sends you to sign in and back", async ({ page }) => {
   await page.goto("/dashboard");
-  await expect(page).toHaveURL(/\/sign-in\?next=%2Fdashboard/);
+  await expect(page).toHaveURL(/\/login\?next=%2Fdashboard/);
 });
 
 test("signed out, the admin console sends you to the staff sign-in", async ({ page }) => {
