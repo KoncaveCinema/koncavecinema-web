@@ -11,6 +11,7 @@ import { LocalTime } from "@/components/cinema/live-time";
 import { Button } from "@/components/ui/button";
 import { PageSkeleton } from "@/features/auth/require-session";
 import { ScreenAliasForm } from "@/features/auth/screen-alias-form";
+import { verifyEmailHref } from "@/features/auth/links";
 import { useSession } from "@/features/auth/session";
 import { ErrorCode, toApiError } from "@/api";
 import { useClaimInvite, useGetInvitePreview } from "@/api/tickets/tickets-api";
@@ -18,6 +19,8 @@ import type { InvitePreview } from "@/api/tickets/tickets-schemas";
 
 function claimError(code: string): string {
   switch (code) {
+    case ErrorCode.EMAIL_NOT_VERIFIED:
+      return "Confirm your email first. Taking you to the code…";
     case ErrorCode.SUITE_FULL:
       return "This suite is full. Ask your host whether there's another way in.";
     case ErrorCode.SUITE_NOT_ACTIVE:
@@ -89,6 +92,7 @@ export function InvitePage({ params }: { params: Promise<{ code: string }> }) {
   const router = useRouter();
   const status = useSession((state) => state.status);
   const needsAlias = useSession((state) => !state.user?.publicScreenAlias);
+  const email = useSession((state) => state.user?.email);
   const preview = useGetInvitePreview(code);
   const claim = useClaimInvite(code);
   const next = encodeURIComponent(pathname);
@@ -101,6 +105,12 @@ export function InvitePage({ params }: { params: Promise<{ code: string }> }) {
           description: `Your pass is ${ticket.seatIdentifier}.`,
         });
         router.replace(`/dashboard/tickets/${ticket.id}`);
+      },
+      // The address isn't confirmed yet: the code step, then back to this invite
+      onError: (error) => {
+        if (email && toApiError(error).is(ErrorCode.EMAIL_NOT_VERIFIED)) {
+          router.push(verifyEmailHref(email, pathname, true));
+        }
       },
     });
   }
@@ -190,7 +200,7 @@ export function InvitePage({ params }: { params: Promise<{ code: string }> }) {
                 <Link href={`/register?next=${next}`}>Create an account to join</Link>
               </Button>
               <Link
-                href={`/sign-in?next=${next}`}
+                href={`/login?next=${next}`}
                 className="text-sm text-white/60 underline underline-offset-4 hover:text-foreground"
               >
                 I already have an account

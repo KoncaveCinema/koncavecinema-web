@@ -29,7 +29,7 @@ export function needs(account: Account) {
 /** Signs in on the member or staff form and waits to leave it */
 export async function signIn(page: Page, account: Account) {
   const { email, password } = credentials(account)!;
-  const path = account === "ADMIN" ? "/admin/login" : "/sign-in";
+  const path = account === "ADMIN" ? "/admin/login" : "/login";
   await page.goto(path);
   await page.locator("#email").fill(email);
   await page.locator("#password").fill(password);

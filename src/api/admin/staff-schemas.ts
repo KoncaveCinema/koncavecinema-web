@@ -18,6 +18,8 @@ export const staffMemberSchema = z.object({
   role: z.union([staffRoleSchema, z.literal("VIEWER")]),
   /** Invited until their set-password link has been used */
   status: z.enum(["INVITED", "ACTIVE"]),
+  /** Signs in with an authenticator code; admin routes refuse staff without it (dev 9bc5a9f) */
+  twoFactorEnabled: z.boolean(),
   lastSignInAt: z.iso.datetime().nullable(),
   createdAt: z.iso.datetime(),
 });

@@ -4,6 +4,7 @@ import { Ban, CalendarClock, Pencil } from "lucide-react";
 import Link from "next/link";
 import { use, useState } from "react";
 
+import { toast } from "sonner";
 import { ErrorCode } from "@/api";
 import { ConfirmDialog } from "@/components/console/confirm-dialog";
 import { PageHeader } from "@/components/console/page-header";
@@ -241,6 +242,7 @@ function ShowtimeDetail({
         tone="danger"
         onConfirm={async (reason) => {
           setResult(await cancel.mutateAsync({ id: data.id, reason }));
+          toast.success("Screening cancelled");
         }}
         explainError={(error) => {
           if (error.is(ErrorCode.SHOWTIME_ALREADY_STARTED)) {

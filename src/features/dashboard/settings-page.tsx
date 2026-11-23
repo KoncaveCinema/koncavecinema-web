@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { ErrorCode, toApiError, type ApiError } from "@/api";
+import { useClearOnLeave } from "@/hooks/use-clear-on-leave";
 import { changePassword, deleteAccount } from "@/api/auth/auth-api";
 import { ConfirmDialog } from "@/components/console/confirm-dialog";
 import { PageHeader } from "@/components/console/page-header";
@@ -25,6 +26,7 @@ import { PageSkeleton } from "@/features/auth/require-session";
 import { newPasswordSchema } from "@/features/auth/schemas";
 import { ScreenAliasForm } from "@/features/auth/screen-alias-form";
 import { useSession } from "@/features/auth/session";
+import { TwoFactorSettings } from "@/features/auth/two-factor-settings";
 import { SUPPORT_EMAIL } from "@/features/support/content";
 import { formatLagosDate } from "@/lib/format";
 
@@ -83,6 +85,10 @@ function PasswordForm() {
     defaultValues: { currentPassword: "", newPassword: "", confirmPassword: "" },
   });
   const password = useWatch({ control, name: "newPassword" });
+  useClearOnLeave(() => {
+    reset();
+    setProblem(null);
+  });
 
   async function onSubmit(values: z.infer<typeof passwordSchema>) {
     setProblem(null);
@@ -179,6 +185,10 @@ function DeleteAccount() {
   const setUser = useSession((state) => state.setUser);
   const [open, setOpen] = useState(false);
   const [password, setPassword] = useState("");
+  useClearOnLeave(() => {
+    setOpen(false);
+    setPassword("");
+  });
 
   return (
     <>
@@ -250,7 +260,7 @@ export function SettingsPage() {
       <PageHeader
         eyebrow="Your account"
         title="Settings"
-        description="Your profile, password and account."
+        description="Your profile, sign-in and account."
       />
 
       <div className="space-y-6">
@@ -283,6 +293,10 @@ export function SettingsPage() {
 
         <Panel id="password" title="Password">
           <PasswordForm />
+        </Panel>
+
+        <Panel id="two-factor" title="Two-factor sign-in">
+          <TwoFactorSettings />
         </Panel>
 
         <Panel id="delete" title="Delete account" tone="danger">

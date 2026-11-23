@@ -4,7 +4,15 @@ import { getAccessToken, setAccessToken } from "../access-token";
 import { refreshAccessToken, restoreAccessToken } from "../client";
 import { ApiError, ErrorCode } from "../errors";
 import { http } from "../http";
-import { RESTORE_RETRY_MS, restoreSession, updateScreenAlias, verifyIdentity } from "./auth-api";
+import {
+  RESTORE_RETRY_MS,
+  enableTwoFactor,
+  restoreSession,
+  signIn,
+  updateScreenAlias,
+  verifyEmail,
+  verifyIdentity,
+} from "./auth-api";
 
 vi.mock("../http", () => ({ http: vi.fn() }));
 vi.mock("../client", () => ({ refreshAccessToken: vi.fn(), restoreAccessToken: vi.fn() }));
@@ -21,11 +29,48 @@ const profile = {
   isPhoneVerified: false,
   role: "VIEWER",
   createdAt: "2026-09-22T18:00:00.000Z",
+  emailVerified: true,
+  twoFactorEnabled: false,
   aliasChangeableAt: null,
 };
 
 describe("auth calls", () => {
   afterEach(() => vi.clearAllMocks());
+
+  it("sign in at once, or hold off with a challenge when two-factor sign-in is on", async () => {
+    setAccessToken(null);
+    httpMock.mockResolvedValueOnce({
+      twoFactorRequired: true,
+      challengeToken: "c1",
+      expiresIn: 300,
+    });
+    const challenged = await signIn("ada@example.com", "S3cure!pass");
+    expect(challenged).toEqual({
+      signedIn: false,
+      challenge: { twoFactorRequired: true, challengeToken: "c1", expiresIn: 300 },
+    });
+    // No token until the code is right
+    expect(getAccessToken()).toBeNull();
+
+    httpMock.mockResolvedValueOnce({ accessToken: "t1", expiresIn: 900, user: profile });
+    await expect(verifyEmail("ada@example.com", "482913")).resolves.toEqual({
+      signedIn: true,
+      user: profile,
+    });
+    expect(getAccessToken()).toBe("t1");
+  });
+
+  it("switch to the new session when two-factor sign-in is turned on", async () => {
+    httpMock.mockResolvedValueOnce({
+      accessToken: "t2",
+      expiresIn: 900,
+      user: { ...profile, twoFactorEnabled: true },
+      recoveryCodes: ["k7m2p-x9q4r"],
+    });
+    const enabled = await enableTwoFactor("482913");
+    expect(enabled.recoveryCodes).toEqual(["k7m2p-x9q4r"]);
+    expect(getAccessToken()).toBe("t2");
+  });
 
   it("refresh the access token after an alias change, since the token carries the alias", async () => {
     httpMock.mockResolvedValue(profile);

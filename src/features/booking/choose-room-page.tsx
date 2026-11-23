@@ -10,6 +10,7 @@ import { useState, useTransition } from "react";
 import { LocalTime } from "@/components/cinema/live-time";
 import { Button } from "@/components/ui/button";
 import { IdentityCheck } from "@/features/auth/identity-check";
+import { verifyEmailHref } from "@/features/auth/links";
 import { useSession } from "@/features/auth/session";
 import type { ShowtimeCapacity, TierCapacity } from "@/api/showtimes/showtimes-schemas";
 import { useReserveTicket } from "@/api/tickets/tickets-api";
@@ -210,6 +211,17 @@ export function ChooseRoomPage({
           ErrorCode.IDEMPOTENCY_REQUEST_IN_PROGRESS,
         );
         if (!unanswered) setAttempt(null);
+        // The address isn't confirmed yet: the code step, then straight back to this booking
+        if (apiError.is(ErrorCode.EMAIL_NOT_VERIFIED) && user) {
+          router.push(
+            verifyEmailHref(
+              user.email,
+              `${window.location.pathname}${window.location.search}`,
+              true,
+            ),
+          );
+          return;
+        }
         if (apiError.is(ErrorCode.KYC_REQUIRED)) {
           setVerifying(true);
           return;
@@ -231,7 +243,7 @@ export function ChooseRoomPage({
     if (!selected) return;
     if (status !== "signed-in") {
       const next = `${pathname}?room=${selected.tier}`;
-      router.push(`/sign-in?next=${encodeURIComponent(next)}`);
+      router.push(`/login?next=${encodeURIComponent(next)}`);
       return;
     }
     // The API holds a Public Hall seat only for verified members: verify first, then hold

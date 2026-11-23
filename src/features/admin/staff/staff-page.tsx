@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "cn";
-import { Ellipsis, Shield, ShieldCheck, UserMinus, UserPlus } from "lucide-react";
+import { Ellipsis, KeyRound, Shield, ShieldCheck, UserMinus, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -29,6 +29,7 @@ import {
   useChangeStaffRole,
   useInviteStaff,
   useRemoveStaff,
+  useResetStaffTwoFactor,
   useStaff,
 } from "@/api/admin/staff-api";
 import { useSuperAdminSignedIn } from "../require-staff";
@@ -54,6 +55,8 @@ export function StaffPage() {
   const invite = useInviteStaff();
   const change = useChangeStaffRole();
   const remove = useRemoveStaff();
+  const resetTwoFactor = useResetStaffTwoFactor();
+  const [resetting, setResetting] = useState<StaffMember | null>(null);
   const me = useSession((session) => session.user?.id);
   const [inviting, setInviting] = useState(false);
   const [email, setEmail] = useState("");
@@ -87,6 +90,14 @@ export function StaffPage() {
       cell: (member) => <StatusBadge kind="staff" status={member.status} />,
     },
     {
+      id: "two-factor",
+      header: "Two-factor",
+      // Admin routes refuse staff without it: "Off" until they set it up at their next sign-in
+      cell: (member) => (
+        <StatusBadge kind="twoFactor" status={member.twoFactorEnabled ? "ON" : "OFF"} />
+      ),
+    },
+    {
       id: "signin",
       header: "Last sign-in",
       hideOnMobile: true,
@@ -114,7 +125,11 @@ export function StaffPage() {
       // Nobody changes or removes their own access
       cell: (member) =>
         member.id === me ? null : (
-          <StaffActions member={member} onChange={(next) => setPending({ member, role: next })} />
+          <StaffActions
+            member={member}
+            onChange={(next) => setPending({ member, role: next })}
+            onResetTwoFactor={() => setResetting(member)}
+          />
         ),
     },
   ];
@@ -227,6 +242,25 @@ export function StaffPage() {
         }}
         explainError={lastSuperAdmin}
       />
+
+      <ConfirmDialog
+        open={resetting !== null}
+        onOpenChange={(open) => !open && setResetting(null)}
+        title={`Reset two-factor sign-in for ${resetting?.email ?? ""}?`}
+        description="For a lost or replaced phone."
+        consequences={[
+          "They're signed out everywhere.",
+          "They set two-factor sign-in up again, with a new QR code, the next time they sign in.",
+        ]}
+        confirmLabel="Reset two-factor"
+        pendingLabel="Resetting…"
+        tone="danger"
+        onConfirm={async () => {
+          if (!resetting) return;
+          await resetTwoFactor.mutateAsync(resetting.id);
+          toast.success("Two-factor sign-in reset");
+        }}
+      />
     </>
   );
 }
@@ -235,9 +269,11 @@ export function StaffPage() {
 function StaffActions({
   member,
   onChange,
+  onResetTwoFactor,
 }: {
   member: StaffMember;
   onChange: (role: StaffRole | "VIEWER") => void;
+  onResetTwoFactor: () => void;
 }) {
   const other: StaffRole = member.role === "SUPER_ADMIN" ? "ADMIN" : "SUPER_ADMIN";
   return (
@@ -252,6 +288,12 @@ function StaffActions({
           {other === "SUPER_ADMIN" ? <ShieldCheck /> : <Shield />}
           Make {ROLE_NAME[other].toLowerCase()}
         </DropdownMenuItem>
+        {member.twoFactorEnabled && (
+          <DropdownMenuItem onSelect={onResetTwoFactor}>
+            <KeyRound />
+            Reset two-factor
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive" onSelect={() => onChange("VIEWER")}>
           <UserMinus />

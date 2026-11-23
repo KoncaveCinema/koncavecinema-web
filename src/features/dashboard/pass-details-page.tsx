@@ -6,9 +6,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { use } from "react";
 import { toast } from "sonner";
-import { encode } from "uqr";
 
 import { LocalTime, ScreeningStatus } from "@/components/cinema/live-time";
+import { QrCode } from "@/components/cinema/qr-code";
 import { PageHeader } from "@/components/console/page-header";
 import { Panel } from "@/components/console/panel";
 import { QueryView } from "@/components/states/query-view";
@@ -49,32 +49,6 @@ export function passEvent(ticket: TicketDetail, appUrl: string): CalendarEvent {
     // When the lobby opens
     reminderMinutes: 30,
   };
-}
-
-/**
- * The pass's admission code as a QR, drawn as one SVG path from the encoded grid (no canvas, no
- * network, no injected markup). Dark on white, as scanners expect. Online screenings don't
- * scan it at a door; it identifies the pass to support at a glance.
- */
-function PassQr({ payload, label }: { payload: string; label: string }) {
-  const { data, size } = encode(payload, { border: 2, ecc: "M" });
-  let path = "";
-  data.forEach((row, y) =>
-    row.forEach((dark, x) => {
-      if (dark) path += `M${x} ${y}h1v1h-1z`;
-    }),
-  );
-  return (
-    <svg
-      viewBox={`0 0 ${size} ${size}`}
-      role="img"
-      aria-label={label}
-      shapeRendering="crispEdges"
-      className="size-full rounded-lg bg-white"
-    >
-      <path d={path} fill="#000" />
-    </svg>
-  );
 }
 
 const CRUMBS = [{ href: "/dashboard/tickets", label: "My tickets" }];
@@ -148,7 +122,7 @@ function PassCard({ ticket }: { ticket: TicketDetail }) {
         {/* The admission code only on a pass that admits someone */}
         {admits && (
           <div className="size-28">
-            <PassQr
+            <QrCode
               payload={ticket.qrAdmissionPayload}
               label={`Admission code for pass ${ticket.seatIdentifier}`}
             />

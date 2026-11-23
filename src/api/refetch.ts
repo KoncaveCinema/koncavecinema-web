@@ -79,6 +79,7 @@ export const refetchAfter: Record<string, readonly string[]> = {
   inviteStaff: ["/admin/staff", "/admin/audit-logs"],
   changeStaffRole: ["/admin/staff", "/admin/audit-logs"],
   removeStaff: ["/admin/staff", "/admin/audit-logs"],
+  resetStaffTwoFactor: ["/admin/staff", "/admin/audit-logs"],
 
   // Admin: the home page's featured films
   createFeaturedPlacement: ["/admin/featured", "/movies/featured", "/admin/audit-logs"],

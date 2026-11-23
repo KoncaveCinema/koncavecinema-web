@@ -353,7 +353,9 @@ export function MediaPanel({ film }: { film: AdminFilm }) {
         pendingLabel="Deleting…"
         tone="danger"
         onConfirm={async () => {
-          if (deleting) await remove.mutateAsync(deleting.id);
+          if (!deleting) return;
+          await remove.mutateAsync(deleting.id);
+          toast.success("Upload deleted");
         }}
         explainError={(error) => mediaRefusal(error, "The upload couldn't be deleted. Try again.")}
       />

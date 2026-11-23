@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react";
 import { Controller, useForm } from "react-hook-form";
 
 import { ErrorCode, toApiError } from "@/api";
+import { useClearOnLeave } from "@/hooks/use-clear-on-leave";
 import { OptionSelect } from "@/components/console/pickers";
 import { Button } from "@/components/ui/button";
 import { FieldError, FormAlert, fieldClass } from "@/features/auth/form-parts";
@@ -89,11 +90,17 @@ export function FilmForm({
     register,
     control,
     handleSubmit,
+    reset,
     formState: { errors, isSubmitting, isValid, isDirty },
   } = useForm<FilmFormInput, unknown, FilmValues>({
     resolver: zodResolver(filmSchema),
     mode: "onTouched",
     defaultValues: initial,
+  });
+  // A half-written film, or unsaved edits: back to the start by the next visit
+  useClearOnLeave(() => {
+    reset();
+    setFailure(null);
   });
 
   const submit = async (values: FilmValues) => {

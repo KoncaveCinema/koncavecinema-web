@@ -119,6 +119,12 @@ const nextConfig: NextConfig = {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
 
+  // Members sign in at /login (until November 2026 it was /sign-in): old links and bookmarks
+  // still arrive, with their ?next= kept
+  async redirects() {
+    return [{ source: "/sign-in", destination: "/login", permanent: true }];
+  },
+
   // Local development against a remote API (see API_DEV_PROXY_URL in src/env.ts)
   async rewrites() {
     if (!env.API_DEV_PROXY_URL) return [];

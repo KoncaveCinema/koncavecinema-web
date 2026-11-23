@@ -4,6 +4,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 
 import { safeNext } from "./form-parts";
+import { verifyEmailHref } from "./links";
 import { isStaff } from "./roles";
 import { useSession } from "./session";
 
@@ -33,7 +34,7 @@ export function RequireSession({
  * can keep its pages rendering (and prerenderable) while the pages hold their data back until
  * someone is signed in (see `useSignedIn`). The admin console sends staff to its own sign-in.
  */
-export function SignInRedirect({ signInPath = "/sign-in" }: { signInPath?: string }) {
+export function SignInRedirect({ signInPath = "/login" }: { signInPath?: string }) {
   const router = useRouter();
   const pathname = usePathname();
   const search = useSearchParams().toString();
@@ -51,9 +52,13 @@ export function SignInRedirect({ signInPath = "/sign-in" }: { signInPath?: strin
   return null;
 }
 
-/** True once a member is signed in: gate private queries on it. */
+/**
+ * True once a member is signed in with a confirmed address: gate private queries on it. Until
+ * then the page shows its loading state while the code step takes over (ConfirmEmailRedirect),
+ * so nothing private flashes up first.
+ */
 export function useSignedIn(): boolean {
-  return useSession((state) => state.status === "signed-in");
+  return useSession((state) => state.status === "signed-in" && state.user?.emailVerified === true);
 }
 
 /** A neutral placeholder while the session is checked */
@@ -83,8 +88,17 @@ export function SignedInRedirect({
   home?: string;
 }) {
   const router = useRouter();
-  const role = useSession((state) => (state.status === "signed-in" ? state.user?.role : null));
-  const to = role ? safeNext(next, home ?? (isStaff(role) ? "/admin" : "/dashboard")) : null;
+  const user = useSession((state) => (state.status === "signed-in" ? state.user : null));
+  const role = user?.role;
+  const destination = role
+    ? safeNext(next, home ?? (isStaff(role) ? "/admin" : "/dashboard"))
+    : null;
+  // A member who hasn't confirmed their address finishes that first, with a fresh code, so
+  // they never see the page behind it
+  const to =
+    user && destination && !user.emailVerified
+      ? verifyEmailHref(user.email, destination, true)
+      : destination;
 
   useEffect(() => {
     if (to) router.replace(to);

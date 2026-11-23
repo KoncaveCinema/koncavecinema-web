@@ -16,6 +16,7 @@ import { useRouter } from "next/navigation";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { use, useEffect, useState } from "react";
 
+import { toast } from "sonner";
 import { ErrorCode, newIdempotencyKey, toApiError } from "@/api";
 import { useInitializeCheckout } from "@/api/payments/payments-api";
 import { useGetTicket, useReleaseTicket } from "@/api/tickets/tickets-api";
@@ -141,7 +142,11 @@ function ReviewStep({
 
   async function releaseSeat() {
     setReleasing(true);
-    await release.mutateAsync(ticket.id).catch(() => undefined);
+    // Released, or already gone: either way the seat is free and the member goes back to the rooms
+    await release.mutateAsync(ticket.id).then(
+      () => toast.success("Seat released"),
+      () => undefined,
+    );
     router.push(`/movies/${ticket.movieSlug}/showtimes/${ticket.showtimeId}`);
   }
 

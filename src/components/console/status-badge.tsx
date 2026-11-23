@@ -54,6 +54,10 @@ const STATUSES = {
     INVITED: { label: "Invited", tone: "attention" },
     ACTIVE: { label: "Active", tone: "positive" },
   },
+  twoFactor: {
+    ON: { label: "On", tone: "positive" },
+    OFF: { label: "Off", tone: "attention" },
+  },
   role: {
     VIEWER: { label: "Member", tone: "neutral" },
     HOST: { label: "Member", tone: "neutral" },

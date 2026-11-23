@@ -21,6 +21,8 @@ const person = (id: string): UserProfile => ({
   isPhoneVerified: false,
   role: "VIEWER",
   createdAt: "2026-09-22T18:00:00.000Z",
+  emailVerified: true,
+  twoFactorEnabled: false,
   aliasChangeableAt: null,
 });
 

@@ -12,5 +12,5 @@ test("a member signs in to their dashboard and signs out", async ({ page }) => {
 
   await page.getByRole("button", { name: "Sign out" }).first().click();
   await page.goto("/dashboard");
-  await expect(page).toHaveURL(/\/sign-in\?next=%2Fdashboard/);
+  await expect(page).toHaveURL(/\/login\?next=%2Fdashboard/);
 });

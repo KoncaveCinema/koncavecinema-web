@@ -19,7 +19,7 @@ export default function robots(): MetadataRoute.Robots {
         "/checkout",
         "/invite",
         "/watch",
-        "/sign-in",
+        "/login",
         "/register",
         "/forgot-password",
         "/reset-password",

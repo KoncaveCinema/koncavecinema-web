@@ -5,6 +5,7 @@ import { Suspense } from "react";
 
 import { ConsoleShell } from "@/components/console/console-shell";
 import { Button } from "@/components/ui/button";
+import { ConfirmEmailRedirect } from "@/features/auth/confirm-email-redirect";
 import { PageSkeleton, SignInRedirect } from "@/features/auth/require-session";
 import { DashboardSidebar, DashboardTabs, DashboardTrail } from "@/features/dashboard/navigation";
 
@@ -40,6 +41,7 @@ export default function DashboardLayout({ children }: LayoutProps<"/dashboard">)
     >
       <Suspense>
         <SignInRedirect />
+        <ConfirmEmailRedirect />
       </Suspense>
       <Suspense fallback={<PageSkeleton />}>{children}</Suspense>
     </ConsoleShell>

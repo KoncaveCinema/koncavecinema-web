@@ -4,6 +4,7 @@ import { useForm, useFormState, useWatch } from "react-hook-form";
 import { z } from "zod";
 
 import { ErrorCode, toApiError } from "@/api";
+import { useClearOnLeave } from "@/hooks/use-clear-on-leave";
 import { updateScreenAlias } from "@/api/auth/auth-api";
 import type { UserProfile } from "@/api/auth/auth-schemas";
 import { Button } from "@/components/ui/button";
@@ -40,10 +41,15 @@ export function ScreenAliasForm({
   const now = useServerNow();
   const [problem, setProblem] = useState<string | null>(null);
   const saved = user?.publicScreenAlias ?? "";
-  const { register, handleSubmit, setError, control } = useForm({
+  const { register, handleSubmit, setError, control, reset } = useForm({
     resolver: zodResolver(aliasForm),
     defaultValues: { publicScreenAlias: saved },
     mode: "onTouched",
+  });
+  // Back to the saved alias by the next visit, whatever was typed and left
+  useClearOnLeave(() => {
+    reset({ publicScreenAlias: useSession.getState().user?.publicScreenAlias ?? "" });
+    setProblem(null);
   });
   // Explicit subscriptions rather than the form's "dirty" flag, which went stale after a save
   // (the form could not be sent again until a reload): the button compares the typed alias

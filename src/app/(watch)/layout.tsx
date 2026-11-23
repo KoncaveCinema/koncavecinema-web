@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
+import { ConfirmEmailRedirect } from "@/features/auth/confirm-email-redirect";
 import { SignInRedirect } from "@/features/auth/require-session";
 
 // The screening room: a pass holder's own, never indexed (robots.ts disallows it too)
@@ -15,6 +16,7 @@ export default function WatchLayout({ children }: LayoutProps<"/">) {
     <>
       <Suspense>
         <SignInRedirect />
+        <ConfirmEmailRedirect />
       </Suspense>
       {children}
     </>

@@ -4,14 +4,17 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowRight, Check, MailCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, useTransition, type ReactNode } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TERMS_VERSION } from "@/features/legal/documents";
 import { ErrorCode, toApiError } from "@/api";
 import { register, requestPasswordReset, resetPassword, signIn } from "@/api/auth/auth-api";
+import type { UserProfile } from "@/api/auth/auth-schemas";
+import { useClearOnLeave } from "@/hooks/use-clear-on-leave";
 import { cn } from "@/lib/utils";
 
 import {
@@ -35,9 +38,11 @@ import {
   type ResetPasswordValues,
   type SignInValues,
 } from "./schemas";
+import { verifyEmailHref } from "./links";
 import { isStaff } from "./roles";
 import { SignedInRedirect } from "./require-session";
 import { useSession } from "./session";
+import { TwoFactorStep, useCodeStep } from "./two-factor-step";
 
 /* The four auth forms. Each sends the API's request shape and branches on its error codes. */
 
@@ -51,7 +56,11 @@ export function SignInForm() {
   const next = searchParams.get("next");
   const afterReset = searchParams.get("reset") === "1";
   const setUser = useSession((state) => state.setUser);
+  // Signed in, until the next page has loaded: the form stays as it is, its button working
+  const [leaving, startLeaving] = useTransition();
   const [failure, setFailure] = useState<ReactNode>(null);
+  // Two-factor sign-in on: the password was right, the app's code comes next
+  const codeStep = useCodeStep();
   const {
     register: field,
     handleSubmit,
@@ -64,19 +73,54 @@ export function SignInForm() {
     defaultValues: { email: "", password: "" },
   });
 
+  // What was typed stays on screen while signing in, and is gone by the next visit
+  useClearOnLeave(() => {
+    reset();
+    setFailure(null);
+  });
+
+  // The dashboard (or the page asked for) loads while the member types, so it opens at once
+  useEffect(() => {
+    router.prefetch(safeNext(next, "/dashboard"));
+  }, [next, router]);
+
+  const signedIn = (user: UserProfile) => {
+    // Said at once, while the next page loads
+    toast.success(user.emailVerified ? "Signed in" : "Signed in. Confirm your email to go on");
+    setUser(user);
+    // Without somewhere to return to: staff go to their console, members to their dashboard
+    const destination = safeNext(next, isStaff(user.role) ? "/admin" : "/dashboard");
+    // Sign-up left at the code step: finish it first, then on to where they were going
+    startLeaving(() =>
+      router.replace(
+        user.emailVerified ? destination : verifyEmailHref(user.email, destination, true),
+      ),
+    );
+  };
+
   const onSubmit = async (values: SignInValues) => {
     setFailure(null);
     try {
-      const user = await signIn(values.email, values.password);
-      // Next keeps this page alive after leaving it: nothing typed may wait here for the next visit
-      reset();
-      setUser(user);
-      // Without somewhere to return to: staff go to their console, members to their dashboard
-      router.replace(safeNext(next, isStaff(user.role) ? "/admin" : "/dashboard"));
+      const outcome = await signIn(values.email, values.password);
+      if (outcome.signedIn) signedIn(outcome.user);
+      else codeStep.ask(outcome.challenge);
     } catch (error) {
       setFailure(signInFailure(error));
     }
   };
+
+  if (codeStep.challenge) {
+    return (
+      <TwoFactorStep
+        challenge={codeStep.challenge}
+        onSignedIn={signedIn}
+        onRestart={(reason) => {
+          codeStep.back();
+          setFailure(reason ?? null);
+        }}
+      />
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -132,9 +176,9 @@ export function SignInForm() {
           <FieldError message={errors.password?.message} />
         </div>
         {failure && <FormAlert>{failure}</FormAlert>}
-        <Button type="submit" size="xl" disabled={isSubmitting} className="w-full">
-          {isSubmitting ? "Signing in…" : "Sign in"}
-          {!isSubmitting && <ArrowRight data-icon="inline-end" />}
+        <Button type="submit" size="xl" disabled={isSubmitting || leaving} className="w-full">
+          {isSubmitting || leaving ? "Signing in…" : "Sign in"}
+          {!isSubmitting && !leaving && <ArrowRight data-icon="inline-end" />}
         </Button>
       </form>
       <p className="text-center text-sm text-muted-foreground">
@@ -153,21 +197,27 @@ export function SignInForm() {
 export function RegisterForm() {
   const router = useRouter();
   const next = useSearchParams().get("next");
-  const setUser = useSession((state) => state.setUser);
   const [failure, setFailure] = useState<string | null>(null);
   const {
     register: field,
     handleSubmit,
     control,
+    reset,
     formState: { errors, isSubmitting, isValid },
   } = useForm<RegisterValues>({ resolver: zodResolver(registerSchema), mode: "onTouched" });
   const password = useWatch({ control, name: "password" }) ?? "";
+  useClearOnLeave(() => {
+    reset();
+    setFailure(null);
+  });
 
   const onSubmit = async (values: RegisterValues) => {
     setFailure(null);
     try {
-      setUser(await register(values.email, values.password, TERMS_VERSION));
-      router.replace(safeNext(next));
+      await register(values.email, values.password, TERMS_VERSION);
+      toast.success("Account created. We've emailed you a code");
+      // The account exists; confirming the address with the emailed code signs them in
+      router.replace(verifyEmailHref(values.email, next));
     } catch (error) {
       const apiError = toApiError(error);
       setFailure(
@@ -251,7 +301,7 @@ export function RegisterForm() {
       <p className="text-center text-sm text-muted-foreground">
         Already have an account?{" "}
         <Link
-          href={withNext("/sign-in", next)}
+          href={withNext("/login", next)}
           className="font-semibold text-foreground underline decoration-brand underline-offset-4"
         >
           Sign in
@@ -267,10 +317,16 @@ export function ForgotPasswordForm() {
   const {
     register: field,
     handleSubmit,
+    reset,
     formState: { errors, isSubmitting, isValid },
   } = useForm<ForgotPasswordValues>({
     resolver: zodResolver(forgotPasswordSchema),
     mode: "onTouched",
+  });
+  useClearOnLeave(() => {
+    reset();
+    setSentTo(null);
+    setFailure(null);
   });
 
   const onSubmit = async (values: ForgotPasswordValues) => {
@@ -303,7 +359,7 @@ export function ForgotPasswordForm() {
           }
         />
         <Link
-          href="/sign-in"
+          href="/login"
           className="inline-flex text-sm font-semibold underline decoration-brand underline-offset-4"
         >
           Back to sign in
@@ -339,7 +395,7 @@ export function ForgotPasswordForm() {
       <p className="text-center text-sm text-muted-foreground">
         Remembered it?{" "}
         <Link
-          href="/sign-in"
+          href="/login"
           className="font-semibold text-foreground underline decoration-brand underline-offset-4"
         >
           Sign in
@@ -365,12 +421,18 @@ export function ResetPasswordForm() {
     register: field,
     handleSubmit,
     control,
+    reset,
     formState: { errors, isSubmitting, isValid },
   } = useForm<ResetPasswordValues>({
     resolver: zodResolver(resetPasswordSchema),
     mode: "onTouched",
   });
   const password = useWatch({ control, name: "newPassword" }) ?? "";
+  useClearOnLeave(() => {
+    reset();
+    setExpired(false);
+    setFailure(null);
+  });
 
   const onSubmit = async (values: ResetPasswordValues) => {
     if (!token) return;
@@ -379,7 +441,7 @@ export function ResetPasswordForm() {
       await resetPassword(token, values.newPassword);
       // The reset ended every session, this one included
       setUser(null);
-      router.replace(invite ? "/admin/login?reset=1" : "/sign-in?reset=1");
+      router.replace(invite ? "/admin/login?reset=1" : "/login?reset=1");
     } catch (error) {
       const apiError = toApiError(error);
       // A truncated or malformed link fails validation on the token: treat it as expired. The

@@ -244,6 +244,7 @@ describe("admin schemas", () => {
         email: "admin@koncavecinema.com",
         role: "SUPER_ADMIN",
         status: "ACTIVE",
+        twoFactorEnabled: true,
         lastSignInAt: at,
         createdAt: at,
       }).role,

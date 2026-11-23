@@ -4,10 +4,16 @@ import { ErrorCode, toApiError } from "../errors";
 import { http } from "../http";
 import {
   accessTokenSchema,
+  emailCodeSentSchema,
   identityCodeSchema,
+  signInResultSchema,
   signInSchema,
+  twoFactorEnabledSchema,
+  twoFactorSetupSchema,
   userProfileSchema,
   type IdentityCode,
+  type TwoFactorChallenge,
+  type TwoFactorSetup,
   type UserProfile,
 } from "./auth-schemas";
 
@@ -51,27 +57,92 @@ export async function restoreSession(
   }
 }
 
-/** POST /auth/login */
-export async function signIn(email: string, password: string): Promise<UserProfile> {
-  const session = signInSchema.parse(
+/** Signed in (the token is stored), or a two-factor code still to ask for */
+export type SignInOutcome =
+  { signedIn: true; user: UserProfile } | { signedIn: false; challenge: TwoFactorChallenge };
+
+function signInOutcome(reply: unknown): SignInOutcome {
+  const result = signInResultSchema.parse(reply);
+  if ("twoFactorRequired" in result) return { signedIn: false, challenge: result };
+  setAccessToken(result.accessToken);
+  return { signedIn: true, user: result.user };
+}
+
+/** POST /auth/login: signed in, or (two-factor sign-in on) a challenge for the code */
+export async function signIn(email: string, password: string): Promise<SignInOutcome> {
+  return signInOutcome(
     await http({ url: "/auth/login", method: "POST", data: { email, password } }),
+  );
+}
+
+/**
+ * POST /auth/login/two-factor: the second step, with the 6 digits from the authenticator app or
+ * a recovery code (case and the dash don't matter). The challenge works once
+ */
+export async function signInWithCode(challengeToken: string, code: string): Promise<UserProfile> {
+  const session = signInSchema.parse(
+    await http({ url: "/auth/login/two-factor", method: "POST", data: { challengeToken, code } }),
   );
   setAccessToken(session.accessToken);
   return session.user;
 }
 
-/** POST /auth/register creates the account only (no session), so it signs in right after. */
+/**
+ * POST /auth/register creates the account only (no session): the address is confirmed next,
+ * with the 6-digit code the API has just emailed, and that signs the member in
+ */
 export async function register(
   email: string,
   password: string,
   acceptedTermsVersion: string,
-): Promise<UserProfile> {
+): Promise<void> {
   await http({
     url: "/auth/register",
     method: "POST",
     data: { email, password, acceptedTermsVersion },
   });
-  return signIn(email, password);
+}
+
+/** POST /auth/verify-email: confirms the address and signs in (or asks for a two-factor code) */
+export async function verifyEmail(email: string, code: string): Promise<SignInOutcome> {
+  return signInOutcome(
+    await http({ url: "/auth/verify-email", method: "POST", data: { email, code } }),
+  );
+}
+
+/** POST /auth/verify-email/resend: a new code replaces the old; the same answer for any address */
+export async function resendEmailCode(email: string) {
+  return emailCodeSentSchema.parse(
+    await http({ url: "/auth/verify-email/resend", method: "POST", data: { email } }),
+  );
+}
+
+/** POST /auth/two-factor/setup: the secret for the authenticator app, valid 10 minutes */
+export async function beginTwoFactorSetup(): Promise<TwoFactorSetup> {
+  return twoFactorSetupSchema.parse(
+    await http({ url: "/auth/two-factor/setup", method: "POST", data: {} }),
+  );
+}
+
+/**
+ * POST /auth/two-factor/enable with the app's first code. Every other session of the account
+ * ends, this one gets a new token, and the ten recovery codes come back: shown once, never again
+ */
+export async function enableTwoFactor(code: string) {
+  const enabled = twoFactorEnabledSchema.parse(
+    await http({ url: "/auth/two-factor/enable", method: "POST", data: { code } }),
+  );
+  setAccessToken(enabled.accessToken);
+  return { user: enabled.user, recoveryCodes: enabled.recoveryCodes };
+}
+
+/** POST /auth/two-factor/disable: password and a current (or recovery) code; other sessions end */
+export async function disableTwoFactor(password: string, code: string): Promise<UserProfile> {
+  const { accessToken } = accessTokenSchema.parse(
+    await http({ url: "/auth/two-factor/disable", method: "POST", data: { password, code } }),
+  );
+  setAccessToken(accessToken);
+  return getProfile();
 }
 
 /** POST /auth/logout: ends this device's session; the token is dropped even if the call fails */

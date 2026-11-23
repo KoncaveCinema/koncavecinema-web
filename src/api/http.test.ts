@@ -111,6 +111,19 @@ describe("http (every module's request function)", () => {
     });
   });
 
+  it("sends the email code, its resend and the two-factor code without waiting either", async () => {
+    // The session signal never arrives in this test: each call must still go out at once
+    const { http, apiClient } = await load();
+    apiClient.defaults.adapter = stubAdapter(() => ({ status: 200, data: envelope({ ok: true }) }));
+    for (const url of [
+      "/auth/verify-email",
+      "/auth/verify-email/resend",
+      "/auth/login/two-factor",
+    ]) {
+      await expect(http({ url, method: "POST" })).resolves.toEqual({ ok: true });
+    }
+  });
+
   it("rejects with the API's error code", async () => {
     const { http, apiClient, setAccessToken } = await load();
     setAccessToken(null);

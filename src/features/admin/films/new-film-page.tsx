@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 
+import { toast } from "sonner";
 import { PageHeader } from "@/components/console/page-header";
 import { Panel } from "@/components/console/panel";
 
@@ -26,6 +27,7 @@ export function NewFilmPage() {
           onCancel={() => router.push("/admin/films")}
           onSubmit={async (input) => {
             const { id } = await create.mutateAsync(input);
+            toast.success("Draft created");
             router.push(`/admin/films/${id}`);
           }}
         />
