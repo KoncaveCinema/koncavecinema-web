@@ -179,6 +179,7 @@ function ShowtimeForm({
               value={movieId}
               onChange={setMovieId}
               options={filmOptions(films.data?.items)}
+              loading={films.isPending}
               placeholder="Choose a published film"
               searchPlaceholder="Search films"
               emptyText="No published film by that name."

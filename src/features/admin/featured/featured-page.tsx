@@ -50,11 +50,13 @@ function publicFilms(films: AdminFilmListItem[] | undefined) {
 
 /** The standing lineup, in order, reordered and edited in place; each change saves at once */
 function Lineup({
+  filmsLoading,
   placements,
   films,
 }: {
   placements: FeaturedPlacement[];
   films: { value: string; label: string }[];
+  filmsLoading: boolean;
 }) {
   const setLineup = useSetFeaturedLineup();
   const [adding, setAdding] = useState("");
@@ -151,6 +153,7 @@ function Lineup({
             value={adding}
             onChange={setAdding}
             options={addable}
+            loading={filmsLoading}
             placeholder="Choose a film to add"
             searchPlaceholder="Search announced and published films"
             emptyText="No other announced or published film by that name."
@@ -191,11 +194,13 @@ function Lineup({
 
 /** Placements with an end: each takes its position over while it runs (a premiere, a sponsor) */
 function Dated({
+  filmsLoading,
   placements,
   films,
 }: {
   placements: FeaturedPlacement[];
   films: { value: string; label: string }[];
+  filmsLoading: boolean;
 }) {
   const remove = useRemovePlacement();
   const [editing, setEditing] = useState<FeaturedPlacement | "new" | null>(null);
@@ -286,6 +291,7 @@ function Dated({
         onOpenChange={(open) => !open && setEditing(null)}
         placement={editing === "new" ? undefined : (editing ?? undefined)}
         films={films}
+        filmsLoading={filmsLoading}
       />
       <ConfirmDialog
         open={removing !== null}
@@ -310,7 +316,8 @@ function Dated({
 export function FeaturedPage() {
   const signedIn = useStaffSignedIn();
   const featured = useFeatured(signedIn);
-  const films = publicFilms(useFilms(ALL_FILMS, signedIn).data?.items);
+  const filmList = useFilms(ALL_FILMS, signedIn);
+  const films = publicFilms(filmList.data?.items);
   const placements = featured.data ?? [];
 
   return (
@@ -335,10 +342,12 @@ export function FeaturedPage() {
           <Lineup
             placements={placements.filter((placement) => placement.kind === "EVERYDAY")}
             films={films}
+            filmsLoading={filmList.isPending}
           />
           <Dated
             placements={placements.filter((placement) => placement.kind === "DATED")}
             films={films}
+            filmsLoading={filmList.isPending}
           />
         </div>
       )}
