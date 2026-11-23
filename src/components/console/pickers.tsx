@@ -15,6 +15,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -95,7 +96,8 @@ export function OptionSelect({
 
 /**
  * A long list to search (every film): type to narrow it. With `anyLabel`, the first item clears
- * the choice ("All films").
+ * the choice ("All films"). `loading` while its options come from the API: the list shows
+ * placeholder rows, never an empty list or "nothing matches", until they arrive.
  */
 export function SearchSelect({
   id,
@@ -107,6 +109,7 @@ export function SearchSelect({
   searchPlaceholder = "Search",
   emptyText = "Nothing matches.",
   label,
+  loading = false,
   className,
 }: {
   id?: string;
@@ -118,6 +121,8 @@ export function SearchSelect({
   searchPlaceholder?: string;
   emptyText?: string;
   label?: string;
+  /** The options are still on their way from the API */
+  loading?: boolean;
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -141,7 +146,12 @@ export function SearchSelect({
           data-placeholder={chosen || anyLabel ? undefined : ""}
           className={cn(triggerClass, className)}
         >
-          <span className="truncate">{chosen?.label ?? anyLabel ?? placeholder}</span>
+          {/* A choice made before the list arrived (from the link) shows once its name is known */}
+          {loading && value && !chosen ? (
+            <Skeleton className="h-4 w-32" />
+          ) : (
+            <span className="truncate">{chosen?.label ?? anyLabel ?? placeholder}</span>
+          )}
           <ChevronDown aria-hidden="true" className="size-4 shrink-0 opacity-50" />
         </button>
       </PopoverTrigger>
@@ -149,7 +159,14 @@ export function SearchSelect({
         <Command>
           <CommandInput placeholder={searchPlaceholder} />
           <CommandList>
-            <CommandEmpty>{emptyText}</CommandEmpty>
+            {loading && (
+              <div aria-busy="true" aria-label="Loading" className="space-y-2 p-2">
+                {[70, 55, 80, 60].map((width) => (
+                  <Skeleton key={width} className="h-7 rounded-md" style={{ width: `${width}%` }} />
+                ))}
+              </div>
+            )}
+            {!loading && <CommandEmpty>{emptyText}</CommandEmpty>}
             {anyLabel && (
               <CommandItem value={anyLabel} onSelect={() => choose("")}>
                 {anyLabel}

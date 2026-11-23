@@ -33,10 +33,18 @@ interface PlacementDialogProps {
   /** Changes this placement instead of adding one */
   placement?: FeaturedPlacement;
   films: { value: string; label: string }[];
+  /** The films are still on their way from the API */
+  filmsLoading?: boolean;
 }
 
 /** A dated placement: a film in a position from one Lagos time to another */
-export function PlacementDialog({ open, onOpenChange, placement, films }: PlacementDialogProps) {
+export function PlacementDialog({
+  open,
+  onOpenChange,
+  placement,
+  films,
+  filmsLoading,
+}: PlacementDialogProps) {
   const [pending, setPending] = useState(false);
   return (
     <Dialog open={open} onOpenChange={(next) => !pending && onOpenChange(next)}>
@@ -53,6 +61,7 @@ export function PlacementDialog({ open, onOpenChange, placement, films }: Placem
         <PlacementForm
           placement={placement}
           films={films}
+          filmsLoading={filmsLoading}
           onPendingChange={setPending}
           onDone={() => onOpenChange(false)}
         />
@@ -64,9 +73,10 @@ export function PlacementDialog({ open, onOpenChange, placement, films }: Placem
 function PlacementForm({
   placement,
   films,
+  filmsLoading,
   onPendingChange,
   onDone,
-}: Pick<PlacementDialogProps, "placement" | "films"> & {
+}: Pick<PlacementDialogProps, "placement" | "films" | "filmsLoading"> & {
   onPendingChange: (pending: boolean) => void;
   onDone: () => void;
 }) {
@@ -130,6 +140,7 @@ function PlacementForm({
               value={movieId}
               onChange={setMovieId}
               options={films}
+              loading={filmsLoading}
               placeholder="Choose an announced or published film"
               searchPlaceholder="Search films"
               emptyText="No announced or published film by that name."

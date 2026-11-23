@@ -271,6 +271,7 @@ export function SalesPage() {
                   value={range.film}
                   onChange={(film) => void setRange({ film: film || null })}
                   options={filmOptions(films.data?.items)}
+                  loading={films.isPending}
                   anyLabel="All films"
                   searchPlaceholder="Search films"
                   emptyText="No film by that name."

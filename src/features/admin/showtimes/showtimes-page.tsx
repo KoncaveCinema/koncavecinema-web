@@ -132,6 +132,7 @@ export function ShowtimesPage() {
             value={filters.film}
             onChange={(film) => setFilter({ film })}
             options={filmOptions(films.data?.items)}
+            loading={films.isPending}
             anyLabel="All films"
             searchPlaceholder="Search films"
             emptyText="No film by that name."

@@ -81,5 +81,6 @@ export interface ShowtimeInput {
   movieId: string;
   startTime: string;
   basePrice: number;
-  currency?: string;
+  /** Naira only (API df3a80a): anything else is CURRENCY_NOT_OFFERED */
+  currency?: "NGN";
 }

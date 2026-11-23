@@ -7,6 +7,7 @@ import { browserSummary } from "@/lib/user-agent";
 import type { FeaturedPlacement } from "@/api/admin/featured-schemas";
 
 import { auditActionLabel, auditSummary } from "./audit/actions";
+import { showtimeChanges } from "./showtimes/showtime-dialog";
 import { hiddenText, moveInLineup } from "./featured/featured";
 import { readinessGroups, readinessSummary } from "./films/film-details-page";
 import { posterProblem } from "./films/schemas";
@@ -177,5 +178,18 @@ describe("audit actions", () => {
       "1 filtered message from 1 member",
     );
     expect(auditSummary("ADMIN_CHAT_SHADOW_BAN", flagged)).toBeNull();
+  });
+
+  it("sends only what changed when editing a showtime, never an unchanged price", () => {
+    const showtime = { startTime: "2026-12-05T19:00:00.000Z", basePrice: 5000 };
+    // Moving a screening with paid passes: the same price must stay out of the body
+    expect(showtimeChanges(showtime, "2026-12-05T20:00:00.000Z", 5000)).toEqual({
+      startTime: "2026-12-05T20:00:00.000Z",
+    });
+    expect(showtimeChanges(showtime, "2026-12-05T19:00:00.000Z", 6000)).toEqual({
+      basePrice: 6000,
+    });
+    // The same instant written differently is no change
+    expect(showtimeChanges(showtime, "2026-12-05T20:00:00+01:00", 5000)).toEqual({});
   });
 });
