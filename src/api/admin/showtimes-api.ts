@@ -43,15 +43,16 @@ export async function createShowtime(input: ShowtimeInput) {
 }
 
 /**
- * PATCH /admin/showtimes/:id, before the start only. A new start time emails every member
- * holding a paid pass; price and currency are fixed once one is paid.
+ * PATCH /admin/showtimes/:id, before the start only, with only what changed: any price in the
+ * body counts as a price change, refused once a pass is paid (PRICE_LOCKED_AFTER_SALES), even
+ * when it's the same price. A new start time emails every member holding a paid pass.
  */
 export async function updateShowtime({
   id,
   input,
 }: {
   id: string;
-  input: Omit<ShowtimeInput, "movieId">;
+  input: Partial<Omit<ShowtimeInput, "movieId" | "currency">>;
 }) {
   await http({ url: showtime(id), method: "PATCH", data: input });
 }

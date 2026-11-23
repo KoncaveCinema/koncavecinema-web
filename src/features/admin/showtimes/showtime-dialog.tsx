@@ -13,13 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { FormAlert, fieldClass } from "@/features/auth/form-parts";
-import {
-  DatePicker,
-  OptionSelect,
-  SearchSelect,
-  TimeSelect,
-  filmOptions,
-} from "@/components/console/pickers";
+import { DatePicker, SearchSelect, TimeSelect, filmOptions } from "@/components/console/pickers";
 import { formatLagosDateTime, fromLagosInputs, lagosInputs } from "@/lib/format";
 
 import { ALL_FILMS, useFilm, useFilms } from "@/api/admin/films-api";
@@ -27,7 +21,6 @@ import type { AdminShowtime } from "@/api/admin/showtimes-schemas";
 import { useCreateShowtime, useUpdateShowtime } from "@/api/admin/showtimes-api";
 import { useStaffSignedIn } from "../require-staff";
 
-const CURRENCIES = ["NGN", "USD", "GBP", "EUR"];
 const MINUTE = 60_000;
 
 function refusal(code: string | undefined): string {
@@ -37,7 +30,9 @@ function refusal(code: string | undefined): string {
     case ErrorCode.SHOWTIME_START_IN_PAST:
       return "Choose a start time in the future.";
     case ErrorCode.PRICE_OUT_OF_RANGE:
-      return "In naira, the base price is between ₦2,500 and ₦10,000.";
+      return "The base price is between ₦2,500 and ₦10,000.";
+    case ErrorCode.CURRENCY_NOT_OFFERED:
+      return "Showtimes are priced in naira only.";
     case ErrorCode.PRICE_LOCKED_AFTER_SALES:
       return "Passes have sold at this price, so it can't change now. The time still can.";
     case ErrorCode.SHOWTIME_COMPLETED:
@@ -52,6 +47,22 @@ function refusal(code: string | undefined): string {
 }
 
 const labelClass = "text-xs font-semibold tracking-wide text-white/80";
+
+/**
+ * An edit's body: only what changed. The API reads any price in the body as a price change and
+ * refuses it once a pass is paid, even at the same price, so an unchanged price is left out.
+ * Empty when nothing changed.
+ */
+export function showtimeChanges(
+  showtime: Pick<AdminShowtime, "startTime" | "basePrice">,
+  startsAt: string,
+  basePrice: number,
+): { startTime?: string; basePrice?: number } {
+  return {
+    ...(Date.parse(startsAt) !== Date.parse(showtime.startTime) && { startTime: startsAt }),
+    ...(basePrice !== Number(showtime.basePrice) && { basePrice }),
+  };
+}
 
 interface ShowtimeDialogProps {
   open: boolean;
@@ -108,7 +119,6 @@ function ShowtimeForm({
   const [date, setDate] = useState(start.date);
   const [time, setTime] = useState(start.time);
   const [price, setPrice] = useState(String(showtime?.basePrice ?? 5000));
-  const [currency, setCurrency] = useState(showtime?.currency ?? "NGN");
   const [failure, setFailure] = useState<string | null>(null);
   // Moving a screening with paid passes emails every holder: asked once before saving
   const [confirmingMove, setConfirmingMove] = useState(false);
@@ -141,13 +151,19 @@ function ShowtimeForm({
     onPendingChange(true);
     try {
       if (showtime) {
-        await update.mutateAsync({
-          id: showtime.id,
-          input: { startTime: startsAt, basePrice: amount, currency },
-        });
-        toast.success("Showtime updated");
+        const changes = showtimeChanges(showtime, startsAt, amount);
+        // Nothing changed: nothing to send
+        if (Object.keys(changes).length > 0) {
+          await update.mutateAsync({ id: showtime.id, input: changes });
+          toast.success("Showtime updated");
+        }
       } else {
-        await create.mutateAsync({ movieId, startTime: startsAt, basePrice: amount, currency });
+        await create.mutateAsync({
+          movieId,
+          startTime: startsAt,
+          basePrice: amount,
+          currency: "NGN",
+        });
         toast.success("Showtime added");
       }
       onDone();
@@ -212,36 +228,20 @@ function ShowtimeForm({
             />
           </div>
         </div>
-        <div className="grid grid-cols-[minmax(0,1fr)_7rem] gap-4">
-          <div>
-            <label htmlFor="st-price" className={labelClass}>
-              Base price
-            </label>
-            <input
-              id="st-price"
-              type="number"
-              inputMode="decimal"
-              min={1}
-              value={price}
-              onChange={(event) => setPrice(event.target.value)}
-              className={cn(fieldClass, "mt-2")}
-            />
-            <p className="mt-1.5 text-xs text-white/45">
-              Per seat, before fees. ₦2,500 to ₦10,000.
-            </p>
-          </div>
-          <div>
-            <label htmlFor="st-currency" className={labelClass}>
-              Currency
-            </label>
-            <OptionSelect
-              id="st-currency"
-              value={currency}
-              onChange={setCurrency}
-              options={CURRENCIES.map((code) => ({ value: code, label: code }))}
-              className="mt-2"
-            />
-          </div>
+        <div>
+          <label htmlFor="st-price" className={labelClass}>
+            Base price (₦)
+          </label>
+          <input
+            id="st-price"
+            type="number"
+            inputMode="decimal"
+            min={1}
+            value={price}
+            onChange={(event) => setPrice(event.target.value)}
+            className={cn(fieldClass, "mt-2")}
+          />
+          <p className="mt-1.5 text-xs text-white/45">Per seat, before fees. ₦2,500 to ₦10,000.</p>
         </div>
         {startsAt && runtime && (
           <p className="rounded-lg bg-white/4 px-3 py-2 text-xs text-white/60">
