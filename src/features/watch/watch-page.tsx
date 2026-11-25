@@ -33,6 +33,7 @@ import { ErrorCode, toApiError } from "@/api";
 import { formatClock } from "@/lib/format";
 import { isSuite, screeningPhase, watchesAtOwnPace } from "@/lib/screening-window";
 
+import { LobbyOverlay } from "./lobby-overlay";
 import type { PlaybackEnd } from "./player";
 import { FloatingReactions, RoomChat, useRoomChat } from "./room-chat";
 import { useRoom } from "./room-store";
@@ -132,6 +133,13 @@ export function WatchPage({ params }: { params: Promise<{ ticketId: string }> })
   const authorization = ended ? undefined : playback.data;
   const playing = authorization !== undefined;
   const idle = useIdle(playing);
+  // Waiting in the lobby for the playback grant: the countdown holds the player's spot
+  const lobbyHeld = phase === "lobby" && !playing && !ended && (!suitePass || inSuite);
+
+  // The player's script starts loading with the doors, alongside the playback grant
+  useEffect(() => {
+    if (doorsOpen) void import("./player");
+  }, [doorsOpen]);
 
   const [chatHidden, setChatHidden] = useChatHidden();
   // Outside a suite (knocking, turned away) there is no chat to show
@@ -281,7 +289,18 @@ export function WatchPage({ params }: { params: Promise<{ ticketId: string }> })
     if (ended === "closed") return endedScreen;
     if (ended === "another-device") return anotherDevice("This pass is playing on another device");
     if (!playback.error || toApiError(playback.error).is(ErrorCode.STREAM_NOT_OPEN)) {
-      return <RoomMessage icon={Loader} tone="lobby" title="Opening the doors…" />;
+      // The lobby's countdown at once, in the player's own spot, while the player loads
+      return lobbyHeld ? (
+        <div className="relative aspect-video w-full">
+          <LobbyOverlay
+            startsAt={Date.parse(pass.startTime)}
+            ownPace={ownPace}
+            endsAt={formatClock(pass.accessEndsAt)}
+          />
+        </div>
+      ) : (
+        <RoomMessage icon={Loader} tone="lobby" title="Opening the doors…" />
+      );
     }
 
     const refusalCode = toApiError(playback.error).code;
@@ -427,7 +446,7 @@ export function WatchPage({ params }: { params: Promise<{ ticketId: string }> })
           <div
             className={cn(
               "mx-auto w-full",
-              !playing
+              !playing && !lobbyHeld
                 ? "max-w-5xl"
                 : chatColumn
                   ? "max-w-[min(100%,calc((100svh-9rem)*16/9))]"
@@ -441,6 +460,7 @@ export function WatchPage({ params }: { params: Promise<{ ticketId: string }> })
           <div className="flex flex-col gap-4 lg:min-h-0 lg:w-88 lg:shrink-0">
             {suitePass && <SuitePanel ticketId={ticketId} alias={alias} />}
             <RoomChat
+              ticketId={ticketId}
               closing={phase === "ended" || ended !== null}
               className="h-[55svh] lg:h-auto lg:min-h-0 lg:flex-1"
             />

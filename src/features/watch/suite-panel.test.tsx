@@ -8,6 +8,13 @@ import { SuiteDoor } from "./suite-door";
 import { SuitePanel } from "./suite-panel";
 import { useVoice } from "./suite-voice";
 
+// The test browser lacks what a tooltip measures itself with
+globalThis.ResizeObserver ??= class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
+
 const connection = (): RoomConnection => ({
   send: vi.fn(),
   react: vi.fn(),
@@ -47,7 +54,7 @@ function suite(role: "host" | "guest", isPaused = false) {
 
 afterEach(() => {
   resetRoom();
-  useVoice.setState({ status: "idle", speaking: [], micLocked: false });
+  useVoice.setState({ status: "idle", speaking: [], micLocked: false, names: {} });
 });
 
 describe("SuitePanel", () => {
@@ -93,6 +100,22 @@ describe("SuitePanel", () => {
     useVoice.setState({ micLocked: true });
     render(<SuitePanel ticketId="g1" alias="Tunde" />);
     expect(screen.getByRole("button", { name: "The host muted you" })).toBeDisabled();
+    // Their own row says the same as their button
+    expect(screen.getByLabelText("Muted by the host")).toBeInTheDocument();
+  });
+
+  it("names the host for a guest once voice knows them", () => {
+    suite("guest");
+    useVoice.setState({ names: { "host-pass": "Trayshmhirk01", g2: "Ada_Watches" } });
+    render(<SuitePanel ticketId="g1" alias="Tunde" />);
+    expect(screen.getByText("Trayshmhirk01")).toBeInTheDocument();
+  });
+
+  it("shows what each of the host's icon buttons does on hover", async () => {
+    suite("host");
+    render(<SuitePanel ticketId="host-pass" alias="Host" />);
+    fireEvent.focus(screen.getByRole("button", { name: "Remove Tunde" }));
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("Remove Tunde");
   });
 });
 

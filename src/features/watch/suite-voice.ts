@@ -26,6 +26,8 @@ interface VoiceStore {
   needsTap: boolean;
   /** Who is talking now, by ticket id (LiveKit's identity) */
   speaking: string[];
+  /** Each member's screen alias, by ticket id, as voice knows them (it names the host too) */
+  names: Record<string, string>;
   /** Bumped by a retry, so the connection starts again */
   attempt: number;
 }
@@ -37,6 +39,7 @@ const EMPTY = {
   micBlocked: false,
   needsTap: false,
   speaking: [],
+  names: {},
 } satisfies Omit<VoiceStore, "attempt">;
 
 export const useVoice = create<VoiceStore>(() => ({ ...EMPTY, attempt: 0 }));
@@ -69,6 +72,11 @@ export function useSuiteVoice(ticketId: string, enabled: boolean) {
         voice.on(RoomEvent.ActiveSpeakersChanged, (speakers) =>
           useVoice.setState({ speaking: speakers.map((speaker) => speaker.identity) }),
         );
+        voice.on(RoomEvent.ParticipantConnected, (participant) =>
+          useVoice.setState((state) => ({
+            names: { ...state.names, [participant.identity]: participant.name ?? "" },
+          })),
+        );
         voice.on(RoomEvent.TrackSubscribed, (track) => {
           if (track.kind !== Track.Kind.Audio) return;
           const element = track.attach();
@@ -78,7 +86,8 @@ export function useSuiteVoice(ticketId: string, enabled: boolean) {
         voice.on(RoomEvent.TrackUnsubscribed, (track) => {
           for (const element of track.detach()) element.remove();
         });
-        // The host revoked or restored this member's microphone in LiveKit itself
+        // The host revoked or restored this member's microphone in LiveKit itself. The one signal
+        // for the lock: the API's guest_muted can arrive out of order with it
         voice.on(RoomEvent.ParticipantPermissionsChanged, (_previous, participant) => {
           if (participant !== voice.localParticipant) return;
           setMicLocked(participant.permissions?.canPublish === false);
@@ -93,7 +102,12 @@ export function useSuiteVoice(ticketId: string, enabled: boolean) {
         await voice.connect(grant.url, grant.token);
         if (cancelled) return void voice.disconnect();
         room = voice;
-        useVoice.setState({ status: "connected", needsTap: !voice.canPlaybackAudio });
+        const names = Object.fromEntries(
+          [...voice.remoteParticipants.values()].map((other) => [other.identity, other.name ?? ""]),
+        );
+        useVoice.setState({ status: "connected", needsTap: !voice.canPlaybackAudio, names });
+        // Muted before this page loaded: still muted
+        if (voice.localParticipant.permissions?.canPublish === false) setMicLocked(true);
       } catch {
         // VOICE_NOT_AVAILABLE, too many tries, or LiveKit itself: the panel offers a retry
         if (!cancelled) useVoice.setState({ status: "failed" });

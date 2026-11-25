@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { RoomConnection } from "@/api/rooms/rooms-socket";
 
-import { aliasColor, RoomChat } from "./room-chat";
+import { RoomChat } from "./room-chat";
 import { resetRoom, settleFirst, useRoom } from "./room-store";
 
 const at = "2026-11-16T18:00:00.000Z";
@@ -36,7 +36,7 @@ afterEach(resetRoom);
 describe("RoomChat", () => {
   it("shows the hall, its messages and the reactions", () => {
     openHall();
-    render(<RoomChat />);
+    render(<RoomChat ticketId="t1" />);
     expect(screen.getByText("Hall 2 · 812 watching")).toBeInTheDocument();
     expect(screen.getByText("Here we go")).toBeInTheDocument();
     expect(screen.getByText("You")).toBeInTheDocument();
@@ -45,7 +45,7 @@ describe("RoomChat", () => {
 
   it("keeps Send disabled until there is something to send, then sends it", () => {
     const connection = openHall();
-    render(<RoomChat />);
+    render(<RoomChat ticketId="t1" />);
     const send = screen.getByRole("button", { name: "Send" });
     expect(send).toBeDisabled();
 
@@ -60,7 +60,7 @@ describe("RoomChat", () => {
 
   it("sends messages written in a row one after another, never making anyone wait", () => {
     const connection = openHall();
-    render(<RoomChat />);
+    render(<RoomChat ticketId="t1" />);
     const box = screen.getByLabelText("Message");
     for (const text of ["one", "two"]) {
       fireEvent.change(box, { target: { value: text } });
@@ -75,25 +75,15 @@ describe("RoomChat", () => {
   it("explains a message that was nothing but removed content", () => {
     openHall();
     useRoom.setState({ blocked: true, draft: "call 08012345678" });
-    render(<RoomChat />);
+    render(<RoomChat ticketId="t1" />);
     expect(screen.getByText(/left nothing to send/)).toBeInTheDocument();
     expect(screen.getByLabelText("Message")).toHaveValue("call 08012345678");
   });
 
   it("says why a room refused instead of offering the composer", () => {
     useRoom.setState({ status: "refused", refusal: "KYC_REQUIRED" });
-    render(<RoomChat />);
+    render(<RoomChat ticketId="t1" />);
     expect(screen.getByText("Public hall chat needs a verified phone number.")).toBeInTheDocument();
     expect(screen.queryByLabelText("Message")).not.toBeInTheDocument();
-  });
-
-  it("gives each name its own colour, the same every time, and never red", () => {
-    expect(aliasColor("Tunde")).toBe(aliasColor("Tunde"));
-    expect(aliasColor("Tunde")).not.toBe(aliasColor("Ada_Watches"));
-    for (const alias of ["a", "Tunde", "Ada_Watches", "first_member", "Trayshmhirk01"]) {
-      const hue = Number(/hsl\((\d+)/.exec(aliasColor(alias))?.[1]);
-      expect(hue).toBeGreaterThanOrEqual(20);
-      expect(hue).toBeLessThan(320);
-    }
   });
 });

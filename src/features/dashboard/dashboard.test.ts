@@ -77,6 +77,20 @@ describe("ticketView", () => {
     expect(ticketView(pass, start + 178 * MINUTE).phase).toBe("ended");
   });
 
+  it("leads a hall or suite pass back to its chat once the film has ended", () => {
+    const afterFilm = start + 125 * MINUTE;
+    expect(ticketView(ticket({ tier: "PUBLIC" }), afterFilm).action?.label).toBe(
+      "Back to the chat",
+    );
+    expect(ticketView(ticket({ tier: "PRIVATE_5" }), afterFilm).action?.label).toBe(
+      "Back to the suite",
+    );
+    // While the film plays, every room says the same
+    expect(ticketView(ticket({ tier: "PRIVATE_5" }), start + MINUTE).action?.label).toBe(
+      "Watch now",
+    );
+  });
+
   it("sends a live hold back to checkout, and a lapsed one to book again", () => {
     const now = start - 60 * MINUTE;
     const live = ticket({

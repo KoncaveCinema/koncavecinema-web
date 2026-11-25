@@ -1,6 +1,9 @@
 import { createEnv } from "@t3-oss/env-nextjs";
 import { z } from "zod";
 
+/** An origin or base URL without the trailing slash a deployment may give it: links add their own */
+export const baseUrl = z.url().transform((url) => url.replace(/\/+$/, ""));
+
 /**
  * The only place that reads process.env. A missing or malformed variable fails `next dev` and
  * `next build` with a clear message, mirroring the API's validated environment.
@@ -25,9 +28,9 @@ export const env = createEnv({
   },
   client: {
     // Public origin of this web app, used for canonical URLs, Open Graph and Paystack callbacks
-    NEXT_PUBLIC_APP_URL: z.url(),
+    NEXT_PUBLIC_APP_URL: baseUrl,
     // Base URL of koncavecinema-api including its global prefix, e.g. http://localhost:3000/api
-    NEXT_PUBLIC_API_URL: z.url(),
+    NEXT_PUBLIC_API_URL: baseUrl,
   },
   runtimeEnv: {
     NODE_ENV: process.env.NODE_ENV,

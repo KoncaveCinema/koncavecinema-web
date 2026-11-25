@@ -29,7 +29,8 @@ import {
   useRoom,
   withMessages,
 } from "./room-store";
-import { setMicLocked, voiceLeft } from "./suite-voice";
+import { useMemberColors } from "./member-color";
+import { voiceLeft } from "./suite-voice";
 
 /** Asking again after "the room isn't open yet" (a clock a few seconds apart from the API's) */
 const REJOIN_MS = 15_000;
@@ -125,10 +126,9 @@ export function useRoomChat(ticketId: string, enabled: boolean) {
           action: { label: "Let in", onClick: () => connection?.guest("admit", guest) },
           cancel: { label: "Not now", onClick: () => connection?.guest("deny", guest) },
         }),
-      onGuestMuted: (guest, muted) => {
-        set((state) => ({ muted: { ...state.muted, [guest]: muted } }));
-        if (guest === ticketId) setMicLocked(muted);
-      },
+      // The host's list; a guest's own lock follows the voice service (suite-voice.ts)
+      onGuestMuted: (guest, muted) =>
+        set((state) => ({ muted: { ...state.muted, [guest]: muted } })),
       onClock: (clock) => {
         const wasPaused = useRoom.getState().suite?.clock.isPaused;
         set((state) => ({ suite: state.suite && { ...state.suite, clock } }));
@@ -200,19 +200,6 @@ function react(emoji: Reaction) {
   useRoom.getState().connection?.react(emoji);
 }
 
-/**
- * A colour for each member's name, the same wherever they appear, from their alias. Hues near
- * the brand red are skipped, so "You" stays the only red name.
- */
-export function aliasColor(alias: string): string {
-  let hash = 0;
-  for (const char of alias) hash = (hash * 31 + char.codePointAt(0)!) | 0;
-  // 300 of the 360 degrees: from 20 (orange) round to 320 (pink), never red
-  const hue = 20 + (Math.abs(hash) % 300);
-  const lightness = 66 + (Math.abs(hash >> 9) % 3) * 6;
-  return `hsl(${hue} 75% ${lightness}%)`;
-}
-
 /** The one line a closed or refused room shows instead of the composer */
 function notice(status: string, refusal: string | null): string | null {
   if (status === "closed") return "Chat has closed for this screening.";
@@ -234,11 +221,12 @@ function notice(status: string, refusal: string | null): string | null {
  * The messages, and those on their way out. Re-renders only when either changes: the clocks
  * around the room tick without touching it.
  */
-function MessageList() {
+function MessageList({ ticketId }: { ticketId: string }) {
   const messages = useRoom((state) => state.messages);
   const outbox = useRoom((state) => state.outbox);
   const status = useRoom((state) => state.status);
   const alias = useSession((state) => state.user?.publicScreenAlias);
+  const colorOf = useMemberColors(ticketId);
 
   const list = useRef<HTMLOListElement>(null);
   const [following, setFollowing] = useState(true);
@@ -265,10 +253,7 @@ function MessageList() {
     const mine = message.mine ?? (alias != null && message.senderAlias === alias);
     return (
       <li key={message.id} className="wrap-break-word">
-        <span
-          className={cn("font-semibold", mine && "text-brand")}
-          style={mine ? undefined : { color: aliasColor(message.senderAlias) }}
-        >
+        <span className="font-semibold" style={{ color: colorOf(message.senderAlias) }}>
           {mine ? "You" : message.senderAlias}
         </span>{" "}
         <span className="text-white/90">{message.text}</span>
@@ -288,7 +273,9 @@ function MessageList() {
         {messages.map(line)}
         {outbox.map((text, index) => (
           <li key={`out-${index}`} className="wrap-break-word opacity-50">
-            <span className="font-semibold text-brand">You</span>{" "}
+            <span className="font-semibold" style={alias ? { color: colorOf(alias) } : undefined}>
+              You
+            </span>{" "}
             <span className="text-white/90">{text}</span>{" "}
             <span className="text-xs text-white/50">Sending…</span>
           </li>
@@ -317,9 +304,12 @@ function MessageList() {
  * `closing`: the film is over, so the header says when chat closes too.
  */
 export function RoomChat({
+  ticketId,
   closing = false,
   className,
 }: {
+  /** This viewer's pass: in a suite it places them among the members for the colours */
+  ticketId: string;
   closing?: boolean;
   className?: string;
 }) {
@@ -369,7 +359,7 @@ export function RoomChat({
         )}
       </header>
 
-      <MessageList />
+      <MessageList ticketId={ticketId} />
 
       <footer className="space-y-3 border-t border-white/8 p-3">
         {closedLine ? (

@@ -1,6 +1,7 @@
 import type { StatusKind } from "@/components/console/status-badge";
 import type { TicketDetail } from "@/api/tickets/tickets-schemas";
 import { formatClock } from "@/lib/format";
+import { isSuite, watchesAtOwnPace } from "@/lib/screening-window";
 
 /* What a pass is right now, and the one thing to do next with it. One function, so the
    dashboard home, the tickets list and the pass page always agree. */
@@ -55,6 +56,15 @@ export function cancellationText(ticket: TicketDetail): string {
       // Passes cancelled before reasons were recorded
       return "This pass was cancelled.";
   }
+}
+
+/**
+ * The way back into the room. Once a hall or suite film is over only the chat is left (the room
+ * says the screening has ended); an Individual pass can still play until its access ends.
+ */
+function afterFilmLabel(ticket: TicketDetail, over: boolean): string {
+  if (!over || watchesAtOwnPace(ticket.tier)) return "Watch now";
+  return isSuite(ticket.tier) ? "Back to the suite" : "Back to the chat";
 }
 
 /** `timeZone` is the viewer's, for the time a pass stays open after its film ends */
@@ -143,7 +153,7 @@ export function ticketView(ticket: TicketDetail, now: number, timeZone?: string)
             label: `Access until ${formatClock(ticket.accessEndsAt, timeZone)}`,
           }
         : { kind: "showtime", status: "LIVE", label: "Live now" },
-      action: { label: "Watch now", href: watch },
+      action: { label: afterFilmLabel(ticket, over), href: watch },
       watchable: true,
       note: refundNote(ticket),
     };

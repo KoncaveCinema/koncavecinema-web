@@ -1,7 +1,6 @@
 // Client code without its own "use client": only the watch room (already a client component)
 // imports it.
 
-import { cn } from "cn";
 import {
   Crown,
   Loader,
@@ -19,9 +18,11 @@ import { useState, type ReactNode } from "react";
 import type { SuiteMember } from "@/api/rooms/rooms-schemas";
 import { ConfirmDialog } from "@/components/console/confirm-dialog";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useServerNow } from "@/hooks/use-now";
 import { formatCountdown } from "@/lib/format";
 
+import { useHostAlias, useMemberColors } from "./member-color";
 import { useRoom } from "./room-store";
 import { SEEK_STEP_SECONDS, suiteMoment } from "./suite-clock";
 import { retryVoice, startSuiteAudio, toggleMic, useVoice } from "./suite-voice";
@@ -64,20 +65,25 @@ export function SuitePausedOverlay() {
 function VoiceControls() {
   const { status, micOn, micLocked, micBlocked, needsTap } = useVoice();
 
+  // Every state of the line is a button high, so the list under it never jumps
   if (status === "connecting" || status === "idle") {
     return (
-      <p className="flex items-center gap-2 text-sm text-white/55">
+      <p className="flex h-8 items-center gap-2 text-sm text-white/55">
         <Loader aria-hidden="true" className="size-4 animate-spin" />
         Joining voice…
       </p>
     );
   }
   if (status === "unavailable") {
-    return <p className="text-sm text-white/55">Voice isn&apos;t available for this screening.</p>;
+    return (
+      <p className="flex h-8 items-center text-sm text-white/55">
+        Voice isn&apos;t available for this screening.
+      </p>
+    );
   }
   if (status === "failed") {
     return (
-      <div className="flex items-center justify-between gap-3 text-sm text-white/60">
+      <div className="flex h-8 items-center justify-between gap-3 text-sm text-white/60">
         Voice couldn&apos;t connect.
         <Button size="sm" variant="outline" onClick={retryVoice}>
           Try again
@@ -117,12 +123,15 @@ function VoiceControls() {
 /** One person in the suite, with a ring while they talk */
 function MemberRow({
   name,
+  color,
   speaking,
   muted,
   host,
   actions,
 }: {
   name: string;
+  /** Their colour, the same as their name in the chat */
+  color: string | undefined;
   speaking: boolean;
   muted: boolean;
   host?: boolean;
@@ -133,10 +142,11 @@ function MemberRow({
       <span className="flex min-w-0 items-center gap-2.5">
         <span
           aria-hidden="true"
-          className={cn(
-            "grid size-7 shrink-0 place-items-center rounded-full bg-white/8 text-xs font-bold uppercase ring-2 transition-shadow",
-            speaking ? "ring-lobby" : "ring-transparent",
-          )}
+          className="grid size-7 shrink-0 place-items-center rounded-full bg-white/8 text-xs font-bold uppercase transition-shadow"
+          style={{
+            color,
+            boxShadow: speaking ? `0 0 0 2px ${color ?? "currentColor"}` : undefined,
+          }}
         >
           {name.charAt(0)}
         </span>
@@ -151,6 +161,28 @@ function MemberRow({
       </span>
       {actions && <span className="flex shrink-0 gap-1">{actions}</span>}
     </li>
+  );
+}
+
+/** An icon-only host control, named on hover and focus as well as to screen readers */
+function IconAction({
+  label,
+  onClick,
+  children,
+}: {
+  label: string;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button size="icon" variant="ghost" aria-label={label} onClick={onClick}>
+          {children}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -230,6 +262,9 @@ export function SuitePanel({ ticketId, alias }: { ticketId: string; alias: strin
   const muted = useRoom((state) => state.muted);
   const connection = useRoom((state) => state.connection);
   const speaking = useVoice((state) => state.speaking);
+  const micLocked = useVoice((state) => state.micLocked);
+  const hostAlias = useHostAlias(ticketId);
+  const colorOf = useMemberColors(ticketId);
   const [removing, setRemoving] = useState<SuiteMember | null>(null);
   if (!suite) return null;
 
@@ -262,7 +297,8 @@ export function SuitePanel({ ticketId, alias }: { ticketId: string; alias: strin
 
       <ul className="divide-y divide-white/6">
         <MemberRow
-          name={host ? "You" : "Host"}
+          name={host ? "You" : hostAlias || "Host"}
+          color={hostAlias ? colorOf(hostAlias) : undefined}
           host
           speaking={host ? speaking.includes(ticketId) : hostSpeaking}
           muted={false}
@@ -270,44 +306,41 @@ export function SuitePanel({ ticketId, alias }: { ticketId: string; alias: strin
         {!host && (
           <MemberRow
             name={alias ? `You (${alias})` : "You"}
+            color={alias ? colorOf(alias) : undefined}
             speaking={speaking.includes(ticketId)}
-            muted={muted[ticketId] === true}
+            // What the voice service says, the same as the microphone button
+            muted={micLocked}
           />
         )}
-        {others.map((guest) => (
-          <MemberRow
-            key={guest.ticketId}
-            name={guest.alias}
-            speaking={speaking.includes(guest.ticketId)}
-            muted={muted[guest.ticketId] === true}
-            actions={
-              host && (
-                <>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    aria-label={
-                      muted[guest.ticketId] ? `Unmute ${guest.alias}` : `Mute ${guest.alias}`
-                    }
-                    onClick={() =>
-                      connection?.guest(muted[guest.ticketId] ? "unmute" : "mute", guest.ticketId)
-                    }
-                  >
-                    {muted[guest.ticketId] ? <Mic /> : <MicOff />}
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    aria-label={`Remove ${guest.alias}`}
-                    onClick={() => setRemoving(guest)}
-                  >
-                    <UserMinus />
-                  </Button>
-                </>
-              )
-            }
-          />
-        ))}
+        {others.map((guest) => {
+          const guestMuted = muted[guest.ticketId] === true;
+          return (
+            <MemberRow
+              key={guest.ticketId}
+              name={guest.alias}
+              color={colorOf(guest.alias)}
+              speaking={speaking.includes(guest.ticketId)}
+              muted={guestMuted}
+              actions={
+                host && (
+                  <>
+                    <IconAction
+                      label={guestMuted ? `Unmute ${guest.alias}` : `Mute ${guest.alias}`}
+                      onClick={() =>
+                        connection?.guest(guestMuted ? "unmute" : "mute", guest.ticketId)
+                      }
+                    >
+                      {guestMuted ? <Mic /> : <MicOff />}
+                    </IconAction>
+                    <IconAction label={`Remove ${guest.alias}`} onClick={() => setRemoving(guest)}>
+                      <UserMinus />
+                    </IconAction>
+                  </>
+                )
+              }
+            />
+          );
+        })}
       </ul>
 
       {host && suite.waiting.length > 0 && (

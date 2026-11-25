@@ -27,6 +27,7 @@ import { formatCountdown, formatMoney } from "@/lib/format";
 
 import { useServerNow, useViewerTimeZone } from "@/hooks/use-now";
 import { downloadIcs, googleCalendarUrl, type CalendarEvent } from "@/lib/ics";
+import { watchesAtOwnPace } from "@/lib/screening-window";
 
 import { useGetSuiteGuests, useGetTicket, useReleaseTicket } from "@/api/tickets/tickets-api";
 import { useSignedIn } from "@/features/auth/require-session";
@@ -297,18 +298,29 @@ function SuiteGuests({ ticket }: { ticket: TicketDetail }) {
 /** When the doors open, and the way in. */
 function WatchPanel({ ticket, now }: { ticket: TicketDetail; now: number | null }) {
   const view = ticketView(ticket, now ?? 0);
+  // A hall or suite film that has ended: the room has only its chat left
+  const afterFilm =
+    now !== null && now >= Date.parse(ticket.endTime) && !watchesAtOwnPace(ticket.tier);
   const untilLobby = now === null ? null : Date.parse(ticket.lobbyOpensAt) - now;
   return (
     <Panel title="Watch">
       <div className="space-y-4">
         <ScreeningStatus startTime={ticket.startTime} endTime={ticket.endTime} />
         {view.watchable ? (
-          <Button asChild size="lg" className="w-full">
-            <Link href={`/watch/${ticket.id}`}>
-              {view.phase === "live" ? "Watch now" : "Enter lobby"}
-              <ArrowRight data-icon="inline-end" />
-            </Link>
-          </Button>
+          <>
+            <Button asChild size="lg" className="w-full">
+              <Link href={`/watch/${ticket.id}`}>
+                {view.action?.label ?? "Watch now"}
+                <ArrowRight data-icon="inline-end" />
+              </Link>
+            </Button>
+            {afterFilm && (
+              <p className="text-xs text-white/50">
+                The film has ended. The chat stays open until{" "}
+                <LocalTime iso={ticket.accessEndsAt} format="clock" />.
+              </p>
+            )}
+          </>
         ) : view.phase === "upcoming" ? (
           <>
             <Button size="lg" className="w-full" disabled>

@@ -27,11 +27,12 @@ import type {
 } from "@/api/stream-security/stream-security-schemas";
 import { LogoMark } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
-import { useServerClock, useServerNow } from "@/hooks/use-now";
-import { formatClock, formatCountdown } from "@/lib/format";
+import { useServerClock } from "@/hooks/use-now";
+import { formatClock } from "@/lib/format";
 
 import type { SuiteClock } from "@/api/rooms/rooms-schemas";
 
+import { LobbyOverlay } from "./lobby-overlay";
 import { suiteMoment } from "./suite-clock";
 import {
   CATCH_UP_RATE,
@@ -120,12 +121,6 @@ function Watermark({ watermark }: { watermark: WatermarkInfo }) {
       {[watermark.alias, watermark.userRef].filter(Boolean).join(" · ")}
     </span>
   );
-}
-
-/** The lobby's countdown: the one part of the player that changes every second */
-function StartsIn({ startsAt }: { startsAt: number }) {
-  const now = useServerNow();
-  return <>{now === null ? "…" : formatCountdown(startsAt - now)}</>;
 }
 
 export default function Player({
@@ -401,23 +396,7 @@ export default function Player({
       {/* The cinema's mark, faint in the corner above the controls, in full screen too */}
       <LogoMark className="pointer-events-none absolute right-4 bottom-10 z-10 size-9 opacity-30 select-none sm:right-6 sm:size-12" />
 
-      {!started && (
-        <div className="absolute inset-0 z-20 grid place-items-center text-center">
-          <div>
-            <p className="text-[0.7rem] font-bold tracking-[0.3em] text-lobby uppercase">
-              Lobby open · starts in
-            </p>
-            <p className="mt-3 font-display text-5xl font-black tabular-nums sm:text-7xl">
-              <StartsIn startsAt={startsAt} />
-            </p>
-            <p className="mt-3 text-sm text-white/60">
-              {ownPace
-                ? `Your film starts here. Pause and rewind as you like until ${endsAt}.`
-                : "The film starts for everyone at once. Stay on this page."}
-            </p>
-          </div>
-        </div>
-      )}
+      {!started && <LobbyOverlay startsAt={startsAt} ownPace={ownPace} endsAt={endsAt} />}
 
       {needsTap && (
         <div className="absolute inset-0 z-20 grid place-items-center">
