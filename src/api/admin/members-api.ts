@@ -5,6 +5,7 @@ import { http } from "../http";
 import {
   adminMemberPageSchema,
   adminMemberSchema,
+  memberTwoFactorResetSchema,
   passCancellationSchema,
 } from "./members-schemas";
 
@@ -62,6 +63,16 @@ export async function liftShadowBan(id: string) {
   await http({ url: `${member(id)}/chat-shadow-ban`, method: "DELETE" });
 }
 
+/**
+ * POST /admin/users/:id/two-factor/reset: for a member who lost their phone and recovery codes.
+ * Their sessions end and they're emailed; the reason goes to the audit log only.
+ */
+export async function resetMemberTwoFactor({ id, reason }: { id: string; reason: string }) {
+  return memberTwoFactorResetSchema.parse(
+    await http({ url: `${member(id)}/two-factor/reset`, method: "POST", data: { reason } }),
+  );
+}
+
 /* Hooks. Each query waits for `enabled` (a member of staff signed in). */
 
 export function useMembers(query: MembersQuery, enabled: boolean) {
@@ -106,6 +117,10 @@ export function useShadowBan() {
 
 export function useLiftShadowBan() {
   return useMutation({ mutationKey: ["liftShadowBan"], mutationFn: liftShadowBan });
+}
+
+export function useResetMemberTwoFactor() {
+  return useMutation({ mutationKey: ["resetMemberTwoFactor"], mutationFn: resetMemberTwoFactor });
 }
 
 export function useCancelPass() {

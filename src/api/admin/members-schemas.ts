@@ -66,6 +66,8 @@ export const adminMemberSchema = z.object({
   termsVersion: z.string().nullable(),
   createdAt: z.iso.datetime(),
   lastSignInAt: z.iso.datetime().nullable(),
+  /** Whether the member signs in with a two-factor code (dev 78c1217) */
+  twoFactorEnabled: z.boolean(),
   /** Set while the member is shadow-banned from room chat (dev 1654026) */
   chatShadowBannedAt: z.iso.datetime().nullable(),
   legalFullName: z.string().nullable().optional(),
@@ -87,3 +89,9 @@ export const passCancellationSchema = z.object({
   refundQueued: z.number(),
 });
 export type PassCancellation = z.infer<typeof passCancellationSchema>;
+
+/** POST /admin/users/:id/two-factor/reset (dev 78c1217) */
+export const memberTwoFactorResetSchema = z.object({
+  id: z.string(),
+  twoFactorEnabled: z.boolean(),
+});

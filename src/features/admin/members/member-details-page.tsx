@@ -1,6 +1,14 @@
 "use client";
 
-import { Eye, MailCheck, MessageSquareOff, ScrollText, Ticket, XCircle } from "lucide-react";
+import {
+  Eye,
+  MailCheck,
+  MessageSquareOff,
+  ScrollText,
+  ShieldOff,
+  Ticket,
+  XCircle,
+} from "lucide-react";
 import Link from "next/link";
 import { use, useState } from "react";
 import { toast } from "sonner";
@@ -17,6 +25,7 @@ import { roomLabel } from "@/features/admin/rooms";
 import { isSuperAdmin } from "@/features/auth/roles";
 import { useSession } from "@/features/auth/session";
 import { ErrorCode, toApiError } from "@/api";
+import { getQueryClient } from "@/api/query-client";
 import { formatLagosDate, formatLagosDateTime, formatMoney } from "@/lib/format";
 import { browserSummary } from "@/lib/user-agent";
 
@@ -27,6 +36,7 @@ import {
   useLiftShadowBan,
   useMember,
   useResendConfirmation,
+  useResetMemberTwoFactor,
   useRevealLegalName,
   useShadowBan,
 } from "@/api/admin/members-api";
@@ -92,6 +102,7 @@ function Profile({ member }: { member: AdminMember }) {
           </dd>
         </div>
         <ChatModeration member={member} />
+        <TwoFactorSignIn member={member} />
       </dl>
       <ConfirmDialog
         open={asking}
@@ -150,6 +161,79 @@ function ChatModeration({ member }: { member: AdminMember }) {
         onConfirm={async () => {
           await (bannedAt ? lift : ban).mutateAsync(member.id);
           toast.success(bannedAt ? "Shadow-ban lifted." : "Member shadow-banned from room chat.");
+        }}
+      />
+    </div>
+  );
+}
+
+/** The API's refusals of a two-factor reset, in words for this page */
+function resetRefusal(code: string): string | undefined {
+  switch (code) {
+    case ErrorCode.TWO_FACTOR_NOT_ENABLED:
+      return "Two-factor sign-in is already off for this member. The page is up to date again.";
+    case ErrorCode.STAFF_TWO_FACTOR_RESET_ONLY:
+      return "This is a staff account. Reset its two-factor sign-in from the Staff page.";
+    case ErrorCode.RATE_LIMITED:
+      return "Too many resets in a minute. Wait a moment, then try again.";
+    default:
+      return undefined;
+  }
+}
+
+/**
+ * Two-factor sign-in, and support's way out for a member who lost their phone and their recovery
+ * codes: turning it off. Either admin role may; the reason goes to the audit log only.
+ */
+export function TwoFactorSignIn({ member }: { member: AdminMember }) {
+  const reset = useResetMemberTwoFactor();
+  const [asking, setAsking] = useState(false);
+  const name = member.publicScreenAlias ?? member.email;
+  return (
+    <div>
+      <dt className="text-xs text-white/45">Two-factor sign-in</dt>
+      <dd className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-2">
+        <span>{member.twoFactorEnabled ? "On" : "Off"}</span>
+        {member.twoFactorEnabled && (
+          <Button size="sm" variant="outline" onClick={() => setAsking(true)}>
+            <ShieldOff data-icon="inline-start" />
+            Reset two-factor
+          </Button>
+        )}
+      </dd>
+      <ConfirmDialog
+        open={asking}
+        onOpenChange={setAsking}
+        title={`Turn off two-factor sign-in for ${name}?`}
+        description="For a member who has lost both their authenticator and their recovery codes. Check it's really them first."
+        consequences={[
+          "They're signed out on every device and emailed that support turned it off.",
+          "They sign in with their password alone until they turn it on again in Settings.",
+          "Your reason is kept in the audit log with your name. The member never sees it.",
+        ]}
+        reason={{
+          label: "Reason (audit log only)",
+          placeholder: "e.g. Lost phone; identity checked against the booking email",
+          min: 5,
+          max: 500,
+        }}
+        confirmLabel="Turn off two-factor"
+        pendingLabel="Turning off…"
+        tone="danger"
+        explainError={(error) => resetRefusal(error.code)}
+        onConfirm={async (reason) => {
+          try {
+            await reset.mutateAsync({ id: member.id, reason });
+          } catch (error) {
+            // Already off (turned off elsewhere): show the member as they are now
+            if (toApiError(error).is(ErrorCode.TWO_FACTOR_NOT_ENABLED)) {
+              void getQueryClient().invalidateQueries({ queryKey: ["/admin/users"] });
+            }
+            throw error;
+          }
+          toast.success(`Two-factor sign-in turned off for ${name}`, {
+            description: "They've been signed out and emailed.",
+          });
         }}
       />
     </div>
