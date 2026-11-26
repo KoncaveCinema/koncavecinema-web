@@ -2,7 +2,7 @@
 
 import { screeningPhase } from "@/lib/screening-window";
 import { formatClock, formatCountdown, formatElapsed, formatShowtime } from "@/lib/format";
-import { useNow, useViewerTimeZone } from "@/hooks/use-now";
+import { useClock, useViewerTimeZone } from "@/hooks/use-now";
 import { cn } from "@/lib/utils";
 
 import { LiveDot } from "./live-dot";
@@ -21,9 +21,11 @@ export function LocalTime({
   iso: string;
   format?: "showtime" | "clock";
 }) {
-  const now = useNow();
   const timeZone = useViewerTimeZone();
-  const text = format === "clock" ? formatClock(iso, timeZone) : formatShowtime(iso, now, timeZone);
+  // Re-renders when the words change ("Tomorrow" to "Today"), not every second
+  const text = useClock((now) =>
+    format === "clock" ? formatClock(iso, timeZone) : formatShowtime(iso, now, timeZone),
+  );
   return (
     <time dateTime={iso} suppressHydrationWarning>
       {text}
@@ -43,29 +45,30 @@ interface ScreeningStatusProps {
 
 const HOUR = 3_600_000;
 
-/**
- * Live screening state: "Starts in 08:42", "Lobby open · 08:42", "Live · 22m in". Before the
- * page is interactive it shows the calendar time, so server and client markup match.
- */
-export function ScreeningStatus({
-  startTime,
-  endTime,
-  className,
-  appearance = "chip",
-  relativeOnly = false,
-}: ScreeningStatusProps) {
-  const now = useNow();
-  const timeZone = useViewerTimeZone();
+type Tone = "live" | "lobby" | "gold" | "muted";
 
-  let tone: "live" | "lobby" | "gold" | "muted" = "muted";
+/**
+ * The status as one string, "tone|pulse|label" ("" for nothing to show), so the component
+ * re-renders only when what it shows changes
+ */
+function statusKey(
+  {
+    startTime,
+    endTime,
+    relativeOnly,
+  }: Pick<ScreeningStatusProps, "startTime" | "endTime" | "relativeOnly">,
+  now: number | null,
+  timeZone: string | undefined,
+): string {
+  let tone: Tone = "muted";
   let label: string;
   let pulse = false;
 
   if (relativeOnly) {
-    if (now === null) return null;
+    if (now === null) return "";
     const phase = screeningPhase({ startTime, endTime }, now);
     if (phase === "ended" || (phase === "upcoming" && Date.parse(startTime) - now >= 24 * HOUR)) {
-      return null;
+      return "";
     }
   }
 
@@ -93,6 +96,25 @@ export function ScreeningStatus({
     }
   }
 
+  return `${tone}|${pulse ? 1 : 0}|${label}`;
+}
+
+/**
+ * Live screening state: "Starts in 08:42", "Lobby open · 08:42", "Live · 22m in". Before the
+ * page is interactive it shows the calendar time, so server and client markup match.
+ */
+export function ScreeningStatus({
+  startTime,
+  endTime,
+  className,
+  appearance = "chip",
+  relativeOnly = false,
+}: ScreeningStatusProps) {
+  const timeZone = useViewerTimeZone();
+  const key = useClock((now) => statusKey({ startTime, endTime, relativeOnly }, now, timeZone));
+  if (!key) return null;
+  const [tone, pulse, label] = key.split("|") as [Tone, string, string];
+
   return (
     <span
       className={cn(
@@ -104,7 +126,7 @@ export function ScreeningStatus({
         className,
       )}
     >
-      <LiveDot tone={tone} pulse={pulse} />
+      <LiveDot tone={tone} pulse={pulse === "1"} />
       <span suppressHydrationWarning>{label}</span>
     </span>
   );

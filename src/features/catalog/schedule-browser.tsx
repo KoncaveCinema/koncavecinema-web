@@ -6,13 +6,13 @@ import Link from "next/link";
 import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
 
 import { RatingBadge } from "@/components/cinema/badges";
-import { useNow, useViewerTimeZone } from "@/hooks/use-now";
-import { dayKey, formatMoney, formatRuntime } from "@/lib/format";
+import { useClock, useViewerTimeZone } from "@/hooks/use-now";
+import { dateFormat, dayKey, formatMoney, formatRuntime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 import type { ScheduleShowtime } from "@/api/showtimes/showtimes-schemas";
 import { DateStrip, type StripDay } from "./date-strip";
-import { screeningPhase } from "@/lib/screening-window";
+import { lastPhaseChange, screeningPhase } from "@/lib/screening-window";
 import { ShowtimeChip } from "./showtime-chip";
 
 /*
@@ -33,9 +33,7 @@ const dateParser = parseAsString.withDefault("");
 
 function hourIn(iso: string, timeZone?: string): number {
   return Number(
-    new Intl.DateTimeFormat("en-GB", { hour: "numeric", hour12: false, timeZone }).format(
-      new Date(iso),
-    ),
+    dateFormat("en-GB", { hour: "numeric", hour12: false, timeZone }).format(new Date(iso)),
   );
 }
 
@@ -44,7 +42,8 @@ interface FilmGroup {
   showtimes: ScheduleShowtime[];
 }
 
-function FilmRow({ group }: { group: FilmGroup }) {
+/** `first`: the top row, whose poster is on screen at once (the page's largest image) */
+function FilmRow({ group, first }: { group: FilmGroup; first: boolean }) {
   const { movie, showtimes } = group;
   const from = Math.min(...showtimes.map((showtime) => showtime.priceFrom));
   return (
@@ -58,6 +57,8 @@ function FilmRow({ group }: { group: FilmGroup }) {
           alt=""
           fill
           sizes="(min-width: 1024px) 16rem, (min-width: 640px) 13rem, 92vw"
+          loading={first ? "eager" : "lazy"}
+          fetchPriority={first ? "high" : "auto"}
           className="object-cover transition-transform duration-700 ease-cinema group-hover:scale-[1.04]"
         />
       </Link>
@@ -127,8 +128,12 @@ function LiveNow({ showtimes, now }: { showtimes: ScheduleShowtime[]; now: numbe
 }
 
 export function ScheduleBrowser({ showtimes }: { showtimes: ScheduleShowtime[] }) {
-  const now = useNow();
   const timeZone = useViewerTimeZone();
+  // Worked out at the last phase change, not every second: the list only changes then
+  const now = useClock((current) =>
+    current === null ? null : lastPhaseChange(showtimes, current),
+  );
+  const todayKey = useClock((current) => (current === null ? null : dayKey(current, timeZone)));
   const [date, setDate] = useQueryState("date", dateParser);
   const [period, setPeriod] = useQueryState("time", periodParser);
 
@@ -169,7 +174,7 @@ export function ScheduleBrowser({ showtimes }: { showtimes: ScheduleShowtime[] }
           days={days}
           selected={selected}
           onSelect={(key) => void setDate(key)}
-          todayKey={now === null ? null : dayKey(now, timeZone)}
+          todayKey={todayKey}
           timeZone={timeZone}
         />
         <div
@@ -209,8 +214,8 @@ export function ScheduleBrowser({ showtimes }: { showtimes: ScheduleShowtime[] }
         </div>
       ) : (
         <ul className="mt-4">
-          {groups.map((group) => (
-            <FilmRow key={group.movie.slug} group={group} />
+          {groups.map((group, index) => (
+            <FilmRow key={group.movie.slug} group={group} first={index === 0} />
           ))}
         </ul>
       )}

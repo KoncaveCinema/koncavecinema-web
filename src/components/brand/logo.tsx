@@ -46,8 +46,10 @@ export function Logo({ className, variant = "stacked", priority = false }: LogoP
       <Image
         src="/koncave-logo.png"
         alt="Koncave Cinema"
-        width={1643}
-        height={957}
+        // The size it's drawn at (48 px high at most), so the browser fetches a small copy, not
+        // the 3840-wide one
+        width={83}
+        height={48}
         priority={priority}
         className={cn(
           "w-auto object-contain transition-transform duration-300",

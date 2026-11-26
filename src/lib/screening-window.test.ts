@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { screeningOverAt, watchableUntil, watchesAtOwnPace } from "./screening-window";
+import {
+  lastPhaseChange,
+  screeningOverAt,
+  watchableUntil,
+  watchesAtOwnPace,
+} from "./screening-window";
 
 const MINUTE = 60_000;
 const endTime = "2026-11-06T20:00:00.000Z";
@@ -22,5 +27,17 @@ describe("screening window", () => {
     expect(watchesAtOwnPace("INDIVIDUAL")).toBe(true);
     expect(watchesAtOwnPace("PUBLIC")).toBe(false);
     expect(watchesAtOwnPace("PRIVATE_5")).toBe(false);
+  });
+
+  it("finds the last moment a list of screenings changed phase, so pages re-render only then", () => {
+    const start = end - 120 * MINUTE;
+    const showtimes = [{ startTime: new Date(start).toISOString(), endTime }];
+    // Before the lobby: nothing has happened yet
+    expect(lastPhaseChange(showtimes, start - 40 * MINUTE)).toBe(0);
+    // The same answer all through the lobby, then the start, then the end
+    expect(lastPhaseChange(showtimes, start - 20 * MINUTE)).toBe(start - 30 * MINUTE);
+    expect(lastPhaseChange(showtimes, start - 1)).toBe(start - 30 * MINUTE);
+    expect(lastPhaseChange(showtimes, start + MINUTE)).toBe(start);
+    expect(lastPhaseChange(showtimes, end + MINUTE)).toBe(end);
   });
 });

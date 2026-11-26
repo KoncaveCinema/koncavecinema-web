@@ -64,13 +64,32 @@ const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
 
+const dateFormats = new Map<string, Intl.DateTimeFormat>();
+
+/**
+ * A date formatter, made once per locale and options and then reused. Making one is slow, and the
+ * time labels on a page format again every second
+ */
+export function dateFormat(
+  locale: string,
+  options: Intl.DateTimeFormatOptions,
+): Intl.DateTimeFormat {
+  const key = `${locale}|${JSON.stringify(options)}`;
+  let formatter = dateFormats.get(key);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(locale, options);
+    dateFormats.set(key, formatter);
+  }
+  return formatter;
+}
+
 function zone(timeZone: string | undefined): string | undefined {
   return timeZone ?? HOME_TIME_ZONE;
 }
 
 /** "8:00 PM" */
 export function formatClock(iso: string, timeZone?: string): string {
-  return new Intl.DateTimeFormat("en-NG", {
+  return dateFormat("en-NG", {
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
@@ -80,7 +99,7 @@ export function formatClock(iso: string, timeZone?: string): string {
 
 /** "Sat 25 Oct" */
 export function formatDay(iso: string, timeZone?: string): string {
-  return new Intl.DateTimeFormat("en-GB", {
+  return dateFormat("en-GB", {
     weekday: "short",
     day: "numeric",
     month: "short",
@@ -90,7 +109,7 @@ export function formatDay(iso: string, timeZone?: string): string {
 
 /** "Oct 28" for premiere ribbons */
 export function formatShortDate(iso: string, timeZone?: string): string {
-  return new Intl.DateTimeFormat("en-US", {
+  return dateFormat("en-US", {
     month: "short",
     day: "numeric",
     timeZone: zone(timeZone),
@@ -101,7 +120,7 @@ export function formatShortDate(iso: string, timeZone?: string): string {
 
 /** "2026-10-28": the calendar day of a moment in a timezone, for grouping by day */
 export function dayKey(time: number, timeZone?: string): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: zone(timeZone) }).format(new Date(time));
+  return dateFormat("en-CA", { timeZone: zone(timeZone) }).format(new Date(time));
 }
 
 /**
@@ -161,7 +180,7 @@ export function formatLagosDateTime(
   options: { year?: boolean; until?: string } = {},
 ): string {
   // Assembled from parts: en-GB adds a comma after the weekday only when the year is shown
-  const parts = new Intl.DateTimeFormat("en-GB", {
+  const parts = dateFormat("en-GB", {
     weekday: "short",
     day: "numeric",
     month: "short",
@@ -173,7 +192,7 @@ export function formatLagosDateTime(
   const date = [part("weekday"), part("day"), part("month"), options.year ? part("year") : ""]
     .filter(Boolean)
     .join(" ");
-  const clock = new Intl.DateTimeFormat("en-GB", {
+  const clock = dateFormat("en-GB", {
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
@@ -186,7 +205,7 @@ export function formatLagosDateTime(
 
 /** "7 Nov 2026" */
 export function formatLagosDate(iso: string): string {
-  return new Intl.DateTimeFormat("en-GB", {
+  return dateFormat("en-GB", {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -196,7 +215,7 @@ export function formatLagosDate(iso: string): string {
 
 /** A moment as a date and a time input show it in Lagos: { date: "2026-11-07", time: "19:00" } */
 export function lagosInputs(iso: string): { date: string; time: string } {
-  const parts = new Intl.DateTimeFormat("en-CA", {
+  const parts = dateFormat("en-CA", {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",

@@ -13,7 +13,7 @@ import { PageSkeleton, RequireSession } from "@/features/auth/require-session";
 import { lobbyOpensAt } from "@/lib/screening-window";
 import { AUDITORIUMS } from "@/features/home/auditoriums/halls";
 import { SUPPORT_EMAIL } from "@/features/support/content";
-import { useNow } from "@/hooks/use-now";
+import { useClock } from "@/hooks/use-now";
 import { ErrorCode, serverOffset, toApiError } from "@/api";
 import { useVerifyPayment, VERIFY_WAIT_MS } from "@/api/payments/payments-api";
 import { useGetTicket } from "@/api/tickets/tickets-api";
@@ -50,7 +50,6 @@ function SupportLine({ reference }: { reference: string }) {
 }
 
 function ConfirmationBody({ ticketId, reference }: { ticketId: string; reference: string }) {
-  const now = useNow();
   const [startedAt] = useState(() => Date.now());
   // Paystack's webhook can lag the redirect: polled while the outcome is pending
   const payment = useVerifyPayment(reference);
@@ -58,11 +57,15 @@ function ConfirmationBody({ ticketId, reference }: { ticketId: string; reference
   const ticket = useGetTicket(ticketId);
   const detail = ticket.data;
   const lockExpiresAt = detail?.lockExpiresAt;
-  const holdLive =
-    detail?.status === "RESERVED" &&
-    Boolean(lockExpiresAt) &&
-    now !== null &&
-    Date.parse(lockExpiresAt ?? "") > now + serverOffset();
+  // Each re-renders the page when it changes, not every second
+  const holdLive = useClock(
+    (now) =>
+      detail?.status === "RESERVED" &&
+      Boolean(lockExpiresAt) &&
+      now !== null &&
+      Date.parse(lockExpiresAt ?? "") > now + serverOffset(),
+  );
+  const waitingLong = useClock((now) => now !== null && now - startedAt > VERIFY_WAIT_MS);
   const movieSlug = detail?.movieSlug;
   const showtimeHref =
     detail && movieSlug ? "/movies/" + movieSlug + "/showtimes/" + detail.showtimeId : "/showtimes";
@@ -96,7 +99,6 @@ function ConfirmationBody({ ticketId, reference }: { ticketId: string; reference
   const outcome = payment.data?.outcome;
 
   if (payment.isPending || outcome === "PENDING") {
-    const waitingLong = now !== null && now - startedAt > VERIFY_WAIT_MS;
     if (!waitingLong) {
       return (
         <div className="mx-auto max-w-lg py-16 text-center">

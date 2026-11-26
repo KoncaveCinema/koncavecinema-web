@@ -3,7 +3,7 @@
 import { CircleDot, DoorOpen } from "lucide-react";
 import Link from "next/link";
 
-import { useNow, useViewerTimeZone } from "@/hooks/use-now";
+import { useClock, useViewerTimeZone } from "@/hooks/use-now";
 import { formatClock, formatMoney, formatRelativeDay } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -32,9 +32,12 @@ export function ShowtimeChip({
   withDay?: boolean;
   className?: string;
 }) {
-  const now = useNow();
   const timeZone = useViewerTimeZone();
-  const phase = now === null ? "upcoming" : screeningPhase({ startTime, endTime }, now);
+  // Each re-renders only when it changes: the phase a few times an evening, the day once a day
+  const phase = useClock((now) =>
+    now === null ? "upcoming" : screeningPhase({ startTime, endTime }, now),
+  );
+  const day = useClock((now) => (withDay ? formatRelativeDay(startTime, now, timeZone) : ""));
   if (phase === "ended") return null;
 
   return (
@@ -56,7 +59,7 @@ export function ShowtimeChip({
           suppressHydrationWarning
           className="text-[0.6rem] font-bold tracking-[0.14em] whitespace-nowrap text-white/45 uppercase"
         >
-          {formatRelativeDay(startTime, now, timeZone)}
+          {day}
         </span>
       )}
       <time

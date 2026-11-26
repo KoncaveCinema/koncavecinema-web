@@ -68,10 +68,31 @@ export function useNow(): number | null {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
-/** The viewer's timezone once running in the browser; undefined (Lagos time) before that. */
+let viewerTimeZone: string | undefined;
+
+/**
+ * The viewer's timezone once running in the browser; undefined (Lagos time) before that. Read
+ * once, and it never re-renders anything after the page starts.
+ */
 export function useViewerTimeZone(): string | undefined {
-  const current = useNow();
-  return current === null ? undefined : Intl.DateTimeFormat().resolvedOptions().timeZone;
+  return useClock((current) => {
+    if (current === null) return undefined;
+    viewerTimeZone ??= Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return viewerTimeZone;
+  });
+}
+
+/**
+ * Something worked out from the viewer's clock, re-rendering only when it changes: "Today,
+ * 8:00 PM" changes once a day, so it needn't render every second the way a countdown does.
+ * `read` gets null before the page is interactive; return a primitive.
+ */
+export function useClock<T>(read: (now: number | null) => T): T {
+  return useSyncExternalStore(
+    subscribe,
+    () => read(now),
+    () => read(null),
+  );
 }
 
 /**
