@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { Suspense } from "react";
 
 import { FilmGrain, ScreenGlow } from "@/components/brand/atmosphere";
@@ -41,12 +42,22 @@ export default async function ShowtimesPage() {
         ) : (
           // The day and time filters read the link (?date=, ?time=) in the browser
           <Suspense fallback={<ScheduleFallback />}>
-            <ScheduleBrowser showtimes={showtimes} />
+            <Schedule showtimes={showtimes} />
           </Suspense>
         )}
       </div>
     </div>
   );
+}
+
+/**
+ * Rendered for each request, so the filters read from the link on the server and the list (with
+ * its first poster, the page's main image) is in the HTML. Prerendered, it could only appear once
+ * the browser had loaded the page's JavaScript.
+ */
+async function Schedule({ showtimes }: { showtimes: Awaited<ReturnType<typeof getSchedule>> }) {
+  await connection();
+  return <ScheduleBrowser showtimes={showtimes} />;
 }
 
 function ScheduleFallback() {
