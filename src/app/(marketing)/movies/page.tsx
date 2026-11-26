@@ -116,9 +116,9 @@ export default async function NowShowingPage() {
                   Also playing this week
                 </h2>
                 <ul className="mt-8 grid gap-x-6 gap-y-12 sm:grid-cols-2 xl:grid-cols-3">
-                  {rest.map((film, index) => (
+                  {rest.map((film) => (
                     <li key={film.id}>
-                      <MovieCard film={film} priority={index < 2} />
+                      <MovieCard film={film} />
                     </li>
                   ))}
                 </ul>
