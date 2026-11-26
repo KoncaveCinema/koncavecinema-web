@@ -117,9 +117,22 @@ export function PasswordChecklist({ id, password }: { id: string; password: stri
   );
 }
 
-/** Only same-site paths are followed after signing in, never another origin */
+const SITE = "https://koncave.invalid";
+
+/**
+ * Only same-site paths are followed after signing in, never another origin. Read the way a
+ * browser reads it: "/\evil.com", or a tab or newline inside "//", also lead off the site.
+ */
 export function safeNext(value: string | null, fallback = "/movies"): string {
-  return value && value.startsWith("/") && !value.startsWith("//") ? value : fallback;
+  if (!value?.startsWith("/")) return fallback;
+  try {
+    const url = new URL(value, SITE);
+    if (url.origin !== SITE) return fallback;
+    // The parsed path, so what is followed is exactly what was checked
+    return `${url.pathname}${url.search}${url.hash}`;
+  } catch {
+    return fallback;
+  }
 }
 
 export function AuthHeading({ title, description }: { title: string; description: ReactNode }) {

@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState } from "react";
 
+import { dateFormat } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 export interface StripDay {
@@ -15,9 +16,9 @@ const DAY = 86_400_000;
 
 function labels(iso: string, todayKey: string | null, key: string, timeZone?: string) {
   const date = new Date(iso);
-  const weekday = new Intl.DateTimeFormat("en-GB", { weekday: "short", timeZone }).format(date);
-  const day = new Intl.DateTimeFormat("en-GB", { day: "numeric", timeZone }).format(date);
-  const month = new Intl.DateTimeFormat("en-GB", { month: "short", timeZone }).format(date);
+  const weekday = dateFormat("en-GB", { weekday: "short", timeZone }).format(date);
+  const day = dateFormat("en-GB", { day: "numeric", timeZone }).format(date);
+  const month = dateFormat("en-GB", { month: "short", timeZone }).format(date);
   let top = weekday;
   if (todayKey && key === todayKey) top = "Today";
   else if (todayKey && key === new Date(Date.parse(todayKey) + DAY).toISOString().slice(0, 10)) {

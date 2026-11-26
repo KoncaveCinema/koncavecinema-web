@@ -25,6 +25,25 @@ export function screeningPhase(
   return "upcoming";
 }
 
+/**
+ * The last moment at or before `now` when any of these screenings changed phase (a lobby opened,
+ * a film started or ended), or 0. Between two such moments every phase is the same, so a page of
+ * showtimes worked out at this moment instead of `now` re-renders only when something changes.
+ */
+export function lastPhaseChange(
+  showtimes: { startTime: string; endTime: string }[],
+  now: number,
+): number {
+  let last = 0;
+  for (const showtime of showtimes) {
+    const start = Date.parse(showtime.startTime);
+    for (const moment of [start - LOBBY_OPENS_BEFORE_MS, start, Date.parse(showtime.endTime)]) {
+      if (moment <= now && moment > last) last = moment;
+    }
+  }
+  return last;
+}
+
 export function lobbyOpensAt(showtime: { startTime: string }): string {
   return new Date(Date.parse(showtime.startTime) - LOBBY_OPENS_BEFORE_MS).toISOString();
 }

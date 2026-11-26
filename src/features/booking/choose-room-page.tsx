@@ -17,7 +17,7 @@ import { useReserveTicket } from "@/api/tickets/tickets-api";
 import { heldTicketSchema, type HeldTicket } from "@/api/tickets/tickets-schemas";
 import { lobbyOpensAt, screeningPhase } from "@/lib/screening-window";
 import { AUDITORIUMS } from "@/features/home/auditoriums/halls";
-import { useNow } from "@/hooks/use-now";
+import { useClock } from "@/hooks/use-now";
 import { ErrorCode, newIdempotencyKey, toApiError } from "@/api";
 import { formatMoney, formatRuntime } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -161,7 +161,6 @@ export function ChooseRoomPage({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const now = useNow();
   const { status, user } = useSession();
   const [verifying, setVerifying] = useState(false);
   const [held, setHeld] = useState<HeldTicket | null>(null);
@@ -175,7 +174,8 @@ export function ChooseRoomPage({
   const [attempt, setAttempt] = useState<{ tier: TicketTier; key: string } | null>(null);
   const reserveTicket = useReserveTicket();
 
-  const ended = now !== null && screeningPhase(capacity, now) === "ended";
+  // Re-renders the page when the screening ends, not every second
+  const ended = useClock((now) => now !== null && screeningPhase(capacity, now) === "ended");
   const selected = capacity.tiers.find((tier) => tier.tier === room);
   const needsIdentity = selected?.requiresKyc === true;
   const verified = user?.isPhoneVerified === true;

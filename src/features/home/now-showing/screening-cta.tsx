@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { screeningPhase } from "@/lib/screening-window";
 import { formatMoney } from "@/lib/format";
-import { useNow } from "@/hooks/use-now";
+import { useClock } from "@/hooks/use-now";
 
 /**
  * The card's main action follows the screening: reserve ahead, "Join the lobby" once the doors
@@ -23,8 +23,10 @@ export function ScreeningCta({
   endTime: string;
   price: { amount: number; currency: string } | null;
 }) {
-  const now = useNow();
-  const phase = now === null ? "upcoming" : screeningPhase({ startTime, endTime }, now);
+  // Re-renders when the phase changes, not every second
+  const phase = useClock((now) =>
+    now === null ? "upcoming" : screeningPhase({ startTime, endTime }, now),
+  );
   const urgent = phase === "lobby" || phase === "live";
   const amount = price ? formatMoney(price.amount, price.currency) : null;
 

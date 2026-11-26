@@ -3,8 +3,9 @@
 import { CalendarX2 } from "lucide-react";
 import { useState } from "react";
 
-import { useNow, useViewerTimeZone } from "@/hooks/use-now";
+import { useClock, useViewerTimeZone } from "@/hooks/use-now";
 import { dayKey } from "@/lib/format";
+import { lastPhaseChange } from "@/lib/screening-window";
 
 import { DateStrip, type StripDay } from "./date-strip";
 import { lowestPrice } from "./screening";
@@ -16,8 +17,12 @@ import type { CatalogShowtime } from "./types";
  * timezone; until the page is interactive they follow Lagos time, so the markup matches.
  */
 export function FilmShowtimes({ slug, showtimes }: { slug: string; showtimes: CatalogShowtime[] }) {
-  const now = useNow();
   const timeZone = useViewerTimeZone();
+  // Worked out at the last phase change, not every second: the list only changes then
+  const now = useClock((current) =>
+    current === null ? null : lastPhaseChange(showtimes, current),
+  );
+  const todayKey = useClock((current) => (current === null ? null : dayKey(current, timeZone)));
   const [chosen, setChosen] = useState<string | null>(null);
 
   const upcoming = showtimes
@@ -45,7 +50,6 @@ export function FilmShowtimes({ slug, showtimes }: { slug: string; showtimes: Ca
   }
 
   const selected = chosen && byDay.has(chosen) ? chosen : days[0]!.key;
-  const todayKey = now === null ? null : dayKey(now, timeZone);
   const items = byDay.get(selected) ?? [];
 
   return (
