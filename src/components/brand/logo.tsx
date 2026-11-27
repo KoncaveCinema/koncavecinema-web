@@ -15,8 +15,9 @@ export function LogoMark({ className, monochrome = false }: MarkProps) {
       <Image
         src={monochrome ? "/koncave-icon-black.png" : "/koncave-icon.png"}
         alt=""
-        width={1254}
-        height={1254}
+        // The largest it's drawn (48 px), so the browser fetches a small copy, not the full 1254 px
+        width={48}
+        height={48}
         className={cn("size-full object-contain", className)}
       />
     </span>

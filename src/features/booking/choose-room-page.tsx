@@ -56,19 +56,22 @@ function errorMessage(code: string): string {
   }
 }
 
+/** `first`: the top card, whose picture is on screen at once (the page's largest image) */
 function RoomCard({
   tier,
   selected,
+  first,
   onSelect,
 }: {
   tier: TierCapacity;
   selected: boolean;
+  first: boolean;
   onSelect: () => void;
 }) {
   const hall = AUDITORIUMS.find((item) => item.tier === tier.tier);
   const suite = tier.seatCount > 1;
   return (
-    <li>
+    <div>
       <button
         type="button"
         role="radio"
@@ -87,6 +90,8 @@ function RoomCard({
               src={hall.image}
               alt=""
               fill
+              loading={first ? "eager" : "lazy"}
+              fetchPriority={first ? "high" : "auto"}
               sizes="(min-width: 1024px) 26vw, (min-width: 640px) 45vw, 92vw"
               className="object-cover transition-transform duration-700 ease-cinema group-hover:scale-[1.03]"
             />
@@ -144,7 +149,7 @@ function RoomCard({
           </div>
         </div>
       </button>
-    </li>
+    </div>
   );
 }
 
@@ -387,20 +392,21 @@ export function ChooseRoomPage({
               <span>{formatRuntime(film.durationMinutes)}</span>
             </p>
 
-            <ul
+            <div
               role="radiogroup"
               aria-label="Choose your room"
               className="mt-8 grid gap-4 sm:grid-cols-2"
             >
-              {capacity.tiers.map((tier) => (
+              {capacity.tiers.map((tier, index) => (
                 <RoomCard
                   key={tier.tier}
                   tier={tier}
                   selected={room === tier.tier}
+                  first={index === 0}
                   onSelect={() => void setRoom(tier.tier as (typeof TIERS)[number])}
                 />
               ))}
-            </ul>
+            </div>
           </>
         )}
         {/* Mobile: under the rooms, just above the bottom bar. Desktop shows it in the panel */}
