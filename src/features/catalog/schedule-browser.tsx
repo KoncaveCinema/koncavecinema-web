@@ -50,6 +50,7 @@ function FilmRow({ group, first }: { group: FilmGroup; first: boolean }) {
     <li className="grid reveal gap-5 border-t border-white/8 py-7 first:border-t-0 sm:grid-cols-[13rem_1fr] sm:gap-7 lg:grid-cols-[16rem_1fr]">
       <Link
         href={`/movies/${movie.slug}`}
+        aria-label={movie.title}
         className="group relative block aspect-video overflow-hidden rounded-xl bg-surface-2 ring-1 ring-white/8"
       >
         <Image
@@ -64,11 +65,11 @@ function FilmRow({ group, first }: { group: FilmGroup; first: boolean }) {
       </Link>
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2.5">
-          <h3 className="font-display text-xl leading-tight font-extrabold">
+          <h2 className="font-display text-xl leading-tight font-extrabold">
             <Link href={`/movies/${movie.slug}`} className="hover:underline">
               {movie.title}
             </Link>
-          </h3>
+          </h2>
           <RatingBadge rating={movie.ageRating} />
         </div>
         <p className="mt-1.5 text-sm text-white/50">

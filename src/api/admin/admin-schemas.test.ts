@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { featuredPlacementsSchema } from "./featured-schemas";
 import { adminFilmPageSchema, adminFilmSchema } from "./films-schemas";
-import { adminMemberSchema } from "./members-schemas";
+import { adminMemberSchema, memberTwoFactorResetSchema } from "./members-schemas";
 import { adminOverviewSchema, adminPaymentPageSchema } from "./money-schemas";
 import { adminShowtimePageSchema } from "./showtimes-schemas";
 import { auditEntriesPageSchema, staffMemberSchema } from "./staff-schemas";
@@ -204,6 +204,7 @@ describe("admin schemas", () => {
       termsVersion: "2026-10-28",
       createdAt: at,
       lastSignInAt: null,
+      twoFactorEnabled: true,
       chatShadowBannedAt: null,
       passes: [
         {
@@ -238,6 +239,11 @@ describe("admin schemas", () => {
       ],
     });
     expect(member.passes[0]?.payments[0]?.refundState).toBe("IN_PROGRESS");
+    expect(member.twoFactorEnabled).toBe(true);
+    expect(memberTwoFactorResetSchema.parse({ id: "u1", twoFactorEnabled: false })).toEqual({
+      id: "u1",
+      twoFactorEnabled: false,
+    });
     expect(
       staffMemberSchema.parse({
         id: "a1",
