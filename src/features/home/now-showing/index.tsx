@@ -26,7 +26,7 @@ export async function NowShowing() {
           action={{ href: "/movies", label: "All films" }}
         />
         {screenings.length > 0 ? (
-          <div className="-mx-5 mt-12 snap-rail gap-4 px-5 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-5 sm:overflow-visible sm:px-0 xl:grid-cols-[repeat(auto-fit,minmax(16rem,1fr))]">
+          <div className="-mx-5 mt-12 snap-rail gap-4 px-5 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-5 sm:overflow-visible sm:px-0 xl:grid-cols-[repeat(auto-fill,minmax(16rem,1fr))]">
             {screenings.map((screening) => (
               <FilmCard key={screening.showtime.id} screening={screening} />
             ))}
